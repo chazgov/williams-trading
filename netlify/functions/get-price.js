@@ -1,3 +1,6 @@
+bash
+
+cat /mnt/user-data/outputs/williams-netlify-project/netlify/functions/get-price.js
 // Netlify Function — runs server-side, so Twelve Data's CORS block doesn't apply.
 // This is called by the browser as /api/get-price?symbol=GBP/USD
 // and returns clean JSON with price, change, and history for Williams %R.
