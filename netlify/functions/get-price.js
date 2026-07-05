@@ -1,15 +1,5 @@
-bash
-
-cat /mnt/user-data/outputs/williams-netlify-project/netlify/functions/get-price.js
-Output
-
-// Netlify Function — runs server-side, so Twelve Data's CORS block doesn't apply.
-// This is called by the browser as /api/get-price?symbol=GBP/USD
-// and returns clean JSON with price, change, and history for Williams %R.
-
 const TWELVE_DATA_KEY = process.env.TWELVE_DATA_KEY || "43e0b306690347ab9640f991f5c87e3d";
 
-// Map our internal market keys to Twelve Data symbols
 const SYMBOL_MAP = {
   gbpusd: "GBP/USD",
   eurusd: "EUR/USD",
@@ -40,10 +30,7 @@ exports.handler = async function (event) {
       };
     }
 
-    // Key is embedded directly — no configuration needed
-
-    // Fetch current quote
-    const quoteUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_KEY}`;
+    const quoteUrl = "https://api.twelvedata.com/quote?symbol=" + encodeURIComponent(symbol) + "&apikey=" + TWELVE_DATA_KEY;
     const quoteRes = await fetch(quoteUrl);
     const quoteData = await quoteRes.json();
 
@@ -55,16 +42,15 @@ exports.handler = async function (event) {
       };
     }
 
-    // Fetch daily history for Williams %R (last 20 days)
-    const histUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=20&apikey=${TWELVE_DATA_KEY}`;
+    const histUrl = "https://api.twelvedata.com/time_series?symbol=" + encodeURIComponent(symbol) + "&interval=1day&outputsize=20&apikey=" + TWELVE_DATA_KEY;
     const histRes = await fetch(histUrl);
     const histData = await histRes.json();
 
-    let history = null;
+    var history = null;
     if (histData.values && Array.isArray(histData.values)) {
-      const highs = histData.values.map(v => parseFloat(v.high)).reverse();
-      const lows = histData.values.map(v => parseFloat(v.low)).reverse();
-      const closes = histData.values.map(v => parseFloat(v.close)).reverse();
+      const highs = histData.values.map(function(v){ return parseFloat(v.high); }).reverse();
+      const lows = histData.values.map(function(v){ return parseFloat(v.low); }).reverse();
+      const closes = histData.values.map(function(v){ return parseFloat(v.close); }).reverse();
       history = { h: highs, l: lows, c: closes };
     }
 
