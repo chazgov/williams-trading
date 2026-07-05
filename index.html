@@ -364,11 +364,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
 </div>
 <!-- LIVE PANEL -->
 <div id="p-live" class="panel on">
-  <div class="bn g"><b>&#128994; Live prices update every 30 seconds.</b> Green card = all 3 Larry Williams signals confirmed = valid trade. Amber = watch and wait. Grey = no signal, stand aside. Prices sourced from Frankfurter (forex), Finnhub and Yahoo Finance.</div>
+  <div class="bn g"><b>&#128994; Live prices update every 30 seconds.</b> Green card = all 3 Larry Williams signals confirmed = valid trade. Amber = watch and wait. Grey = no signal, stand aside. Prices sourced from Twelve Data via Netlify Function.</div>
   <div id="liveStatus" style="font-size:11px;color:var(--dim);margin-bottom:13px;display:flex;align-items:center;gap:6px"><span class="pulse"></span>Connecting to live data sources...</div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px" id="liveSummary"></div>
   <div id="liveCards"></div>
-  <div class="disc">Live prices use Frankfurter.app (forex), Finnhub.io and Yahoo Finance as fallback. Prices auto-refresh every 30 seconds. Williams %R is calculated from daily candle data. COT signals update weekly from CFTC data. Seasonal signals are based on 30+ year historical patterns and update monthly.</div>
+  <div class="disc">Live prices sourced from Twelve Data via your Netlify serverless function. Prices auto-refresh every 30 seconds. Williams %R calculated from real daily candle history. COT signals update weekly. Seasonal signals based on 30+ year historical patterns.</div>
 </div>
 <!-- SIGNALS PANEL -->
 <div id="p-sig" class="panel">
