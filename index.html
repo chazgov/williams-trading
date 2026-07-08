@@ -653,4 +653,14 @@ var PLATS=[
 function renderPlats(){
   document.getElementById("platH").innerHTML=PLATS.map(function(p){
     var tc=p.ts==="Yes"?"#00d97e":p.ts==="Limited"?"#ffa94d":"#ff4d6d";
-    return '<div class="platc" onclick="this.classList.toggle(\'open\')"><div class="plrow"><div class="pll"><span class="plnum">#'+p.n+'</span><span class="plname">'+p.nm+'</span><span class="pltype">'+p.ty+'</span></div><div class="plr"><span class="plmin">'+p.mn+'</span><span class="plrat">'+p.rt+'/10</span></div></div><div class="pldet">Min deposit: '+p.mn+' &middot; <span style="color:var(--g)">Best for:</span> '+p.bf+' &middot; <span style="color:'+tc+'">Trailing stops: '+p.ts+'</span></div></
+    return '<div class="platc" onclick="this.classList.toggle(\'open\')"><div class="plrow"><div class="pll"><span class="plnum">#'+p.n+'</span><span class="plname">'+p.nm+'</span><span class="pltype">'+p.ty+'</span></div><div class="plr"><span class="plmin">'+p.mn+'</span><span class="plrat">'+p.rt+'/10</span></div></div><div class="pldet">Min deposit: '+p.mn+' &middot; <span style="color:var(--g)">Best for:</span> '+p.bf+' &middot; <span style="color:'+tc+'">Trailing stops: '+p.ts+'</span></div></div>';
+  }).join("");
+}
+
+// ═══ INIT ════════════════════════════════════════════════════════
+upCap();
+renderPlats();
+renderLive();
+</script>
+</body>
+</html>
