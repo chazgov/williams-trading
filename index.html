@@ -297,10 +297,10 @@ var MARKETS = {
   eurusd:{ name:"EUR/USD",    cat:"Forex",     dir:"long",  dp:5, sp:1.0, bp:0.8, tp:0.8, gp:1.5, lev:30, cOk:false, sOk:false, cTxt:"COT neutral — no clear signal",                sTxt:"Seasonal neutral",                   eTime:"09:00 UK", note:"No signal present. Stand aside." },
   usdjpy:{ name:"USD/JPY",    cat:"Forex",     dir:"short", dp:3, sp:1.2, bp:0.8, tp:0.8, gp:2.0, lev:30, cOk:true,  sOk:false, cTxt:"JPY commercials hedging USD exposure",         sTxt:"Marginally bearish seasonal",        eTime:"09:00 UK", note:"Partial signal — COT confirms but seasonal neutral." },
   gold:  { name:"Gold",       cat:"Commodity", dir:"long",  dp:2, sp:1.0, bp:0.8, tp:0.8, gp:1.8, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials reducing shorts — bullish",        sTxt:"June-July historically bullish (68%)", eTime:"08:00 or 13:30 UK", note:"Multi-day hold. Trail 0.8% below each new high." },
-  oil:   { name:"Crude Oil",  cat:"Commodity", dir:"long",  dp:2, sp:1.5, bp:1.5, tp:1.2, gp:3.0, lev:10, cOk:true,  sOk:true,  cTxt:"Producers hedging less — supply confidence",  sTxt:"Summer driving season peak (70%)",   eTime:"13:30 UK", note:"Check EIA inventory report Wed 15:30 UK before entering." },
-  sp500: { name:"S&P 500",    cat:"Index",     dir:"long",  dp:0, sp:0.8, bp:0.6, tp:0.5, gp:1.5, lev:10, cOk:true,  sOk:true,  cTxt:"Large specs flipping long — momentum",        sTxt:"June post-election year bullish (62%)", eTime:"14:30 UK", note:"INTRADAY ONLY. Close by 20:00 UK. Never hold overnight." },
-  nas100:{ name:"Nasdaq 100", cat:"Index",     dir:"long",  dp:0, sp:1.0, bp:0.8, tp:0.8, gp:2.0, lev:10, cOk:true,  sOk:true,  cTxt:"Tech sector COT bullish",                     sTxt:"June seasonally bullish (60%)",      eTime:"14:30 UK", note:"Follow S&P 500 setup timing. Same intraday rules apply." },
-  ftse:  { name:"FTSE 100",   cat:"Index",     dir:"long",  dp:0, sp:1.5, bp:1.0, tp:1.0, gp:2.5, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials NET LONG — institutional buying",  sTxt:"June historically bullish (67%)",    eTime:"08:00 UK", note:"Enter at London open next day. Best UK tax-free via Spreadex." }
+  oil:   { name:"Crude Oil",  cat:"Commodity", dir:"long",  dp:2, sp:1.5, bp:1.5, tp:1.2, gp:3.0, lev:10, cOk:true,  sOk:true,  cTxt:"Producers hedging less — supply confidence",  sTxt:"Summer driving season peak (70%)",   eTime:"13:30 UK", note:"Price via USO ETF proxy (tracks WTI crude). Check EIA inventory report Wed 15:30 UK before entering." },
+  sp500: { name:"S&P 500",    cat:"Index",     dir:"long",  dp:0, sp:0.8, bp:0.6, tp:0.5, gp:1.5, lev:10, cOk:true,  sOk:true,  cTxt:"Large specs flipping long — momentum",        sTxt:"June post-election year bullish (62%)", eTime:"14:30 UK", note:"Price via SPY ETF proxy (tracks S&P 500). INTRADAY ONLY. Close by 20:00 UK. Never hold overnight." },
+  nas100:{ name:"Nasdaq 100", cat:"Index",     dir:"long",  dp:0, sp:1.0, bp:0.8, tp:0.8, gp:2.0, lev:10, cOk:true,  sOk:true,  cTxt:"Tech sector COT bullish",                     sTxt:"June seasonally bullish (60%)",      eTime:"14:30 UK", note:"Price via QQQ ETF proxy (tracks Nasdaq 100). Same intraday rules as S&P 500 apply." },
+  ftse:  { name:"FTSE 100",   cat:"Index",     dir:"long",  dp:0, sp:1.5, bp:1.0, tp:1.0, gp:2.5, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials NET LONG — institutional buying",  sTxt:"June historically bullish (67%)",    eTime:"08:00 UK", note:"Price via ISF.L ETF proxy (tracks FTSE 100). Enter at London open next day. Best UK tax-free via Spreadex." }
 };
 
 // ═══ CLOCK ═══════════════════════════════════════════════════════
@@ -653,14 +653,4 @@ var PLATS=[
 function renderPlats(){
   document.getElementById("platH").innerHTML=PLATS.map(function(p){
     var tc=p.ts==="Yes"?"#00d97e":p.ts==="Limited"?"#ffa94d":"#ff4d6d";
-    return '<div class="platc" onclick="this.classList.toggle(\'open\')"><div class="plrow"><div class="pll"><span class="plnum">#'+p.n+'</span><span class="plname">'+p.nm+'</span><span class="pltype">'+p.ty+'</span></div><div class="plr"><span class="plmin">'+p.mn+'</span><span class="plrat">'+p.rt+'/10</span></div></div><div class="pldet">Min deposit: '+p.mn+' &middot; <span style="color:var(--g)">Best for:</span> '+p.bf+' &middot; <span style="color:'+tc+'">Trailing stops: '+p.ts+'</span></div></div>';
-  }).join("");
-}
-
-// ═══ INIT ════════════════════════════════════════════════════════
-upCap();
-renderPlats();
-renderLive();
-</script>
-</body>
-</html>
+    return '<div class="platc" onclick="this.classList.toggle(\'open\')"><div class="plrow"><div class="pll"><span class="plnum">#'+p.n+'</span><span class="plname">'+p.nm+'</span><span class="pltype">'+p.ty+'</span></div><div class="plr"><span class="plmin">'+p.mn+'</span><span class="plrat">'+p.rt+'/10</span></div></div><div class="pldet">Min deposit: '+p.mn+' &middot; <span style="color:var(--g)">Best for:</span> '+p.bf+' &middot; <span style="color:'+tc+'">Trailing stops: '+p.ts+'</span></div></
