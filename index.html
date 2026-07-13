@@ -227,7 +227,7 @@ input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3
   <div class="bn g">
     <b>&#128994; Live Signals &mdash; 8 Markets, Real Data</b><br>
     Prices and Williams %R update from <b>Twelve Data</b> via your backend every 15 minutes. 
-    <b style="color:var(--g)">Green card = all 3 signals confirmed = valid trade setup.</b> 
+    <b style="color:var(--g)">Green card = 3 or more of 4 signals confirmed = valid trade setup.</b> 
     Amber = watch. Grey = no signal, stand aside.<br><br>
     <b>Before entering any trade:</b> verify %R on TradingView.com (Daily chart, period 14) matches what you see here. Enter at the NEXT session open, never intraday.
   </div>
@@ -297,10 +297,10 @@ var MARKETS = {
   eurusd:{ name:"EUR/USD",    cat:"Forex",     dir:"long",  dp:5, sp:1.0, bp:0.8, tp:0.8, gp:1.5, lev:30, cOk:false, sOk:false, cTxt:"COT neutral — no clear signal",                sTxt:"Seasonal neutral",                   eTime:"09:00 UK", note:"No signal present. Stand aside." },
   usdjpy:{ name:"USD/JPY",    cat:"Forex",     dir:"short", dp:3, sp:1.2, bp:0.8, tp:0.8, gp:2.0, lev:30, cOk:true,  sOk:false, cTxt:"JPY commercials hedging USD exposure",         sTxt:"Marginally bearish seasonal",        eTime:"09:00 UK", note:"Partial signal — COT confirms but seasonal neutral." },
   gold:  { name:"Gold",       cat:"Commodity", dir:"long",  dp:2, sp:1.0, bp:0.8, tp:0.8, gp:1.8, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials reducing shorts — bullish",        sTxt:"June-July historically bullish (68%)", eTime:"08:00 or 13:30 UK", note:"Multi-day hold. Trail 0.8% below each new high." },
-  oil:   { name:"Crude Oil",  cat:"Commodity", dir:"long",  dp:2, sp:1.5, bp:1.5, tp:1.2, gp:3.0, lev:10, cOk:true,  sOk:true,  cTxt:"Producers hedging less — supply confidence",  sTxt:"Summer driving season peak (70%)",   eTime:"13:30 UK", note:"Price via USO ETF proxy (tracks WTI crude). Check EIA inventory report Wed 15:30 UK before entering." },
-  sp500: { name:"S&P 500",    cat:"Index",     dir:"long",  dp:0, sp:0.8, bp:0.6, tp:0.5, gp:1.5, lev:10, cOk:true,  sOk:true,  cTxt:"Large specs flipping long — momentum",        sTxt:"June post-election year bullish (62%)", eTime:"14:30 UK", note:"Price via SPY ETF proxy (tracks S&P 500). INTRADAY ONLY. Close by 20:00 UK. Never hold overnight." },
-  nas100:{ name:"Nasdaq 100", cat:"Index",     dir:"long",  dp:0, sp:1.0, bp:0.8, tp:0.8, gp:2.0, lev:10, cOk:true,  sOk:true,  cTxt:"Tech sector COT bullish",                     sTxt:"June seasonally bullish (60%)",      eTime:"14:30 UK", note:"Price via QQQ ETF proxy (tracks Nasdaq 100). Same intraday rules as S&P 500 apply." },
-  ftse:  { name:"FTSE 100",   cat:"Index",     dir:"long",  dp:0, sp:1.5, bp:1.0, tp:1.0, gp:2.5, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials NET LONG — institutional buying",  sTxt:"June historically bullish (67%)",    eTime:"08:00 UK", note:"Price via ISF.L ETF proxy (tracks FTSE 100). Enter at London open next day. Best UK tax-free via Spreadex." }
+  oil:   { name:"Crude Oil",  cat:"Commodity", dir:"long",  dp:2, sp:1.5, bp:1.5, tp:1.2, gp:3.0, lev:10, cOk:true,  sOk:true,  cTxt:"Producers hedging less — supply confidence",  sTxt:"Summer driving season peak (70%)",   eTime:"13:30 UK", note:"Check EIA inventory report Wed 15:30 UK before entering." },
+  sp500: { name:"S&P 500",    cat:"Index",     dir:"long",  dp:0, sp:0.8, bp:0.6, tp:0.5, gp:1.5, lev:10, cOk:true,  sOk:true,  cTxt:"Large specs flipping long — momentum",        sTxt:"June post-election year bullish (62%)", eTime:"14:30 UK", note:"INTRADAY ONLY. Close by 20:00 UK. Never hold overnight." },
+  nas100:{ name:"Nasdaq 100", cat:"Index",     dir:"long",  dp:0, sp:1.0, bp:0.8, tp:0.8, gp:2.0, lev:10, cOk:true,  sOk:true,  cTxt:"Tech sector COT bullish",                     sTxt:"June seasonally bullish (60%)",      eTime:"14:30 UK", note:"Follow S&P 500 setup timing. Same intraday rules apply." },
+  ftse:  { name:"FTSE 100",   cat:"Index",     dir:"long",  dp:0, sp:1.5, bp:1.0, tp:1.0, gp:2.5, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials NET LONG — institutional buying",  sTxt:"June historically bullish (67%)",    eTime:"08:00 UK", note:"Enter at London open next day. Best UK tax-free via Spreadex." }
 };
 
 // ═══ CLOCK ═══════════════════════════════════════════════════════
@@ -367,14 +367,40 @@ function calcWR(key){
   return ((hh-close)/(hh-ll))*-100;
 }
 
+// ═══ 20-DAY SMA ══════════════════════════════════════════════════
+function calc20SMA(key){
+  var h = liveHistory[key];
+  if(!h || h.c.length < 20) return null;
+  var last20 = h.c.slice(-20);
+  var sum = last20.reduce(function(a,b){ return a+b; }, 0);
+  return sum / 20;
+}
+
+function smaSignal(key){
+  var d = liveData[key];
+  var m = MARKETS[key];
+  if(!d) return null;
+  var sma = calc20SMA(key);
+  if(sma === null) return null;
+  var isL = m.dir === "long";
+  var priceAboveSMA = d.price > sma;
+  // For LONG: price above SMA = trend confirms signal
+  // For SHORT: price below SMA = trend confirms signal
+  var confirms = (isL && priceAboveSMA) || (!isL && !priceAboveSMA);
+  return { sma: sma, priceAboveSMA: priceAboveSMA, confirms: confirms };
+}
+
 // ═══ SIGNAL EVALUATION ═══════════════════════════════════════════
 function evalSig(key){
   var m=MARKETS[key];
   var wr=calcWR(key);
   var rOk=false;
   if(wr!==null) rOk=(m.dir==="long")?(wr<=-80):(wr>=-20);
-  var cnt=(rOk?1:0)+(m.cOk?1:0)+(m.sOk?1:0);
-  return {wr:wr, rOk:rOk, cotOk:m.cOk, seaOk:m.sOk, cnt:cnt};
+  var smaSig = smaSignal(key);
+  var smaOk = smaSig ? smaSig.confirms : false;
+  // Count: %R + COT + Seasonal + SMA = max 4, need 3+ for trade ready
+  var cnt=(rOk?1:0)+(m.cOk?1:0)+(m.sOk?1:0)+(smaOk?1:0);
+  return {wr:wr, rOk:rOk, cotOk:m.cOk, seaOk:m.sOk, smaOk:smaOk, smaSig:smaSig, cnt:cnt};
 }
 
 // ═══ TRADE LEVELS ════════════════════════════════════════════════
@@ -507,7 +533,7 @@ function renderLive(){
     var lvl=calcLvls(key,d.price);
     var usdMkts={gold:1,oil:1,sp500:1,nas100:1};
     var gbpHtml=usdMkts[key]?'<div class="mcard-gbp">&asymp;&pound;'+( d.price*gbpRate).toFixed(0)+'</div>':"";
-    var cardCls=sig.cnt===3?"ready":sig.cnt===2?"watch":"nosig";
+    var cardCls=sig.cnt>=3?"ready":sig.cnt===2?"watch":"nosig";
     var sigLabel=sig.cnt===3?"&#9989; TRADE READY &mdash; "+m.name+" "+m.dir.toUpperCase():sig.cnt===2?"&#128993; WATCH &mdash; 2 of 3 signals":"&#9898; NO SIGNAL &mdash; Stand aside";
 
     // Action box content
@@ -555,6 +581,11 @@ function renderLive(){
     html+='<div class="light '+wrCls+'"><div class="light-lbl">Williams %R</div><span class="light-icon">'+(sig.rOk?"&#9989;":sig.wr!==null?"&#10060;":"&#9744;")+'</span><div class="light-val" style="color:'+(sig.rOk?"#00d97e":sig.wr!==null?"#ff4d6d":"#5a6478")+'">'+wrTxt+'</div><div class="light-txt">Need '+(isL?"below -80":"above -20")+'</div></div>';
     html+='<div class="light '+(sig.cotOk?"ok":"warn")+'"><div class="light-lbl">COT Signal</div><span class="light-icon">'+(sig.cotOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.cotOk?"#00d97e":"#ffa94d")+'">'+(sig.cotOk?"Confirmed":"Watch")+'</div><div class="light-txt">'+m.cTxt+'</div></div>';
     html+='<div class="light '+(sig.seaOk?"ok":"warn")+'"><div class="light-lbl">Seasonal</div><span class="light-icon">'+(sig.seaOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.seaOk?"#00d97e":"#ffa94d")+'">'+(sig.seaOk?"Confirmed":"Neutral")+'</div><div class="light-txt">'+m.sTxt+'</div></div>';
+    var smaLbl = sig.smaSig ? (sig.smaOk?"&#9989;":"&#128993;") : "&#9744;";
+    var smaVal = sig.smaSig ? (sig.smaOk?"Confirms":"Against") : "Loading...";
+    var smaCol = sig.smaSig ? (sig.smaOk?"#00d97e":"#ffa94d") : "#5a6478";
+    var smaTxt = sig.smaSig ? ("20-SMA: "+sig.smaSig.sma.toFixed(m.dp)+" &middot; Price "+(sig.smaSig.priceAboveSMA?"above":"below")+" average") : "Need 20 days of history";
+    html+='<div class="light '+(sig.smaOk?"ok":sig.smaSig?"warn":"")+'"><div class="light-lbl">20-Day SMA</div><span class="light-icon">'+smaLbl+'</span><div class="light-val" style="color:'+smaCol+'">'+smaVal+'</div><div class="light-txt">'+smaTxt+'</div></div>';
     html+='</div>';
     // Gap warning
     html+=gapWarnHtml(key);
@@ -643,24 +674,4 @@ var PLATS=[
   {n:1,nm:"Spreadex",ty:"Spread Bet",mn:"\xa30",rt:"9.5",ts:"Yes",bf:"Tax-free spread betting \xb7 No minimum deposit \xb7 Trailing stops built in \xb7 FTSE, Forex, Gold, Oil"},
   {n:2,nm:"IG Markets",ty:"CFD / Spread Bet",mn:"\xa3250",rt:"9.4",ts:"Yes",bf:"Largest UK CFD broker \xb7 Guaranteed trailing stops \xb7 All markets"},
   {n:3,nm:"CMC Markets",ty:"CFD / Spread Bet",mn:"\xa30",rt:"9.3",ts:"Yes",bf:"Excellent charting \xb7 Trailing stops on all CFDs"},
-  {n:4,nm:"Pepperstone",ty:"CFD / Forex",mn:"\xa3200",rt:"9.2",ts:"Yes",bf:"Forex and Gold specialist \xb7 Tight spreads \xb7 MT4/MT5"},
-  {n:5,nm:"City Index",ty:"CFD / Spread Bet",mn:"\xa30",rt:"8.9",ts:"Yes",bf:"Good for commodities \xb7 Educational tools"},
-  {n:6,nm:"Trading 212",ty:"Stocks ISA",mn:"\xa31",rt:"8.8",ts:"Limited",bf:"Best for UK shares in ISA \xb7 Tax-free gains \xb7 Zero commission"},
-  {n:7,nm:"Interactive Brokers",ty:"Stocks / Futures",mn:"\xa30",rt:"9.0",ts:"Yes",bf:"Professional grade \xb7 Futures access \xb7 Lowest commissions"},
-  {n:8,nm:"Hargreaves Lansdown",ty:"Stocks / ISA",mn:"\xa31",rt:"8.7",ts:"Limited",bf:"Best UK ISA for long-term \xb7 SIPP available"},
-  {n:9,nm:"XTB",ty:"CFD / Forex",mn:"\xa30",rt:"8.7",ts:"Yes",bf:"Great mobile app \xb7 Stocks CFD and Forex"}
-];
-function renderPlats(){
-  document.getElementById("platH").innerHTML=PLATS.map(function(p){
-    var tc=p.ts==="Yes"?"#00d97e":p.ts==="Limited"?"#ffa94d":"#ff4d6d";
-    return '<div class="platc" onclick="this.classList.toggle(\'open\')"><div class="plrow"><div class="pll"><span class="plnum">#'+p.n+'</span><span class="plname">'+p.nm+'</span><span class="pltype">'+p.ty+'</span></div><div class="plr"><span class="plmin">'+p.mn+'</span><span class="plrat">'+p.rt+'/10</span></div></div><div class="pldet">Min deposit: '+p.mn+' &middot; <span style="color:var(--g)">Best for:</span> '+p.bf+' &middot; <span style="color:'+tc+'">Trailing stops: '+p.ts+'</span></div></div>';
-  }).join("");
-}
-
-// ═══ INIT ════════════════════════════════════════════════════════
-upCap();
-renderPlats();
-renderLive();
-</script>
-</body>
-</html>
+  {n:4,nm:"Pepp
