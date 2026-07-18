@@ -1,6 +1,7 @@
 const TWELVE_DATA_KEY = process.env.TWELVE_DATA_KEY || "43e0b306690347ab9640f991f5c87e3d";
 
 const SYMBOL_MAP = {
+  // Larry Williams markets
   gbpusd: "GBP/USD",
   eurusd: "EUR/USD",
   usdjpy: "USD/JPY",
@@ -8,7 +9,15 @@ const SYMBOL_MAP = {
   oil:    "USO:NYSE",
   sp500:  "SPY:NYSE",
   nas100: "QQQ:NASDAQ",
-  ftse:   "EWU:NYSE"
+  ftse:   "EWU:NYSE",
+  // RSI strategy markets
+  audusd: "AUD/USD",
+  usdcad: "USD/CAD",
+  usdchf: "USD/CHF",
+  nzdusd: "NZD/USD",
+  silver: "XAG/USD",
+  btc:    "BTC/USD",
+  eth:    "ETH/USD"
 };
 
 exports.handler = async function(event) {
