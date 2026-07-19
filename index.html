@@ -483,29 +483,164 @@ function gapWarnHtml(key){
 }
 
 // ═══ FETCH FROM NETLIFY FUNCTION ═════════════════════════════════
+// Route RSI-only markets to appropriate free sources
+var CRYPTO_KEYS = {btc:"bitcoin", eth:"ethereum"};
+var FOREX_EXTRA = {audusd:"AUD", usdcad:"CAD", usdchf:"CHF", nzdusd:"NZD"};
+var COMMODITY_EXTRA = {silver:"XAG"};
+
 function fetchRSIMarket(key){
+  if(CRYPTO_KEYS[key])    { fetchCoinGecko(key); return; }
+  if(FOREX_EXTRA[key])    { fetchFrankfurterExtra(key); return; }
+  if(COMMODITY_EXTRA[key]){ fetchSilver(key); return; }
+  // fallback to main function
+  var xhr=new XMLHttpRequest();
+  try{
+    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key),true);
+    xhr.timeout=12000;
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        try{
+          var d=JSON.parse(xhr.responseText);
+          if(d.error){liveErrors[key]=d.error;renderRSI();return;}
+          liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:"Twelve Data"};
+          if(d.history&&d.history.h&&d.history.h.length>=14)liveHistory[key]=d.history;
+          delete liveErrors[key]; renderRSI();
+        }catch(e){liveErrors[key]="Parse error";}
+      } else { liveErrors[key]="HTTP "+xhr.status; renderRSI(); }
+    };
+    xhr.ontimeout=function(){liveErrors[key]="Timeout";};
+    xhr.onerror=function(){liveErrors[key]="Network error";};
+    xhr.send();
+  }catch(e){liveErrors[key]="Exception";}
+}
+
+function fetchCoinGecko(key){
+  var coinId = CRYPTO_KEYS[key];
   var xhr = new XMLHttpRequest();
   try{
-    xhr.open("GET", "/api/get-price?key=" + encodeURIComponent(key), true);
-    xhr.timeout = 12000;
-    xhr.onreadystatechange = function(){
+    xhr.open("GET","https://api.coingecko.com/api/v3/coins/"+coinId+"?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false",true);
+    xhr.timeout=10000;
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        try{
+          var d=JSON.parse(xhr.responseText);
+          var price=d.market_data.current_price.usd;
+          var prev=d.market_data.current_price.usd*(1-(d.market_data.price_change_percentage_24h/100));
+          var chgPct=d.market_data.price_change_percentage_24h||0;
+          liveData[key]={price:price,prev:prev,chg:price-prev,chgPct:chgPct,ts:new Date(),src:"CoinGecko"};
+          // Build synthetic history from 7d sparkline if available
+          var spark=d.market_data.sparkline_7d&&d.market_data.sparkline_7d.price;
+          if(spark&&spark.length>=14){
+            var closes=spark.filter(function(v,i){return i%24===0;}).slice(-14);
+            if(closes.length>=14) liveHistory[key]={h:closes,l:closes,c:closes};
+          }
+          delete liveErrors[key]; renderRSI();
+        }catch(e){liveErrors[key]="CoinGecko parse error: "+e.message; renderRSI();}
+      } else { liveErrors[key]="CoinGecko HTTP "+xhr.status; renderRSI(); }
+    };
+    xhr.ontimeout=function(){liveErrors[key]="CoinGecko timeout";};
+    xhr.onerror=function(){liveErrors[key]="CoinGecko network error";};
+    xhr.send();
+  }catch(e){liveErrors[key]="CoinGecko exception";}
+}
+
+function fetchFrankfurterExtra(key){
+  var ccy=FOREX_EXTRA[key];
+  var isUSDBase=(key.indexOf("usd")===0); // USD/CAD, USD/CHF
+  var from=isUSDBase?"USD":ccy;
+  var to=isUSDBase?ccy:"USD";
+  var xhr=new XMLHttpRequest();
+  try{
+    xhr.open("GET","https://api.frankfurter.app/latest?from="+from+"&to="+to,true);
+    xhr.timeout=8000;
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        try{
+          var d=JSON.parse(xhr.responseText);
+          var rate=d.rates[to];
+          var price=rate;
+          liveData[key]={price:price,prev:price,chg:0,chgPct:0,ts:new Date(),src:"Frankfurter"};
+          // Fetch history for RSI
+          fetchFrankfurterExtraHistory(key, from, to);
+          delete liveErrors[key]; renderRSI();
+        }catch(e){liveErrors[key]="Frankfurter parse error"; renderRSI();}
+      } else { liveErrors[key]="Frankfurter HTTP "+xhr.status; renderRSI(); }
+    };
+    xhr.ontimeout=function(){liveErrors[key]="Frankfurter timeout";};
+    xhr.onerror=function(){liveErrors[key]="Frankfurter CORS error";};
+    xhr.send();
+  }catch(e){liveErrors[key]="Frankfurter exception";}
+}
+
+function fetchFrankfurterExtraHistory(key, from, to){
+  var end=new Date().toISOString().split("T")[0];
+  var start=new Date(Date.now()-30*86400000).toISOString().split("T")[0];
+  var xhr=new XMLHttpRequest();
+  try{
+    xhr.open("GET","https://api.frankfurter.app/"+start+".."+end+"?from="+from+"&to="+to,true);
+    xhr.timeout=8000;
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        try{
+          var d=JSON.parse(xhr.responseText);
+          var dates=Object.keys(d.rates).sort();
+          var prices=dates.map(function(dt){return d.rates[dt][to];});
+          if(prices.length>=14){
+            liveHistory[key]={h:prices,l:prices,c:prices};
+            renderRSI();
+          }
+        }catch(e){}
+      }
+    };
+    xhr.onerror=function(){};
+    xhr.send();
+  }catch(e){}
+}
+
+function fetchSilver(key){
+  // XAG/USD via Frankfurter (silver is available as a currency pair)
+  var xhr=new XMLHttpRequest();
+  try{
+    xhr.open("GET","https://api.frankfurter.app/latest?from=XAG&to=USD",true);
+    xhr.timeout=8000;
+    xhr.onreadystatechange=function(){
       if(xhr.readyState===4){
         if(xhr.status===200){
           try{
-            var d = JSON.parse(xhr.responseText);
-            if(d.error){ liveErrors[key]=d.error; renderRSI(); return; }
-            liveData[key] = {price:d.price, prev:d.prev||d.price, chg:d.change||0, chgPct:d.changePct||0, ts:new Date(), src:"Twelve Data"};
-            if(d.history&&d.history.h&&d.history.h.length>=14) liveHistory[key]=d.history;
-            delete liveErrors[key];
-            renderRSI();
-          }catch(e){ liveErrors[key]="Parse error"; }
-        } else { liveErrors[key]="HTTP "+xhr.status; renderRSI(); }
+            var d=JSON.parse(xhr.responseText);
+            var price=d.rates.USD;
+            liveData[key]={price:price,prev:price,chg:0,chgPct:0,ts:new Date(),src:"Frankfurter"};
+            delete liveErrors[key]; renderRSI();
+          }catch(e){fetchSilverFallback(key);}
+        } else { fetchSilverFallback(key); }
       }
     };
-    xhr.ontimeout=function(){ liveErrors[key]="Timeout"; };
-    xhr.onerror=function(){ liveErrors[key]="Network error"; };
+    xhr.onerror=function(){fetchSilverFallback(key);};
     xhr.send();
-  }catch(e){ liveErrors[key]="Exception"; }
+  }catch(e){fetchSilverFallback(key);}
+}
+
+function fetchSilverFallback(key){
+  // GoldAPI.io free tier for silver
+  var xhr=new XMLHttpRequest();
+  try{
+    xhr.open("GET","https://api.metals.live/v1/spot/silver",true);
+    xhr.timeout=8000;
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        try{
+          var d=JSON.parse(xhr.responseText);
+          var price=d[0]&&d[0].silver;
+          if(price){
+            liveData[key]={price:price,prev:price,chg:0,chgPct:0,ts:new Date(),src:"Metals.live"};
+            delete liveErrors[key]; renderRSI();
+          }
+        }catch(e){liveErrors[key]="Silver unavailable"; renderRSI();}
+      } else { liveErrors[key]="Silver HTTP "+xhr.status; renderRSI(); }
+    };
+    xhr.onerror=function(){liveErrors[key]="Silver network error"; renderRSI();};
+    xhr.send();
+  }catch(e){liveErrors[key]="Silver exception"; renderRSI();}
 }
 
 function fetchMarket(key){
