@@ -91,8 +91,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 .mcard-upd{font-size:10px;color:var(--dim)}
 
 /* SIGNAL LIGHTS */
-.lights{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:12px 16px;border-top:1px solid var(--bdr)}
-@media(max-width:540px){.lights{grid-template-columns:1fr 1fr}}
+.lights{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:12px 16px;border-top:1px solid var(--bdr)}
 .light{background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:10px;padding:10px;text-align:center}
 .light.ok{border-color:rgba(0,217,126,0.4);background:rgba(0,217,126,0.05)}
 .light.warn{border-color:rgba(255,169,77,0.3)}
@@ -216,10 +215,10 @@ input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3
 <!-- NAV — only 4 tabs, all genuinely useful -->
 <div class="navwrap">
   <div class="nav">
-    <button class="ntab on" onclick="tab('live',this)">&#128994; LIVE SIGNALS</button>
+    <button class="ntab on" onclick="tab('live',this)">&#128218; LARRY WILLIAMS</button>
     <button class="ntab" onclick="tab('tc',this)">&#128274; TRAIL CALC</button>
     <button class="ntab" onclick="tab('exit',this)">&#128682; EXIT GUIDE</button>
-    <button class="ntab" onclick="tab('rsi',this)">&#9889; RSI SIGNALS</button>
+    <button class="ntab" onclick="tab('rsi',this)">&#9889; RSI STRATEGY</button>
     <button class="ntab" onclick="tab('plat',this)">&#127974; PLATFORMS</button>
   </div>
 </div>
@@ -227,9 +226,9 @@ input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3
 <!-- LIVE SIGNALS PANEL -->
 <div id="p-live" class="panel on">
   <div class="bn g">
-    <b>&#128994; Live Signals &mdash; 8 Markets, Real Data</b><br>
+    <b>&#128218; Larry Williams Method &mdash; 8 Markets</b><br>
     Prices and Williams %R update from <b>Twelve Data</b> via your backend every 15 minutes. 
-    <b style="color:var(--g)">Green card = 3 or more of 4 signals confirmed = valid trade setup.</b> 
+    <b style="color:var(--g)">Green card = all 3 Larry Williams signals confirmed = valid trade setup.</b> <b style="color:var(--r)">Williams %R is mandatory — if %R is not in zone, no trade regardless of COT or Seasonal.</b> 
     Amber = watch. Grey = no signal, stand aside.<br><br>
     <b>Before entering any trade:</b> verify %R on TradingView.com (Daily chart, period 14) matches what you see here. Enter at the NEXT session open, never intraday.
   </div>
@@ -442,11 +441,11 @@ function evalSig(key){
   var wr=calcWR(key);
   var rOk=false;
   if(wr!==null) rOk=(m.dir==="long")?(wr<=-80):(wr>=-20);
-  var smaSig = smaSignal(key);
-  var smaOk = smaSig ? smaSig.confirms : false;
-  // Count: %R + COT + Seasonal + SMA = max 4, need 3+ for trade ready
-  var cnt=(rOk?1:0)+(m.cOk?1:0)+(m.sOk?1:0)+(smaOk?1:0);
-  return {wr:wr, rOk:rOk, cotOk:m.cOk, seaOk:m.sOk, smaOk:smaOk, smaSig:smaSig, cnt:cnt};
+  // Pure Larry Williams — 3 signals only. %R is mandatory gate.
+  // If %R not in zone = maximum WATCH, never TRADE READY.
+  var cnt = (rOk?1:0)+(m.cOk?1:0)+(m.sOk?1:0);
+  if(!rOk) cnt = Math.min(2, cnt);
+  return {wr:wr, rOk:rOk, cotOk:m.cOk, seaOk:m.sOk, cnt:cnt};
 }
 
 // ═══ TRADE LEVELS ════════════════════════════════════════════════
@@ -757,14 +756,23 @@ function renderLive(){
     var usdMkts={gold:1,oil:1,sp500:1,nas100:1};
     var gbpHtml=usdMkts[key]?'<div class="mcard-gbp">&asymp;&pound;'+( d.price*gbpRate).toFixed(0)+'</div>':"";
     var cardCls=sig.cnt>=3?"ready":sig.cnt===2?"watch":"nosig";
-    var sigLabel=sig.cnt===3?"&#9989; TRADE READY &mdash; "+m.name+" "+m.dir.toUpperCase():sig.cnt===2?"&#128993; WATCH &mdash; 2 of 3 signals":"&#9898; NO SIGNAL &mdash; Stand aside";
+    var sigLabel;
+    if(sig.cnt===3 && sig.rOk){
+      sigLabel = "&#9989; TRADE READY &mdash; "+m.name+" "+m.dir.toUpperCase();
+    } else if(!sig.rOk){
+      sigLabel = "&#128993; WATCH &mdash; %R at "+(sig.wr!==null?sig.wr.toFixed(1):"...")+", need "+(m.dir==="long"?"below -80":"above -20");
+    } else if(sig.cnt===2){
+      sigLabel = "&#128993; WATCH &mdash; 2 of 3 signals";
+    } else {
+      sigLabel = "&#9898; NO SIGNAL &mdash; Stand aside";
+    }
 
     // Action box content
     var actionHtml="";
     if(sig.cnt===3){
       var entryDay=sig.rOk?"Confirmed in zone":"Check %R again at close";
       actionHtml='<div class="action-box trade"><div class="action-title">&#9989; What to do</div>'+
-        '1. Verify %R is '+(isL?"below -80":"above -20")+' at today\'s market close on TradingView (Daily, period 14)<br>'+
+        '1. Check the %R light on this card — must show '+(isL?"below -80":"above -20")+' at market close. If it shows “Calculating...” press Refresh and wait 30 seconds.<br>'+
         '2. If confirmed, place order for <b>tomorrow\'s open at '+m.eTime+'</b><br>'+
         '3. Set initial stop at <b>'+f(lvl.stop)+'</b> the moment the trade opens<br>'+
         '4. Move stop to breakeven (<b>'+f(d.price)+'</b>) once price reaches <b>'+f(lvl.be)+'</b><br>'+
@@ -804,11 +812,6 @@ function renderLive(){
     html+='<div class="light '+wrCls+'"><div class="light-lbl">Williams %R</div><span class="light-icon">'+(sig.rOk?"&#9989;":sig.wr!==null?"&#10060;":"&#9744;")+'</span><div class="light-val" style="color:'+(sig.rOk?"#00d97e":sig.wr!==null?"#ff4d6d":"#5a6478")+'">'+wrTxt+'</div><div class="light-txt">Need '+(isL?"below -80":"above -20")+'</div></div>';
     html+='<div class="light '+(sig.cotOk?"ok":"warn")+'"><div class="light-lbl">COT Signal</div><span class="light-icon">'+(sig.cotOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.cotOk?"#00d97e":"#ffa94d")+'">'+(sig.cotOk?"Confirmed":"Watch")+'</div><div class="light-txt">'+m.cTxt+'</div></div>';
     html+='<div class="light '+(sig.seaOk?"ok":"warn")+'"><div class="light-lbl">Seasonal</div><span class="light-icon">'+(sig.seaOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.seaOk?"#00d97e":"#ffa94d")+'">'+(sig.seaOk?"Confirmed":"Neutral")+'</div><div class="light-txt">'+m.sTxt+'</div></div>';
-    var smaLbl = sig.smaSig ? (sig.smaOk?"&#9989;":"&#128993;") : "&#9744;";
-    var smaVal = sig.smaSig ? (sig.smaOk?"Confirms":"Against") : "Loading...";
-    var smaCol = sig.smaSig ? (sig.smaOk?"#00d97e":"#ffa94d") : "#5a6478";
-    var smaTxt = sig.smaSig ? ("20-SMA: "+sig.smaSig.sma.toFixed(m.dp)+" &middot; Price "+(sig.smaSig.priceAboveSMA?"above":"below")+" average") : "Need 20 days of history";
-    html+='<div class="light '+(sig.smaOk?"ok":sig.smaSig?"warn":"")+'"><div class="light-lbl">20-Day SMA</div><span class="light-icon">'+smaLbl+'</span><div class="light-val" style="color:'+smaCol+'">'+smaVal+'</div><div class="light-txt">'+smaTxt+'</div></div>';
     html+='</div>';
     // Gap warning
     html+=gapWarnHtml(key);
@@ -1033,6 +1036,14 @@ function evalRSI(key){
   return { rsi:rsi, signal:signal, smaOk:smaOk, sma:sma, priceAboveSMA:priceAboveSMA };
 }
 
+var rsiFilter = "all";
+function filterRSI(type, btn){
+  rsiFilter = type;
+  document.querySelectorAll("#rsiFilters button").forEach(function(b){ b.classList.remove("on"); });
+  btn.classList.add("on");
+  renderRSI();
+}
+
 function renderRSI(){
   var keys = Object.keys(RSI_MARKETS);
   var ready=0, watch=0, nosig=0;
@@ -1045,21 +1056,28 @@ function renderRSI(){
 
   document.getElementById("rsiSummary").innerHTML =
     '<div class="sumcard ready"><div class="sumnum g">'+ready+'</div><div class="sumlbl">&#9989; RSI READY</div></div>'+
-    '<div class="sumcard watch"><div class="sumnum a">'+watch+'</div><div class="sumlbl">&#128993; WEAK SIGNAL</div></div>'+
+    '<div class="sumcard watch"><div class="sumnum a">'+watch+'</div><div class="sumlbl">&#128993; WATCHING</div></div>'+
     '<div class="sumcard nosig"><div class="sumnum d">'+nosig+'</div><div class="sumlbl">&#9898; NO SIGNAL</div></div>';
 
   var loaded = keys.filter(function(k){ return liveData[k]; }).length;
   var el = document.getElementById("rsiStatus");
-  if(loaded === keys.length){
-    el.innerHTML = "&#9989; RSI calculated for all " + keys.length + " markets from live data";
+  if(loaded >= keys.length){
+    el.innerHTML = "&#9989; " + keys.length + " markets loaded &middot; RSI calculated from live data";
     el.style.color = "#00d97e";
   } else {
     el.innerHTML = '<span class="pulse"></span>Loading... (' + loaded + '/' + keys.length + ')';
     el.style.color = "";
   }
 
+  // Apply filter
+  var filteredKeys = keys.filter(function(k){
+    if(rsiFilter === "all") return true;
+    if(rsiFilter === "ready"){ var ev=evalRSI(k); return ev.signal!=="none"&&ev.smaOk; }
+    return RSI_MARKETS[k].cat === rsiFilter;
+  });
+
   var html = "";
-  keys.forEach(function(key){
+  filteredKeys.forEach(function(key){
     var m = RSI_MARKETS[key];
     var d = liveData[key];
     var ev = evalRSI(key);
@@ -1101,19 +1119,45 @@ function renderRSI(){
 
     var actionHtml = "";
     if(isReady){
-      actionHtml = '<div class="action-box trade"><div class="action-title">&#9989; What to do</div>'+
-        '1. Verify RSI is '+(isBuy?"below 30":"above 70")+' at market close today on TradingView (Daily, period 14)<br>'+
-        '2. Confirm price is '+(isBuy?"above":"below")+' the 20-day moving average (trend filter)<br>'+
-        '3. Enter at tomorrow open at '+m.eTime+'<br>'+
-        '4. Set stop loss immediately<br>'+
-        '5. Exit when RSI returns to 50, or after 3 trading days maximum<br>'+
-        '6. Do NOT hold this alongside a Larry Williams trade on the same market</div>';
+      var rsiStop   = isBuy ? d.price*(1-m.sp/100) : d.price*(1+m.sp/100);
+      var rsiTarget = isBuy ? d.price*(1+m.gp/100) : d.price*(1-m.gp/100);
+      var rsiRR     = (m.gp/m.sp).toFixed(2);
+      var stake     = cap * 0.02; // 2% risk
+      var stopDist  = Math.abs(d.price - rsiStop);
+      var units     = stopDist > 0 ? (stake / stopDist).toFixed(2) : "n/a";
+      var profEst   = (stake * (m.gp/m.sp)).toFixed(2);
+      var usdMktsR  = {gold:1,silver:1,btc:1,eth:1};
+      var profGBP   = usdMktsR[key] ? " (≈£"+(parseFloat(profEst)*gbpRate).toFixed(2)+")" : "";
+      actionHtml = '<div class="action-box trade">'+
+        '<div class="action-title">&#9989; What to do &mdash; '+m.name+' '+(isBuy?"BUY":"SELL")+'</div>'+
+        '1. Check the RSI gauge on this card — must show '+(isBuy?"below 30":"above 70")+' at market close. If showing “Calculating...” press Refresh and wait.<br>'+
+        '2. Open Trade Nation &mdash; search <b>'+(
+          key==="gbpusd"?"GBP/USD":key==="eurusd"?"EUR/USD":key==="usdjpy"?"USD/JPY":
+          key==="audusd"?"AUD/USD":key==="usdcad"?"USD/CAD":key==="usdchf"?"USD/CHF":
+          key==="nzdusd"?"NZD/USD":key==="gold"?"Gold / XAU/USD":key==="silver"?"Silver / XAG/USD":
+          key==="btc"?"Bitcoin / BTC":key==="eth"?"Ethereum / ETH":"your market"
+        )+"</b><br>"+
+        "3. Enter at <b>"+m.eTime+"</b> &mdash; set as Limit Order at this price: <b style='color:#4dabf7'>"+parseFloat(d.price).toFixed(m.dp)+"</b><br>"+
+        "4. Set <b>Stop Loss</b> immediately at <b style='color:#ff4d6d'>"+parseFloat(rsiStop).toFixed(m.dp)+"</b><br>"+
+        "5. Set <b>Take Profit</b> at <b style='color:#00d97e'>"+parseFloat(rsiTarget).toFixed(m.dp)+"</b> (RSI returning to 50)<br>"+
+        "6. Quantity: <b>"+units+" units</b> (keeps risk at 2% of £"+cap+")<br>"+
+        "7. Exit if RSI returns to 50 OR after <b>3 trading days maximum</b> &mdash; whichever first<br>"+
+        "8. Do NOT hold alongside a Larry Williams trade on the same market<br><br>"+
+        "<b>Estimated profit if target hit: <span style='color:#00d97e'>+£"+profEst+profGBP+"</span> &middot; Max loss if stop hit: <span style='color:#ff4d6d'>-£"+stake.toFixed(2)+"</span></b>"+
+        '</div>';
     } else if(isWeak){
       actionHtml = '<div class="action-box wait"><div class="action-title">&#128993; What to do</div>'+
-        'RSI is in signal zone but the trend filter is against this trade. Wait for price to cross the 20-day average before entering. This reduces false signals significantly.</div>';
+        'RSI is in signal zone ('+(ev.rsi?ev.rsi.toFixed(1):"...")+') but the trend filter is against this trade. '+
+        'This means RSI is oversold/overbought but price is moving against the expected direction on the longer trend. '+
+        '<b>Stand aside</b> &mdash; wait until trend aligns, or skip this market and look for a cleaner setup.</div>';
     } else {
+      var nearBuy = ev.rsi && ev.rsi < 45;
+      var nearSell = ev.rsi && ev.rsi > 55;
       actionHtml = '<div class="action-box skip"><div class="action-title">&#9898; What to do</div>'+
-        'RSI is between 30 and 70 &mdash; no mean reversion opportunity on '+m.name+' right now. Check again at market close tomorrow.</div>';
+        'RSI is '+(ev.rsi?ev.rsi.toFixed(1)+"":"calculating...")+' &mdash; in the neutral zone between 30 and 70. No signal. Stand aside completely.'+
+        (nearBuy?' <b style="color:#ffa94d">Getting closer to oversold (30) &mdash; worth monitoring at market close.</b>':"")+
+        (nearSell?' <b style="color:#ffa94d">Getting closer to overbought (70) &mdash; worth monitoring at market close.</b>':"")+
+        '</div>';
     }
 
     // RSI gauge
@@ -1132,7 +1176,7 @@ function renderRSI(){
     html += '<div class="mcard-top">';
     html += '<div class="mcard-left">';
     html += '<div class="mcard-name">'+(ev.signal!=="none"?'<span class="mcard-dir '+dirCls+'">'+(isBuy?"BUY":"SELL")+'</span>':'')+m.name+'</div>';
-    html += '<div class="mcard-cat">RSI Strategy &middot; Updated '+d.ts.toLocaleTimeString("en-GB")+'</div>';
+    html += '<div class="mcard-cat">'+m.cat+' &middot; RSI Strategy &middot; Updated '+d.ts.toLocaleTimeString("en-GB")+'</div>';
     html += '</div>';
     html += '<div class="mcard-right"><div class="mcard-price">'+f(d.price)+'</div>';
     html += '<div class="mcard-chg" style="color:'+(d.chg>=0?"#00d97e":"#ff4d6d")+'">'+(d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>';
@@ -1163,45 +1207,51 @@ renderLive();
 
 <!-- RSI MEAN REVERSION PANEL -->
 <div id="p-rsi" class="panel">
-  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#9889; RSI Mean Reversion Signals</div>
-  <div style="font-size:12px;color:var(--dim);margin-bottom:16px">A complementary strategy to Larry Williams — fires more frequently, documented 68-75% win rate on major forex pairs over 20+ years.</div>
+  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#9889; RSI Strategy &mdash; 11 Markets</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Complementary to Larry Williams &mdash; fires 3-8 times per week &mdash; documented 68-75% win rate on major pairs</div>
 
-  <div class="bn b">
-    <b>&#128161; How This Strategy Works:</b><br><br>
-    <b>RSI below 30</b> = market oversold = price likely to bounce = <b style="color:#00d97e">BUY signal</b><br>
-    <b>RSI above 70</b> = market overbought = price likely to fall = <b style="color:#ff4d6d">SELL signal</b><br><br>
-    <b>Trend filter:</b> Only buy when price is above the 50-day SMA. Only sell when price is below. This eliminates low-quality signals.<br><br>
-    <b>Entry:</b> Next day open after RSI crosses the threshold at daily close<br>
-    <b>Stop:</b> Beyond the recent swing high (for sells) or swing low (for buys)<br>
-    <b>Target:</b> When RSI returns to 50 (neutral zone) — typically 1-3 days<br>
-    <b>Hold:</b> Maximum 3 trading days
+  <!-- Quick Rules Box -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:6px">&#9989; BUY SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">RSI <b style="color:#fff">below 30</b><br>Market oversold<br>Price likely to bounce<br>Enter next day open</div>
+    </div>
+    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:6px">&#10060; SELL SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">RSI <b style="color:#fff">above 70</b><br>Market overbought<br>Price likely to fall<br>Enter next day open</div>
+    </div>
   </div>
 
-  <div class="bn a">
-    <b>&#9888; Important Difference From Larry Williams:</b><br>
-    This strategy does NOT use COT data or seasonal patterns. It fires purely on price momentum returning to average. Use it when Larry Williams has no green signals. Never run both strategies on the same market at the same time.
+  <!-- Key Rules Strip -->
+  <div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#b0ab9e;line-height:1.9">
+    <b style="color:#4dabf7">Rules:</b>
+    Stop loss at recent swing high/low &middot;
+    Target when RSI returns to 50 &middot;
+    Max hold <b style="color:#fff">3 trading days</b> &middot;
+    Never trade same market as Larry Williams simultaneously &middot;
+    The RSI gauge on each card is calculated from real live data — rely on it directly. Only use TradingView if RSI shows “Calculating...” after two refreshes
   </div>
 
-  <div id="rsiStatus" style="font-size:11px;color:var(--dim);margin-bottom:16px;display:flex;align-items:center;gap:6px">
-    <span class="pulse"></span>Loading RSI data...
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div id="rsiStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
+      <span class="pulse"></span>Loading RSI data...
+    </div>
+    <button onclick="manualRefresh()" style="background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:#00d97e;font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer">&#8635; Refresh</button>
   </div>
 
   <div class="sumstrip" id="rsiSummary"></div>
-  <div id="rsiCards"></div>
 
-  <div class="bn b" style="margin-top:16px">
-    <b>&#128196; How to verify RSI yourself on TradingView (free):</b><br><br>
-    1. Go to tradingview.com and search your market (e.g. GBPUSD)<br>
-    2. Select <b>Daily (1D)</b> timeframe<br>
-    3. Click Indicators and search <b>RSI</b> — add it with period <b>14</b><br>
-    4. Look at the RSI value at the bottom:<br>
-    &nbsp;&nbsp;&nbsp;<b style="color:#00d97e">Below 30</b> = oversold = valid BUY<br>
-    &nbsp;&nbsp;&nbsp;<b style="color:#ff4d6d">Above 70</b> = overbought = valid SELL<br>
-    &nbsp;&nbsp;&nbsp;<b style="color:#5a6478">Between 30-70</b> = no signal, stand aside<br><br>
-    Always check at <b>market close</b> — never mid-session.
+  <!-- Category filters -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="rsiFilters">
+    <button onclick="filterRSI('all',this)" class="ntab on" style="border-radius:20px;padding:5px 13px;font-size:11px">All</button>
+    <button onclick="filterRSI('Forex',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Forex</button>
+    <button onclick="filterRSI('Commodity',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Commodities</button>
+    <button onclick="filterRSI('Crypto',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Crypto</button>
+    <button onclick="filterRSI('ready',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">&#9989; Ready Only</button>
   </div>
 
-  <div class="disc">RSI Mean Reversion is a documented quantitative strategy used by institutional traders. Past win rates do not guarantee future results. Always use a stop loss. Not financial advice.</div>
+  <div id="rsiCards"></div>
+  <div class="disc">RSI Mean Reversion is a documented quantitative strategy. Past win rates do not guarantee future results. Always use a stop loss. Not financial advice. Crypto prices via CoinGecko. Forex via Frankfurter and Twelve Data.</div>
 </div>
 </body>
 </html>
