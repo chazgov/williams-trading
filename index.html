@@ -334,6 +334,8 @@ var gbpRate = 0.79;
 var liveData = {};
 var liveHistory = {};
 var liveErrors = {};
+var liveCOT = {};
+var liveSeasonal = {};
 var appStartTime = Date.now();
 
 // ═══ MARKETS — all parameters for Larry Williams methodology ═══
@@ -412,28 +414,7 @@ function calcWR(key){
   return ((hh-close)/(hh-ll))*-100;
 }
 
-// ═══ 20-DAY SMA ══════════════════════════════════════════════════
-function calc20SMA(key){
-  var h = liveHistory[key];
-  if(!h || h.c.length < 20) return null;
-  var last20 = h.c.slice(-20);
-  var sum = last20.reduce(function(a,b){ return a+b; }, 0);
-  return sum / 20;
-}
 
-function smaSignal(key){
-  var d = liveData[key];
-  var m = MARKETS[key];
-  if(!d) return null;
-  var sma = calc20SMA(key);
-  if(sma === null) return null;
-  var isL = m.dir === "long";
-  var priceAboveSMA = d.price > sma;
-  // For LONG: price above SMA = trend confirms signal
-  // For SHORT: price below SMA = trend confirms signal
-  var confirms = (isL && priceAboveSMA) || (!isL && !priceAboveSMA);
-  return { sma: sma, priceAboveSMA: priceAboveSMA, confirms: confirms };
-}
 
 // ═══ SIGNAL EVALUATION ═══════════════════════════════════════════
 function evalSig(key){
@@ -441,11 +422,20 @@ function evalSig(key){
   var wr=calcWR(key);
   var rOk=false;
   if(wr!==null) rOk=(m.dir==="long")?(wr<=-80):(wr>=-20);
-  // Pure Larry Williams — 3 signals only. %R is mandatory gate.
-  // If %R not in zone = maximum WATCH, never TRADE READY.
-  var cnt = (rOk?1:0)+(m.cOk?1:0)+(m.sOk?1:0);
-  if(!rOk) cnt = Math.min(2, cnt);
-  return {wr:wr, rOk:rOk, cotOk:m.cOk, seaOk:m.sOk, cnt:cnt};
+  var cotOk,cotTxt,seaOk,seaTxt;
+  if(liveCOT[key]){
+    var cot=liveCOT[key];
+    cotOk=(m.dir==="long")?cot.bullish:cot.bearish;
+    cotTxt=cot.text+" &#9889;";
+  } else { cotOk=m.cOk; cotTxt=m.cTxt+" (reference snapshot)"; }
+  if(liveSeasonal[key]){
+    var sea=liveSeasonal[key];
+    seaOk=(m.dir==="long")?sea.bullish:sea.bearish;
+    seaTxt=sea.text+" &#9889;";
+  } else { seaOk=m.sOk; seaTxt=m.sTxt+" (reference snapshot)"; }
+  var cnt=(rOk?1:0)+(cotOk?1:0)+(seaOk?1:0);
+  if(!rOk) cnt=Math.min(2,cnt);
+  return {wr:wr,rOk:rOk,cotOk:cotOk,cotTxt:cotTxt,seaOk:seaOk,seaTxt:seaTxt,cnt:cnt};
 }
 
 // ═══ TRADE LEVELS ════════════════════════════════════════════════
@@ -494,7 +484,7 @@ function fetchRSIMarket(key){
   // fallback to main function
   var xhr=new XMLHttpRequest();
   try{
-    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key),true);
+    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=all",true);
     xhr.timeout=12000;
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4&&xhr.status===200){
@@ -645,7 +635,7 @@ function fetchSilverFallback(key){
 function fetchMarket(key){
   var xhr=new XMLHttpRequest();
   try{
-    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key),true);
+    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=all",true);
     xhr.timeout=12000;
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4){
@@ -653,8 +643,10 @@ function fetchMarket(key){
           try{
             var d=JSON.parse(xhr.responseText);
             if(d.error){liveErrors[key]=d.error; renderLive(); return;}
-            liveData[key]={price:d.price, prev:d.prev||d.price, chg:d.change||0, chgPct:d.changePct||0, ts:new Date(), src:d.source||"Twelve Data"};
+            liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:d.source||"Twelve Data"};
             if(d.history&&d.history.h&&d.history.h.length>=14) liveHistory[key]=d.history;
+            if(d.cot){ liveCOT[key]=d.cot; }
+            if(d.seasonal){ liveSeasonal[key]=d.seasonal; }
             delete liveErrors[key];
             renderLive();
           }catch(e){liveErrors[key]="Parse error"; renderLive();}
@@ -810,8 +802,8 @@ function renderLive(){
     var wrTxt=sig.wr!==null?sig.wr.toFixed(1):(Date.now()-appStartTime>15000?"Unavailable":"Calculating...");
     var wrCls=sig.rOk?"ok":sig.wr!==null?"fail":"";
     html+='<div class="light '+wrCls+'"><div class="light-lbl">Williams %R</div><span class="light-icon">'+(sig.rOk?"&#9989;":sig.wr!==null?"&#10060;":"&#9744;")+'</span><div class="light-val" style="color:'+(sig.rOk?"#00d97e":sig.wr!==null?"#ff4d6d":"#5a6478")+'">'+wrTxt+'</div><div class="light-txt">Need '+(isL?"below -80":"above -20")+'</div></div>';
-    html+='<div class="light '+(sig.cotOk?"ok":"warn")+'"><div class="light-lbl">COT Signal</div><span class="light-icon">'+(sig.cotOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.cotOk?"#00d97e":"#ffa94d")+'">'+(sig.cotOk?"Confirmed":"Watch")+'</div><div class="light-txt">'+m.cTxt+'</div></div>';
-    html+='<div class="light '+(sig.seaOk?"ok":"warn")+'"><div class="light-lbl">Seasonal</div><span class="light-icon">'+(sig.seaOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.seaOk?"#00d97e":"#ffa94d")+'">'+(sig.seaOk?"Confirmed":"Neutral")+'</div><div class="light-txt">'+m.sTxt+'</div></div>';
+    html+='<div class="light '+(sig.cotOk?"ok":"warn")+'"><div class="light-lbl">COT Signal</div><span class="light-icon">'+(sig.cotOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.cotOk?"#00d97e":"#ffa94d")+'">'+(sig.cotOk?"Confirmed":"Watch")+'</div><div class="light-txt">'+sig.cotTxt+'</div></div>';
+    html+='<div class="light '+(sig.seaOk?"ok":"warn")+'"><div class="light-lbl">Seasonal</div><span class="light-icon">'+(sig.seaOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.seaOk?"#00d97e":"#ffa94d")+'">'+(sig.seaOk?"Confirmed":"Neutral")+'</div><div class="light-txt">'+sig.seaTxt+'</div></div>';
     html+='</div>';
     // Gap warning
     html+=gapWarnHtml(key);
