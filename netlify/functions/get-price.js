@@ -130,7 +130,7 @@ exports.handler = async function(event) {
       return { statusCode: sea ? 200 : 404, headers, body: JSON.stringify(sea || { error: "No seasonal data for " + key }) };
     }
 
-    // Price request (default)
+    // Price request (default, all, or 4h)
     const symbol = SYMBOL_MAP[key];
     if (!symbol) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Unknown key: " + key }) };
@@ -143,6 +143,7 @@ exports.handler = async function(event) {
       return { statusCode: 502, headers, body: JSON.stringify({ error: "Twelve Data: " + (q.message || JSON.stringify(q)) }) };
     }
 
+    // Daily history (for Williams %R and daily RSI)
     const hRes = await fetch(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=20&apikey=${TWELVE_DATA_KEY}`);
     const h = await hRes.json();
 
@@ -155,7 +156,21 @@ exports.handler = async function(event) {
       };
     }
 
-    // If "all" type, also fetch COT and seasonal
+    // 4H history (for 4H RSI tab)
+    let history4h = null;
+    if (type === "4h" || type === "all") {
+      const h4Res = await fetch(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=4h&outputsize=30&apikey=${TWELVE_DATA_KEY}`);
+      const h4 = await h4Res.json();
+      if (h4.values && Array.isArray(h4.values) && h4.values.length >= 14) {
+        history4h = {
+          h: h4.values.map(v => parseFloat(v.high)).reverse(),
+          l: h4.values.map(v => parseFloat(v.low)).reverse(),
+          c: h4.values.map(v => parseFloat(v.close)).reverse()
+        };
+      }
+    }
+
+    // COT and seasonal for "all" type
     let cot = null, seasonal = null;
     if (type === "all") {
       [cot, seasonal] = await Promise.all([fetchCOT(key), Promise.resolve(getSeasonal(key))]);
@@ -170,6 +185,7 @@ exports.handler = async function(event) {
         change: parseFloat(q.change),
         changePct: parseFloat(q.percent_change),
         history,
+        history4h: history4h || undefined,
         source: "Twelve Data",
         symbol,
         fetchedAt: new Date().toISOString(),
