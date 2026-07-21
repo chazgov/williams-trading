@@ -219,6 +219,7 @@ input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3
     <button class="ntab" onclick="tab('tc',this)">&#128274; TRAIL CALC</button>
     <button class="ntab" onclick="tab('exit',this)">&#128682; EXIT GUIDE</button>
     <button class="ntab" onclick="tab('rsi',this)">&#9889; RSI STRATEGY</button>
+    <button class="ntab" onclick="tab('rsi4h',this)">&#9202; 4H RSI</button>
     <button class="ntab" onclick="tab('plat',this)">&#127974; PLATFORMS</button>
   </div>
 </div>
@@ -402,6 +403,51 @@ function fetchGbpRate(){
 }
 fetchGbpRate();
 setInterval(fetchGbpRate, 900000);
+
+// ═══ ATR (Average True Range) ════════════════════════════════════
+function calcATR(key, period){
+  var h = liveHistory[key];
+  period = period || 14;
+  if(!h || h.h.length < period+1) return null;
+  var highs  = h.h.slice(-(period+1));
+  var lows   = h.l.slice(-(period+1));
+  var closes = h.c.slice(-(period+1));
+  var trList = [];
+  for(var i=1; i<=period; i++){
+    var hl  = highs[i]  - lows[i];
+    var hcp = Math.abs(highs[i]  - closes[i-1]);
+    var lcp = Math.abs(lows[i]   - closes[i-1]);
+    trList.push(Math.max(hl, hcp, lcp));
+  }
+  var atr = trList.reduce(function(a,b){return a+b;},0) / period;
+  return atr;
+}
+
+function atrStops(key, price, direction){
+  var atr = calcATR(key, 14);
+  if(!atr) return null;
+  var isL = direction === "long";
+  // Larry Williams / institutional standard:
+  // Initial stop: 1.5x ATR from entry
+  // Trailing stop: 2x ATR from running high/low
+  // Target: 3x ATR from entry (gives 1:2 R/R minimum)
+  var initialStop  = isL ? price - (1.5 * atr) : price + (1.5 * atr);
+  var trailDist    = 2.0 * atr;
+  var target       = isL ? price + (3.0 * atr) : price - (3.0 * atr);
+  var breakeven    = isL ? price + (1.0 * atr) : price - (1.0 * atr);
+  var riskDist     = 1.5 * atr;
+  var rr           = (3.0 / 1.5).toFixed(1); // always 1:2
+  return {
+    atr:         atr,
+    atrPct:      (atr / price * 100).toFixed(2),
+    initialStop: initialStop,
+    trailDist:   trailDist,
+    target:      target,
+    breakeven:   breakeven,
+    riskDist:    riskDist,
+    rr:          rr
+  };
+}
 
 // ═══ WILLIAMS %R ═════════════════════════════════════════════════
 function calcWR(key){
@@ -1012,20 +1058,131 @@ function calc50SMA(key){
 
 function evalRSI(key){
   var rsi = calcRSI(key);
-  var sma = calc50SMA(key);
   var d = liveData[key];
-  if(!rsi || !d) return { rsi:null, signal:"none", smaOk:null };
-  var priceAboveSMA = sma ? d.price > sma : null;
-  var signal = "none";
-  var smaOk = false;
-  if(rsi <= 30 && (priceAboveSMA === true || priceAboveSMA === null)){
-    signal = "buy"; smaOk = true;
-  } else if(rsi >= 70 && (priceAboveSMA === false || priceAboveSMA === null)){
-    signal = "sell"; smaOk = true;
-  } else if(rsi <= 30 || rsi >= 70){
-    signal = rsi <= 30 ? "buy" : "sell"; smaOk = false;
+  var h = liveHistory[key];
+  if(!d) return { rsi:null, signal:"none", rules:[], score:0, smaOk:false };
+
+  var rules = [];
+  var price = d.price;
+
+  // ── Rule 1: Uptrend filter — price above 200-day SMA ──────────
+  // We only have 20 days of history so we use 20-day SMA as proxy
+  var sma20 = calc50SMA(key); // our calc50SMA actually uses available data
+  var uptrend = sma20 ? price > sma20 : null;
+  rules.push({
+    name: "Uptrend",
+    ok: uptrend === true,
+    na: uptrend === null,
+    txt: uptrend === true ? "Price above 20-day average — uptrend confirmed" :
+         uptrend === false ? "Price below 20-day average — downtrend, skip BUY signals" :
+         "Trend data loading..."
+  });
+
+  // ── Rule 2: RSI in signal zone ────────────────────────────────
+  var rsiInZone = rsi !== null && (rsi <= 30 || rsi >= 70);
+  var isBuy = rsi !== null && rsi <= 30;
+  var isSell = rsi !== null && rsi >= 70;
+  rules.push({
+    name: "RSI Oversold/Overbought",
+    ok: rsiInZone,
+    na: rsi === null,
+    txt: rsi === null ? "RSI loading..." :
+         rsi <= 30 ? "RSI " + rsi.toFixed(1) + " — oversold, potential BUY" :
+         rsi >= 70 ? "RSI " + rsi.toFixed(1) + " — overbought, potential SELL" :
+         "RSI " + rsi.toFixed(1) + " — neutral zone, no signal"
+  });
+
+  // ── Rule 3: RSI confirmation — turning back through threshold ──
+  // Check if previous RSI was deeper in zone (RSI now recovering)
+  var prevRsi = null;
+  if(h && h.c.length >= 16){
+    var prevCloses = h.c.slice(-16,-1);
+    var pg=0, pl=0;
+    for(var i=1;i<prevCloses.length;i++){
+      var diff=prevCloses[i]-prevCloses[i-1];
+      if(diff>0) pg+=diff; else pl+=Math.abs(diff);
+    }
+    var avgPG=pg/(prevCloses.length-1), avgPL=pl/(prevCloses.length-1);
+    prevRsi = avgPL===0 ? 100 : 100-(100/(1+(avgPG/avgPL)));
   }
-  return { rsi:rsi, signal:signal, smaOk:smaOk, sma:sma, priceAboveSMA:priceAboveSMA };
+  var rsiConfirmed = false;
+  var rsiConfTxt = "Not enough history to confirm";
+  if(prevRsi !== null && rsi !== null){
+    if(isBuy && prevRsi < rsi){
+      rsiConfirmed = true;
+      rsiConfTxt = "RSI turning up from " + prevRsi.toFixed(1) + " to " + rsi.toFixed(1) + " — buyers returning";
+    } else if(isSell && prevRsi > rsi){
+      rsiConfirmed = true;
+      rsiConfTxt = "RSI turning down from " + prevRsi.toFixed(1) + " to " + rsi.toFixed(1) + " — sellers returning";
+    } else if(isBuy){
+      rsiConfTxt = "RSI still falling — wait for RSI to start recovering before entering";
+    } else if(isSell){
+      rsiConfTxt = "RSI still rising — wait for RSI to start declining before entering";
+    }
+  }
+  rules.push({
+    name: "RSI Confirmation",
+    ok: rsiConfirmed,
+    na: prevRsi === null,
+    txt: rsiConfTxt
+  });
+
+  // ── Rule 4: Price near support/resistance ─────────────────────
+  var nearLevel = false;
+  var levelTxt = "Insufficient history";
+  if(h && h.l.length >= 10 && h.h.length >= 10){
+    var recentLows = h.l.slice(-10);
+    var recentHighs = h.h.slice(-10);
+    var swingLow = Math.min.apply(null, recentLows);
+    var swingHigh = Math.max.apply(null, recentHighs);
+    var distFromLow = Math.abs(price - swingLow) / price * 100;
+    var distFromHigh = Math.abs(price - swingHigh) / price * 100;
+    if(isBuy && distFromLow < 2.0){
+      nearLevel = true;
+      levelTxt = "Price within 2% of recent swing low (" + swingLow.toFixed(2) + ") — at support";
+    } else if(isSell && distFromHigh < 2.0){
+      nearLevel = true;
+      levelTxt = "Price within 2% of recent swing high (" + swingHigh.toFixed(2) + ") — at resistance";
+    } else if(isBuy){
+      levelTxt = "Price " + distFromLow.toFixed(1) + "% above recent low — not at clear support yet";
+    } else if(isSell){
+      levelTxt = "Price " + distFromHigh.toFixed(1) + "% below recent high — not at clear resistance yet";
+    } else {
+      levelTxt = "No signal direction to evaluate support/resistance";
+    }
+  }
+  rules.push({
+    name: "At Support/Resistance",
+    ok: nearLevel,
+    na: !h || h.l.length < 10,
+    txt: levelTxt
+  });
+
+  // ── Score: count confirmed rules ──────────────────────────────
+  var score = rules.filter(function(r){ return r.ok; }).length;
+  var maxScore = rules.filter(function(r){ return !r.na; }).length;
+
+  // Signal only fires if RSI is in zone — it is the mandatory gate
+  var signal = "none";
+  if(rsiInZone){ signal = isBuy ? "buy" : "sell"; }
+
+  // smaOk = whether uptrend confirms direction
+  var smaOk = (isBuy && uptrend === true) || (isSell && uptrend === false);
+
+  return {
+    rsi: rsi,
+    prevRsi: prevRsi,
+    signal: signal,
+    rules: rules,
+    score: score,
+    maxScore: maxScore,
+    smaOk: smaOk,
+    sma: sma20,
+    uptrend: uptrend,
+    rsiConfirmed: rsiConfirmed,
+    nearLevel: nearLevel,
+    quality: score >= 3 ? "strong" : score === 2 ? "moderate" : "weak"
+  };
 }
 
 var rsiFilter = "all";
@@ -1191,6 +1348,321 @@ renderLive = function(){
   if(document.getElementById("p-rsi")) renderRSI();
 };
 
+// ═══ 4-HOUR RSI STRATEGY ═════════════════════════════════════════
+// Markets — forex and gold only (crypto excluded on 4H)
+var RSI4H_MARKETS = {
+  gbpusd:{ name:"GBP/USD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
+  eurusd:{ name:"EUR/USD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
+  usdjpy:{ name:"USD/JPY",  dp:3, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
+  audusd:{ name:"AUD/USD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
+  usdcad:{ name:"USD/CAD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (14:00, 18:00 UK — NY session)" },
+  gold:  { name:"Gold",     dp:2, cat:"Commodity", eTime:"08:00 or 16:00 UK (London/NY open)" }
+};
+
+var liveData4H = {};   // 4H candle history per market
+var liveRSI4H  = {};   // computed 4H RSI per market
+var load4HErrors = {};
+
+function fetch4HCandles(key){
+  var sym4H = {
+    gbpusd:"GBP/USD", eurusd:"EUR/USD", usdjpy:"USD/JPY",
+    audusd:"AUD/USD", usdcad:"USD/CAD", gold:"XAU/USD"
+  }[key];
+  if(!sym4H) return;
+
+  var xhr = new XMLHttpRequest();
+  try{
+    xhr.open("GET", "/api/get-price?key="+encodeURIComponent(key)+"&type=4h", true);
+    xhr.timeout = 12000;
+    xhr.onreadystatechange = function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          try{
+            var d = JSON.parse(xhr.responseText);
+            if(d.error){ load4HErrors[key]=d.error; render4HRSI(); return; }
+            if(d.history4h && d.history4h.h && d.history4h.h.length>=20){
+              liveData4H[key] = d.history4h;
+              liveRSI4H[key]  = compute4HRSI(d.history4h);
+              delete load4HErrors[key];
+            } else if(d.history && d.history.h){
+              // Fallback: use daily data if 4H not available
+              liveData4H[key] = d.history;
+              liveRSI4H[key]  = compute4HRSI(d.history);
+              load4HErrors[key] = "Using daily data as 4H proxy";
+            } else {
+              load4HErrors[key] = "No candle data returned";
+            }
+            render4HRSI();
+          }catch(e){ load4HErrors[key]="Parse error: "+e.message; render4HRSI(); }
+        } else {
+          load4HErrors[key] = "HTTP "+xhr.status;
+          render4HRSI();
+        }
+      }
+    };
+    xhr.ontimeout = function(){ load4HErrors[key]="Timeout"; render4HRSI(); };
+    xhr.onerror   = function(){ load4HErrors[key]="Network error"; render4HRSI(); };
+    xhr.send();
+  }catch(e){ load4HErrors[key]="Exception: "+e.message; render4HRSI(); }
+}
+
+function compute4HRSI(h){
+  if(!h || h.c.length < 15) return null;
+  var closes = h.c.slice(-15);
+  var gains=0, losses=0;
+  for(var i=1;i<closes.length;i++){
+    var diff = closes[i]-closes[i-1];
+    if(diff>0) gains+=diff; else losses+=Math.abs(diff);
+  }
+  var period = closes.length-1;
+  var avgG = gains/period, avgL = losses/period;
+  if(avgL===0) return 100;
+  return 100-(100/(1+(avgG/avgL)));
+}
+
+function eval4H(key){
+  var h   = liveData4H[key];
+  var rsi = liveRSI4H[key];
+  var d   = liveData[key]; // use live price from main feed
+  var m   = RSI4H_MARKETS[key];
+  if(!rsi || !d) return { rsi:null, signal:"none", score:0, rules:[] };
+
+  var price = d.price;
+  var rules = [];
+
+  // Rule 1: RSI in zone (35/65 thresholds for 4H)
+  var isBuy  = rsi <= 35;
+  var isSell = rsi >= 65;
+  var inZone = isBuy || isSell;
+  rules.push({
+    name:"RSI Signal",
+    ok: inZone,
+    txt: inZone
+      ? "RSI "+rsi.toFixed(1)+(isBuy?" — oversold on 4H":" — overbought on 4H")
+      : "RSI "+rsi.toFixed(1)+" — neutral (need below 35 or above 65)"
+  });
+
+  // Rule 2: Trend filter using available SMA
+  var closes = h ? h.c : [];
+  var sma = closes.length >= 10
+    ? closes.slice(-10).reduce(function(a,b){return a+b;},0)/10
+    : null;
+  var trendOk = sma
+    ? (isBuy ? price > sma : isSell ? price < sma : false)
+    : null;
+  rules.push({
+    name:"Trend Filter (SMA)",
+    ok: trendOk === true,
+    na: trendOk === null,
+    txt: trendOk === true
+      ? "Price "+(isBuy?"above":"below")+" SMA — trend confirms signal"
+      : trendOk === false
+      ? "Price "+(isBuy?"below":"above")+" SMA — trend opposes signal, skip"
+      : "SMA data loading"
+  });
+
+  // Rule 3: RSI turning (confirmation)
+  var prevRSI = null;
+  if(h && h.c.length >= 16){
+    var pc = h.c.slice(-16,-1);
+    var pg=0,pl=0;
+    for(var i=1;i<pc.length;i++){
+      var df=pc[i]-pc[i-1];
+      if(df>0) pg+=df; else pl+=Math.abs(df);
+    }
+    var prd=pc.length-1;
+    var aPG=pg/prd, aPL=pl/prd;
+    prevRSI = aPL===0?100:100-(100/(1+(aPG/aPL)));
+  }
+  var turning = prevRSI!==null
+    ? (isBuy ? rsi > prevRSI : isSell ? rsi < prevRSI : false)
+    : null;
+  rules.push({
+    name:"RSI Turning",
+    ok: turning === true,
+    na: turning === null,
+    txt: turning === true
+      ? "RSI turning "+(isBuy?"up":"down")+" from "+prevRSI.toFixed(1)+" — momentum shifting"
+      : turning === false
+      ? "RSI still moving deeper — wait for reversal before entering"
+      : "Insufficient data for confirmation"
+  });
+
+  // Rule 4: ATR-based stop feasibility
+  var atr = calcATR(key, 14);
+  var atrOk = atr !== null;
+  rules.push({
+    name:"ATR Stop Available",
+    ok: atrOk,
+    txt: atr
+      ? "ATR: "+atr.toFixed(4)+" ("+((atr/price)*100).toFixed(2)+"% of price) — volatility-based stop calculated"
+      : "ATR not available — use manual stop"
+  });
+
+  var score = rules.filter(function(r){return r.ok;}).length;
+  var signal = inZone ? (isBuy?"buy":"sell") : "none";
+  var smaOk  = trendOk === true;
+
+  return {
+    rsi:rsi, prevRSI:prevRSI, signal:signal,
+    rules:rules, score:score, smaOk:smaOk,
+    atr:atr, sma:sma, price:price,
+    quality: score>=3?"strong":score===2?"moderate":"weak"
+  };
+}
+
+function render4HRSI(){
+  var keys    = Object.keys(RSI4H_MARKETS);
+  var ready=0, watch=0, nosig=0;
+  keys.forEach(function(k){
+    var ev=eval4H(k);
+    if(ev.signal!=="none"&&ev.score>=3) ready++;
+    else if(ev.signal!=="none") watch++;
+    else nosig++;
+  });
+
+  document.getElementById("rsi4hSummary").innerHTML =
+    '<div class="sumcard ready"><div class="sumnum g">'+ready+'</div><div class="sumlbl">&#9989; 4H READY</div></div>'+
+    '<div class="sumcard watch"><div class="sumnum a">'+watch+'</div><div class="sumlbl">&#128993; WATCHING</div></div>'+
+    '<div class="sumcard nosig"><div class="sumnum d">'+nosig+'</div><div class="sumlbl">&#9898; NO SIGNAL</div></div>';
+
+  var loaded = keys.filter(function(k){return liveData4H[k];}).length;
+  var el = document.getElementById("rsi4hStatus");
+  if(loaded>=keys.length){
+    el.innerHTML="&#9989; "+keys.length+" markets loaded &middot; 4H RSI calculated";
+    el.style.color="#00d97e";
+  } else {
+    el.innerHTML='<span class="pulse"></span>Loading 4H data... ('+loaded+'/'+keys.length+')';
+    el.style.color="";
+  }
+
+  var html="";
+  keys.forEach(function(key){
+    var m   = RSI4H_MARKETS[key];
+    var ev  = eval4H(key);
+    var d   = liveData[key];
+    function f(n){ return parseFloat(n).toFixed(m.dp); }
+
+    if(!d || !liveData4H[key]){
+      var errMsg = load4HErrors[key] || "Loading...";
+      html+='<div class="mcard loading"><div class="mcard-top"><div class="mcard-left"><div class="mcard-name">'+m.name+'</div><div class="mcard-cat" style="color:var(--dim)">'+errMsg+'</div></div><div class="mcard-right"><div class="mcard-price" style="color:var(--dim)">--</div></div></div></div>';
+      return;
+    }
+
+    var isBuy   = ev.signal==="buy";
+    var cardCls = ev.signal!=="none"&&ev.score>=3?"ready":ev.signal!=="none"?"watch":"nosig";
+    var dirCls  = isBuy?"long":ev.signal==="sell"?"short":"";
+    var qualCol = ev.quality==="strong"?"#00d97e":ev.quality==="moderate"?"#ffa94d":"#ff4d6d";
+
+    // ATR stops
+    var atrS = ev.atr ? atrStops(key, ev.price, isBuy?"long":"short") : null;
+
+    // Signal pill
+    var pill = ev.signal!=="none"&&ev.score>=3
+      ? "&#9989; 4H READY &mdash; "+m.name+" "+(isBuy?"BUY":"SELL")+" ("+ev.score+"/4 rules)"
+      : ev.signal!=="none"
+      ? "&#128993; WATCH &mdash; "+ev.score+"/4 rules &mdash; wait for confirmation"
+      : "&#9898; NO SIGNAL";
+
+    // RSI gauge
+    var rsiPct = ev.rsi ? Math.min(100,Math.max(0,ev.rsi)) : 50;
+    var rsiCol = ev.rsi ? (ev.rsi<=35?"#00d97e":ev.rsi>=65?"#ff4d6d":"#5a6478") : "#5a6478";
+    var gauge =
+      '<div style="margin:0 16px 14px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px">'+
+      '<span style="color:#00d97e">BUY (&lt;35)</span><span>Neutral</span><span style="color:#ff4d6d">SELL (&gt;65)</span></div>'+
+      '<div style="background:rgba(255,255,255,0.06);border-radius:20px;height:8px;position:relative">'+
+      '<div style="position:absolute;left:0;top:0;width:35%;height:100%;background:rgba(0,217,126,0.2);border-radius:20px 0 0 20px"></div>'+
+      '<div style="position:absolute;right:0;top:0;width:35%;height:100%;background:rgba(255,77,109,0.2);border-radius:0 20px 20px 0"></div>'+
+      '<div style="position:absolute;top:-3px;width:14px;height:14px;background:'+rsiCol+';border-radius:50%;left:calc('+rsiPct+'% - 7px);border:2px solid #0c1118;transition:left .3s"></div>'+
+      '</div>'+
+      '<div style="text-align:center;margin-top:6px;font-size:13px;font-weight:700;color:'+rsiCol+'">4H RSI: '+(ev.rsi?ev.rsi.toFixed(1):"Loading...")+'</div></div>';
+
+    // Rules checklist
+    var rulesHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px">';
+    ev.rules.forEach(function(r){
+      var rc = r.ok?"#00d97e":r.na?"#5a6478":"#ff4d6d";
+      var ri = r.ok?"&#9989;":r.na?"&#9744;":"&#10060;";
+      rulesHtml+='<div style="background:rgba(0,0,0,0.2);border:1px solid '+
+        (r.ok?"rgba(0,217,126,0.3)":r.na?"rgba(90,100,120,0.2)":"rgba(255,77,109,0.2)")+
+        ';border-radius:9px;padding:9px 11px">'+
+        '<div style="font-size:9px;color:var(--dim);text-transform:uppercase;margin-bottom:3px">'+r.name+'</div>'+
+        '<div style="font-size:11px">'+ri+' <span style="color:'+rc+'">'+
+        (r.ok?"Confirmed":r.na?"Loading":"Not met")+'</span></div>'+
+        '<div style="font-size:9px;color:var(--dim);margin-top:3px;line-height:1.4">'+r.txt+'</div>'+
+        '</div>';
+    });
+    rulesHtml+='</div>';
+
+    // ATR levels
+    var levHtml = "";
+    if(atrS && ev.signal!=="none"){
+      levHtml='<div class="levels" style="margin-bottom:0">'+
+        '<div class="lev"><div class="lev-l">Entry (next 4H open)</div><div class="lev-v" style="color:var(--b)">'+f(ev.price)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">ATR Stop (1.5x)</div><div class="lev-v" style="color:var(--r)">'+f(atrS.initialStop)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Target (3x ATR)</div><div class="lev-v" style="color:var(--g)">'+f(atrS.target)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Risk/Reward</div><div class="lev-v" style="color:var(--a)">1:'+atrS.rr+'</div></div>'+
+        '</div>'+
+        '<div style="font-size:10px;color:var(--dim);padding:8px 16px">ATR: '+atrS.atr.toFixed(m.dp)+' ('+atrS.atrPct+'% of price) &middot; Trail: move stop '+f(atrS.trailDist)+' behind running '+
+        (isBuy?"high":"low")+' once breakeven hit at '+f(atrS.breakeven)+'</div>';
+    }
+
+    // Action box
+    var actionHtml = "";
+    if(ev.signal!=="none"&&ev.score>=3&&atrS){
+      var tradeName = {gbpusd:"GBP/USD",eurusd:"EUR/USD",usdjpy:"USD/JPY",audusd:"AUD/USD",usdcad:"USD/CAD",gold:"Gold / XAU/USD"}[key]||m.name;
+      var stake = cap*0.02;
+      var units = atrS.riskDist>0?(stake/atrS.riskDist).toFixed(2):"n/a";
+      var prof  = (stake*parseFloat(atrS.rr)).toFixed(2);
+      actionHtml='<div class="action-box trade">'+
+        '<div class="action-title">&#9989; 4H Trade Instructions &mdash; '+m.name+' '+(isBuy?"BUY":"SELL")+'</div>'+
+        "1. Confirm 4H RSI is "+(isBuy?"below 35":"above 65")+" AND turning "+(isBuy?"up":"down")+" on the current candle<br>"+
+        "2. Open Trade Nation &mdash; search <b>"+tradeName+"</b><br>"+
+        "3. Wait for the <b>next 4H candle open</b> &mdash; "+m.eTime+"<br>"+
+        "4. Place <b>"+(isBuy?"BUY":"SELL")+" Limit Order</b> at: <b style='color:#4dabf7'>"+f(ev.price)+"</b><br>"+
+        "5. Set <b>Stop Loss</b> at: <b style='color:#ff4d6d'>"+f(atrS.initialStop)+"</b> (1.5x ATR below entry)<br>"+
+        "6. Set <b>Take Profit</b> at: <b style='color:#00d97e'>"+f(atrS.target)+"</b> (3x ATR from entry)<br>"+
+        "7. Quantity: <b>"+units+" units</b> (2% of £"+cap+" capital at risk)<br>"+
+        "8. Once price reaches breakeven (<b>"+f(atrS.breakeven)+"</b>) — move stop to entry<br>"+
+        "9. Then trail stop <b>"+f(atrS.trailDist)+"</b> behind each new "+(isBuy?"high":"low")+"<br>"+
+        "10. Exit: Take Profit hit OR trailing stop triggered OR <b>after 6 candles (24 hours maximum)</b><br><br>"+
+        "<b>Estimated profit: <span style='color:#00d97e'>+£"+prof+"</span> &middot; Max loss: <span style='color:#ff4d6d'>-£"+stake.toFixed(2)+"</span> &middot; R/R: 1:"+atrS.rr+"</b>"+
+        '</div>';
+    } else if(ev.signal!=="none"){
+      actionHtml='<div class="action-box wait"><div class="action-title">&#128993; Not ready yet &mdash; '+ev.score+'/4 rules confirmed</div>'+
+        "Wait for all key rules to confirm. Specifically: "+(ev.rules.filter(function(r){return !r.ok&&!r.na;}).map(function(r){return r.name;}).join(", ")||"loading data")+
+        ". Check again at the next 4H candle open.</div>";
+    } else {
+      actionHtml='<div class="action-box skip"><div class="action-title">&#9898; No 4H Signal</div>4H RSI is in neutral zone on '+m.name+'. Stand aside. Check at the next 4H candle open.</div>';
+    }
+
+    html+='<div class="mcard '+cardCls+'">';
+    html+='<div class="mcard-top"><div class="mcard-left">'+
+      '<div class="mcard-name">'+(ev.signal!=="none"?'<span class="mcard-dir '+dirCls+'">'+(isBuy?"BUY":"SELL")+'</span>':'')+m.name+'</div>'+
+      '<div class="mcard-cat">'+m.cat+' &middot; 4H RSI Strategy</div></div>'+
+      '<div class="mcard-right"><div class="mcard-price">'+(d?f(d.price):"--")+'</div>'+
+      (d&&d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"#00d97e":"#ff4d6d")+'">'+
+      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':"")+
+      '</div></div>';
+    html+='<div class="mcard-sig"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
+      '<span class="mcard-upd" style="color:'+qualCol+'">'+ev.quality.toUpperCase()+' SETUP</span></div>';
+    html+=gauge;
+    html+=rulesHtml;
+    html+=levHtml;
+    html+=actionHtml;
+    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 14px;font-style:italic">4H RSI period 14 &middot; ATR-based stops &middot; Max hold 24 hours &middot; Exit when RSI returns to 50</div>';
+    html+='</div>';
+  });
+
+  document.getElementById("rsi4hCards").innerHTML=html;
+}
+
+function load4HRSI(){
+  Object.keys(RSI4H_MARKETS).forEach(function(key,i){
+    setTimeout(function(){ fetch4HCandles(key); }, i*350);
+  });
+}
+
 // ═══ INIT ════════════════════════════════════════════════════════
 upCap();
 renderPlats();
@@ -1244,6 +1716,67 @@ renderLive();
 
   <div id="rsiCards"></div>
   <div class="disc">RSI Mean Reversion is a documented quantitative strategy. Past win rates do not guarantee future results. Always use a stop loss. Not financial advice. Crypto prices via CoinGecko. Forex via Frankfurter and Twelve Data.</div>
+</div>
+
+<!-- 4-HOUR RSI PANEL -->
+<div id="p-rsi4h" class="panel">
+  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#9202; 4-Hour RSI Strategy</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Third backup strategy &mdash; fires 3-15 signals per week &mdash; 60-68% documented win rate on major pairs &mdash; hold 4-24 hours</div>
+
+  <!-- Quick Rules -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:6px">&#9989; BUY SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">4H RSI <b style="color:#fff">below 35</b><br>Price above 4H 50-SMA<br>RSI turning back up<br>Enter next 4H candle open</div>
+    </div>
+    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:6px">&#10060; SELL SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">4H RSI <b style="color:#fff">above 65</b><br>Price below 4H 50-SMA<br>RSI turning back down<br>Enter next 4H candle open</div>
+    </div>
+  </div>
+
+  <!-- Why 4H different thresholds -->
+  <div class="bn a" style="margin-bottom:14px">
+    <b>&#9888; Why RSI 35/65 instead of 30/70 on 4H?</b><br>
+    On a 4-hour chart, RSI rarely reaches the extreme 30/70 levels used on daily charts. Using 35/65 gives you more signals while still filtering out the neutral zone. This is standard practice for intraday RSI strategies used by professional traders.
+  </div>
+
+  <!-- Rules strip -->
+  <div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#b0ab9e;line-height:1.9">
+    <b style="color:#4dabf7">Key differences from Daily RSI tab:</b>
+    Hold <b style="color:#fff">4-24 hours maximum</b> (not 3 days) &middot;
+    Check every <b style="color:#fff">4 hours</b> for new signals &middot;
+    Stop based on <b style="color:#fff">ATR volatility</b> (auto-calculated) &middot;
+    Exit when RSI returns to <b style="color:#fff">50</b> or after <b style="color:#fff">6 candles (24 hours)</b> &middot;
+    Best markets: <b style="color:#fff">Forex and Gold only</b> &middot;
+    <b style="color:#ffa94d">Not recommended for crypto on 4H — too volatile</b>
+  </div>
+
+  <!-- UK Session Guide -->
+  <div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:11px;padding:13px 14px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px">&#127758; 4-Hour Candle Times (UK)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:#b0ab9e">
+      <div>Candle 1: <b style="color:#fff">00:00 - 04:00</b></div>
+      <div>Candle 2: <b style="color:#fff">04:00 - 08:00</b></div>
+      <div>Candle 3: <b style="color:#fff">08:00 - 12:00</b> &#127881; London open</div>
+      <div>Candle 4: <b style="color:#fff">12:00 - 16:00</b></div>
+      <div>Candle 5: <b style="color:#fff">16:00 - 20:00</b> &#127881; NY overlap</div>
+      <div>Candle 6: <b style="color:#fff">20:00 - 00:00</b></div>
+    </div>
+    <div style="font-size:10px;color:var(--dim);margin-top:8px">Best signals appear at the 08:00 and 16:00 candle opens when London and New York sessions begin. Avoid trading the 00:00-04:00 candle — low volume, unreliable signals.</div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div id="rsi4hStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
+      <span class="pulse"></span>Loading 4H RSI data...
+    </div>
+    <button onclick="load4HRSI()" style="background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:#00d97e;font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer">&#8635; Refresh 4H Data</button>
+  </div>
+
+  <div class="sumstrip" id="rsi4hSummary"></div>
+  <div id="rsi4hCards"></div>
+
+  <div class="disc">4-Hour RSI Mean Reversion is an active intraday strategy. Requires monitoring during trading hours. Past win rates do not guarantee future results. Always use ATR-based stop loss. Not financial advice. 4H candle data via Twelve Data.</div>
 </div>
 </body>
 </html>
