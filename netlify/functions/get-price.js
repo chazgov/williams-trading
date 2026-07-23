@@ -156,16 +156,16 @@ exports.handler = async function(event) {
       };
     }
 
-    // 4H history (for 4H RSI tab)
-    let history4h = null;
-    if (type === "4h" || type === "all") {
-      const h4Res = await fetch(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=4h&outputsize=30&apikey=${TWELVE_DATA_KEY}`);
-      const h4 = await h4Res.json();
-      if (h4.values && Array.isArray(h4.values) && h4.values.length >= 14) {
-        history4h = {
-          h: h4.values.map(v => parseFloat(v.high)).reverse(),
-          l: h4.values.map(v => parseFloat(v.low)).reverse(),
-          c: h4.values.map(v => parseFloat(v.close)).reverse()
+    // 1H history (for Bollinger Bands tab)
+    let history1h = null;
+    if (type === "1h") {
+      const h1Res = await fetch(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=30&apikey=${TWELVE_DATA_KEY}`);
+      const h1 = await h1Res.json();
+      if (h1.values && Array.isArray(h1.values) && h1.values.length >= 20) {
+        history1h = {
+          h: h1.values.map(v => parseFloat(v.high)).reverse(),
+          l: h1.values.map(v => parseFloat(v.low)).reverse(),
+          c: h1.values.map(v => parseFloat(v.close)).reverse()
         };
       }
     }
@@ -185,7 +185,7 @@ exports.handler = async function(event) {
         change: parseFloat(q.change),
         changePct: parseFloat(q.percent_change),
         history,
-        history4h: history4h || undefined,
+        history1h: history1h || undefined,
         source: "Twelve Data",
         symbol,
         fetchedAt: new Date().toISOString(),
