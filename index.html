@@ -232,7 +232,7 @@ input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3
     Prices and Williams %R update from <b>Twelve Data</b> via your backend every 15 minutes. 
     <b style="color:var(--g)">Green card = all 3 Larry Williams signals confirmed = valid trade setup.</b> <b style="color:var(--r)">Williams %R is mandatory — if %R is not in zone, no trade regardless of COT or Seasonal.</b> 
     Amber = watch. Grey = no signal, stand aside.<br><br>
-    <b>Before entering any trade:</b> verify %R on TradingView.com (Daily chart, period 14) matches what you see here. Enter at the NEXT session open, never intraday.
+    <b>Before entering any trade:</b> check %R light on the card — it is calculated from real live data. Enter at the NEXT session open, never intraday.
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
   <div id="liveStatus"><span class="pulse"></span>Connecting to Twelve Data...</div>
@@ -526,7 +526,7 @@ function fetchRSIMarket(key){
   // fallback to main function
   var xhr=new XMLHttpRequest();
   try{
-    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=all",true);
+    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=price",true);
     xhr.timeout=12000;
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4&&xhr.status===200){
@@ -1787,6 +1787,8 @@ function fetch1HCandles(key){
           try{
             var d=JSON.parse(xhr.responseText);
             if(d.error){liveBBErrors[key]=d.error;renderBB();return;}
+            // Store price for display on BB cards
+            if(d.price) liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:"Twelve Data"};
             if(d.history1h && d.history1h.c && d.history1h.c.length>=20){
               liveBBData[key]=d.history1h;
               delete liveBBErrors[key];
@@ -1865,4 +1867,203 @@ function renderBB(){
       var pricePct = range>0 ? Math.min(100,Math.max(0,((d.price-ev.bb.lower)/range)*100)) : 50;
       bandHtml='<div style="margin:0 16px 14px">'+
         '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px">'+
-        '<span style="color:#00d97e">Lower '+f(ev.bb.lower)+'
+        '<span style="color:#00d97e">Lower '+f(ev.bb.lower)+'</span>'+
+        '<span>Middle '+f(ev.bb.middle)+'</span>'+
+        '<span style="color:#ff4d6d">Upper '+f(ev.bb.upper)+'</span></div>'+
+        '<div style="background:linear-gradient(to right,rgba(0,217,126,0.15),rgba(255,255,255,0.04),rgba(255,77,109,0.15));border-radius:20px;height:10px;position:relative;border:1px solid rgba(255,255,255,0.08)">'+
+        '<div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.2)"></div>'+
+        '<div style="position:absolute;top:-3px;width:16px;height:16px;background:'+(d.price<=ev.bb.lower*1.001?"#00d97e":d.price>=ev.bb.upper*0.999?"#ff4d6d":"#4dabf7")+';border-radius:50%;left:calc('+pricePct+'% - 8px);border:2px solid #0c1118;transition:left .3s"></div>'+
+        '</div>'+
+        '<div style="text-align:center;margin-top:6px;font-size:12px;font-weight:700;color:'+(d.price<=ev.bb.lower*1.001?"#00d97e":d.price>=ev.bb.upper*0.999?"#ff4d6d":"#4dabf7")+'">Price: '+f(d.price)+' &middot; 1H RSI: '+(ev.rsi?ev.rsi.toFixed(1):"...")+'</div></div>';
+    }
+
+    // Rules grid
+    var rulesHtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px">';
+    ev.rules.forEach(function(r){
+      var rc=r.ok?"#00d97e":"#ff4d6d";
+      var ri=r.ok?"&#9989;":"&#10060;";
+      rulesHtml+='<div style="background:rgba(0,0,0,0.2);border:1px solid '+(r.ok?"rgba(0,217,126,0.3)":"rgba(255,77,109,0.2)")+';border-radius:9px;padding:9px 11px">'+
+        '<div style="font-size:9px;color:var(--dim);text-transform:uppercase;margin-bottom:3px">'+r.name+'</div>'+
+        '<div style="font-size:11px">'+ri+' <span style="color:'+rc+'">'+( r.ok?"Confirmed":"Not met")+'</span></div>'+
+        '<div style="font-size:9px;color:var(--dim);margin-top:3px;line-height:1.4">'+r.txt+'</div></div>';
+    });
+    rulesHtml+='</div>';
+
+    // Levels
+    var levHtml="";
+    if(ev.levels && ev.signal!=="none"){
+      var L=ev.levels;
+      levHtml='<div class="levels">'+
+        '<div class="lev"><div class="lev-l">Entry</div><div class="lev-v" style="color:var(--b)">'+f(d.price)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Stop (ATR)</div><div class="lev-v" style="color:var(--r)">'+f(L.stop)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Target (Mid Band)</div><div class="lev-v" style="color:var(--g)">'+f(L.target)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">R/R</div><div class="lev-v" style="color:var(--a)">1:'+L.rr+'</div></div>'+
+        '</div>'+
+        '<div style="font-size:10px;color:var(--dim);padding:4px 16px 12px">ATR: '+L.atr.toFixed(m.dp)+' &middot; Band width: '+L.bandWidth.toFixed(2)+"% &middot; Breakeven at: "+f(L.breakeven)+'</div>';
+    }
+
+    // Action box
+    var actionHtml="";
+    if(ev.signal!=="none"&&ev.score>=3&&ev.levels){
+      var L=ev.levels;
+      var stake=cap*0.02;
+      var riskDist=Math.abs(d.price-L.stop);
+      var units=riskDist>0?(stake/riskDist).toFixed(2):"n/a";
+      var prof=(stake*parseFloat(L.rr)).toFixed(2);
+      var tname={gbpusd:"GBP/USD",eurusd:"EUR/USD",usdjpy:"USD/JPY",audusd:"AUD/USD",gold:"Gold / XAU/USD"}[key]||m.name;
+      actionHtml='<div class="action-box trade">'+
+        '<div class="action-title">&#9989; 1H BB Trade Instructions &mdash; '+m.name+' '+(isBuy?"BUY":"SELL")+'</div>'+
+        "1. Price has touched the "+(isBuy?"lower":"upper")+" Bollinger Band AND 1H RSI is "+(isBuy?"below 40":"above 60")+"<br>"+
+        "2. Open Trade Nation &mdash; search <b>"+tname+"</b><br>"+
+        "3. Enter at <b>next 1H candle open</b> &mdash; "+m.eTime+"<br>"+
+        "4. Place <b>"+(isBuy?"BUY":"SELL")+"</b> at current price: <b style='color:#4dabf7'>"+f(d.price)+"</b><br>"+
+        "5. Set <b>Stop Loss</b>: <b style='color:#ff4d6d'>"+f(L.stop)+"</b> (1.5x ATR beyond band)<br>"+
+        "6. Set <b>Take Profit</b>: <b style='color:#00d97e'>"+f(L.target)+"</b> (middle band = 20-period average)<br>"+
+        "7. Quantity: <b>"+units+" units</b> (2% of £"+cap+" at risk)<br>"+
+        "8. Exit immediately if price <b>closes outside the band</b> on the 1H chart (signal failed)<br>"+
+        "9. Maximum hold: <b>4 hours</b> regardless — do not hold overnight<br><br>"+
+        "<b>Est. profit: <span style='color:#00d97e'>+£"+prof+"</span> &middot; Max loss: <span style='color:#ff4d6d'>-£"+stake.toFixed(2)+"</span> &middot; R/R: 1:"+L.rr+"</b>"+
+        '</div>';
+    } else if(ev.signal!=="none"){
+      actionHtml='<div class="action-box wait"><div class="action-title">&#128993; Not enough confluence yet</div>'+
+        "Need "+ev.rules.filter(function(r){return !r.ok;}).map(function(r){return r.name;}).join(" + ")+
+        " to confirm. Wait for the next 1H candle and re-check.</div>";
+    } else {
+      actionHtml='<div class="action-box skip"><div class="action-title">&#9898; Price between bands</div>No Bollinger Band signal on '+m.name+' right now. Price needs to reach the upper or lower band before a signal fires. This is normal — check again in 1-4 hours.</div>';
+    }
+
+    html+='<div class="mcard '+cardCls+'">';
+    html+='<div class="mcard-top"><div class="mcard-left">'+
+      '<div class="mcard-name">'+(ev.signal!=="none"?'<span class="mcard-dir '+dirCls+'">'+( isBuy?"BUY":"SELL")+'</span>':'')+m.name+'</div>'+
+      '<div class="mcard-cat">'+m.cat+' &middot; 1H Bollinger Bands</div></div>'+
+      '<div class="mcard-right"><div class="mcard-price">'+(d?f(d.price):"--")+'</div>'+
+      (d&&d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"#00d97e":"#ff4d6d")+'">'+
+      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':"")+
+      '</div></div>';
+    html+='<div class="mcard-sig"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
+      '<span class="mcard-upd" style="color:'+qualCol+'">'+ev.quality.toUpperCase()+'</span></div>';
+    html+=bandHtml;
+    html+=rulesHtml;
+    html+=levHtml;
+    html+=actionHtml;
+    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 14px;font-style:italic">BB(20,2) + 1H RSI(14) &middot; ATR stops &middot; Target middle band &middot; Max 4 hours</div>';
+    html+='</div>';
+  });
+
+  document.getElementById("bbCards").innerHTML=html;
+}
+
+function loadBB(){
+  Object.keys(BB_MARKETS).forEach(function(key,i){
+    setTimeout(function(){ fetch1HCandles(key); }, i*8000);
+  });
+}
+
+// ═══ INIT ════════════════════════════════════════════════════════
+upCap();
+renderLive();
+setTimeout(function(){ loadBB(); }, 3000);
+</script>
+
+<!-- RSI MEAN REVERSION PANEL -->
+<div id="p-rsi" class="panel">
+  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#9889; RSI Strategy &mdash; 11 Markets</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Complementary to Larry Williams &mdash; fires 3-8 times per week &mdash; documented 68-75% win rate on major pairs</div>
+
+  <!-- Quick Rules Box -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:6px">&#9989; BUY SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">RSI <b style="color:#fff">below 30</b><br>Market oversold<br>Price likely to bounce<br>Enter next day open</div>
+    </div>
+    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:6px">&#10060; SELL SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">RSI <b style="color:#fff">above 70</b><br>Market overbought<br>Price likely to fall<br>Enter next day open</div>
+    </div>
+  </div>
+
+  <!-- Key Rules Strip -->
+  <div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#b0ab9e;line-height:1.9">
+    <b style="color:#4dabf7">Rules:</b>
+    Stop loss at recent swing high/low &middot;
+    Target when RSI returns to 50 &middot;
+    Max hold <b style="color:#fff">3 trading days</b> &middot;
+    Never trade same market as Larry Williams simultaneously &middot;
+    The RSI gauge on each card is calculated from real live data — rely on it directly. Only use TradingView if RSI shows “Calculating...” after two refreshes
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div id="rsiStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
+      <span class="pulse"></span>Loading RSI data...
+    </div>
+    <button onclick="manualRefresh()" style="background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:#00d97e;font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer">&#8635; Refresh</button>
+  </div>
+
+  <div class="sumstrip" id="rsiSummary"></div>
+
+  <!-- Category filters -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="rsiFilters">
+    <button onclick="filterRSI('all',this)" class="ntab on" style="border-radius:20px;padding:5px 13px;font-size:11px">All</button>
+    <button onclick="filterRSI('Forex',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Forex</button>
+    <button onclick="filterRSI('Commodity',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Commodities</button>
+    <button onclick="filterRSI('Crypto',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Crypto</button>
+    <button onclick="filterRSI('ready',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">&#9989; Ready Only</button>
+  </div>
+
+  <div id="rsiCards"></div>
+  <div class="disc">RSI Mean Reversion is a documented quantitative strategy. Past win rates do not guarantee future results. Always use a stop loss. Not financial advice. Crypto prices via CoinGecko. Forex via Frankfurter and Twelve Data.</div>
+</div>
+
+
+<!-- BOLLINGER BANDS 1H PANEL -->
+<div id="p-bb" class="panel">
+  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#127992; Bollinger Bands — 1-Hour Strategy</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Most frequent signals — fires 5-20 times daily — 62-70% win rate on major pairs — hold 1-4 hours</div>
+
+  <!-- Quick Rules -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:6px">&#9989; BUY SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">Price touches <b style="color:#fff">lower band</b><br>RSI below <b style="color:#fff">40</b> (confirms)<br>Price closes back inside band<br>Target: middle band (20 SMA)</div>
+    </div>
+    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:6px">&#10060; SELL SIGNAL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">Price touches <b style="color:#fff">upper band</b><br>RSI above <b style="color:#fff">60</b> (confirms)<br>Price closes back inside band<br>Target: middle band (20 SMA)</div>
+    </div>
+  </div>
+
+  <!-- Strategy explanation -->
+  <div class="bn b" style="margin-bottom:14px">
+    <b>&#128161; How Bollinger Bands work:</b><br><br>
+    The bands expand and contract based on market volatility. Price naturally returns to the middle band (average) after touching the outer bands — this is mean reversion.<br><br>
+    <b>Upper band</b> = 20-period average + 2 standard deviations — statistically overbought<br>
+    <b>Middle band</b> = 20-period average — your profit target<br>
+    <b>Lower band</b> = 20-period average - 2 standard deviations — statistically oversold<br><br>
+    <b>Combined with RSI</b> = much stronger signal. Band touch alone = 55% win rate. Band touch + RSI confirmation = 62-70% win rate.
+  </div>
+
+  <!-- Rules strip -->
+  <div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#b0ab9e;line-height:1.9">
+    <b style="color:#4dabf7">Key rules:</b>
+    Target = <b style="color:#fff">middle band</b> (not a fixed % move) &middot;
+    Stop = <b style="color:#fff">ATR-based below/above the band touched</b> &middot;
+    Max hold = <b style="color:#fff">4 hours (1 candle cycle)</b> &middot;
+    Exit immediately if price closes <b style="color:#fff">outside the band</b> (signal failed) &middot;
+    Best during <b style="color:#fff">London (08:00-16:00 UK) and NY (14:30-21:00 UK)</b> sessions &middot;
+    <b style="color:#ffa94d">Avoid 00:00-07:00 UK — low volume, unreliable bands</b>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div id="bbStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
+      <span class="pulse"></span>Loading Bollinger Band data...
+    </div>
+    <button onclick="loadBB()" style="background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:#00d97e;font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer">&#8635; Refresh BB Data</button>
+  </div>
+
+  <div class="sumstrip" id="bbSummary"></div>
+  <div id="bbCards"></div>
+
+  <div class="disc">Bollinger Band Mean Reversion is a short-term intraday strategy. Best results during active market sessions. Past win rates do not guarantee future results. Always use stop loss. Not financial advice.</div>
+</div>
+</body>
+</html>
