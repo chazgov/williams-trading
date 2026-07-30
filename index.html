@@ -1962,7 +1962,16 @@ function loadBB(){
 // ═══ INIT ════════════════════════════════════════════════════════
 upCap();
 renderLive();
-setTimeout(function(){ loadBB(); }, 3000);
+renderRSI();
+renderBB();
+
+// Load all 3 signal tabs simultaneously on page open
+loadAll();                                          // LW METHOD tab
+setTimeout(function(){                              // DAILY RSI tab
+  var rsiOnly=["audusd","usdcad","usdchf","nzdusd","silver","btc","eth"];
+  rsiOnly.forEach(function(k,i){ setTimeout(function(){ fetchRSIMarket(k); }, i*4000); });
+}, 500);
+setTimeout(function(){ loadBB(); }, 1000);          // 1H BANDS tab
 </script>
 
 <!-- RSI MEAN REVERSION PANEL -->
