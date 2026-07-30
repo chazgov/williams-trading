@@ -1,11 +1,26 @@
 const TWELVE_DATA_KEY = process.env.TWELVE_DATA_KEY || "43e0b306690347ab9640f991f5c87e3d";
 
 const SYMBOL_MAP = {
-  gbpusd:"GBP/USD", eurusd:"EUR/USD", usdjpy:"USD/JPY",
-  gold:"XAU/USD",   oil:"USO:NYSE",   sp500:"SPY:NYSE",
-  nas100:"QQQ:NASDAQ", ftse:"EWU:NYSE",
-  audusd:"AUD/USD", usdcad:"USD/CAD", usdchf:"USD/CHF",
-  nzdusd:"NZD/USD", silver:"XAG/USD", btc:"BTC/USD", eth:"ETH/USD"
+  // Forex pairs — direct, match Trade Nation exactly
+  gbpusd:"GBP/USD",
+  eurusd:"EUR/USD",
+  usdjpy:"USD/JPY",
+  audusd:"AUD/USD",
+  usdcad:"USD/CAD",
+  usdchf:"USD/CHF",
+  nzdusd:"NZD/USD",
+  // Gold — XAU/USD matches Trade Nation "Gold" price closely
+  gold:"XAU/USD",
+  // Silver — XAG/USD matches Trade Nation "Silver" price
+  silver:"XAG/USD",
+  // Indices — use direct index symbols (matches Trade Nation cash prices)
+  sp500:"SPX",        // S&P 500 — matches Trade Nation "US 500"
+  nas100:"NDX",       // Nasdaq 100 — matches Trade Nation "US Tech 100"
+  ftse:"FTSE",        // FTSE 100 — matches Trade Nation "UK 100"
+  oil:"WTI/USD",      // WTI Crude — matches Trade Nation "US Light Crude"
+  // Crypto
+  btc:"BTC/USD",
+  eth:"ETH/USD"
 };
 
 // CFTC contract codes for live COT data
