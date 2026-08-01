@@ -3,192 +3,168 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Williams Edge</title>
+<title>4H Trend Dashboard</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0c1118;color:#e8e3d8;font-size:14px;line-height:1.5}
-:root{--g:#00d97e;--r:#ff4d6d;--a:#ffa94d;--b:#4dabf7;--card:#131c2b;--card2:#1a2535;--bdr:rgba(255,255,255,0.08);--bdg:rgba(0,217,126,0.22);--dim:#5a6478}
+:root{--g:#00d97e;--r:#ff4d6d;--a:#ffa94d;--b:#4dabf7;--card:#131c2b;--bdr:rgba(255,255,255,0.08);--dim:#5a6478}
 
 /* TOP BAR */
-.top{background:#0d1520;border-bottom:1px solid var(--bdg);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
+.top{background:#0d1520;border-bottom:1px solid rgba(0,217,126,0.2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
 .brand{display:flex;align-items:center;gap:10px}
 .logo{width:36px;height:36px;background:linear-gradient(135deg,#00d97e,#009955);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:#000;flex-shrink:0}
 .bname{font-size:15px;font-weight:800;color:#fff}
 .bsub{font-size:10px;color:var(--dim)}
 .topR{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.clkbox{background:rgba(0,217,126,0.07);border:1px solid var(--bdg);border-radius:10px;padding:6px 12px;text-align:center}
+.clkbox{background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.2);border-radius:10px;padding:6px 12px;text-align:center}
 #clkT{font-size:16px;font-weight:800;color:var(--g);font-family:monospace;letter-spacing:1px}
 #clkD{font-size:9px;color:var(--dim);margin-top:1px}
 #clkS{font-size:9px;font-weight:700;margin-top:3px;padding:2px 8px;border-radius:10px;display:inline-block}
-.capbar{background:rgba(0,217,126,0.06);border:1px solid var(--bdg);border-radius:10px;padding:6px 12px;display:flex;align-items:center;gap:7px}
+.capbar{background:rgba(0,217,126,0.06);border:1px solid rgba(0,217,126,0.2);border-radius:10px;padding:6px 12px;display:flex;align-items:center;gap:7px}
 .capbar label{font-size:10px;color:var(--dim);white-space:nowrap}
 #capI{background:transparent;border:none;border-bottom:1.5px solid var(--g);color:var(--g);font-size:16px;font-weight:800;width:72px;outline:none;font-family:inherit}
 
 /* NAV */
-.navwrap{background:#0d1520;border-bottom:1px solid var(--bdr);overflow-x:auto;scrollbar-width:none;position:sticky;top:58px;z-index:100}
+.navwrap{background:#0d1520;border-bottom:1px solid var(--bdr);overflow-x:auto;scrollbar-width:none;position:sticky;top:62px;z-index:100}
 .navwrap::-webkit-scrollbar{display:none}
-.nav{display:flex;min-width:max-content;padding:0 8px}
-.ntab{background:none;border:none;border-bottom:3px solid transparent;color:var(--dim);padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .18s;display:flex;align-items:center;gap:5px}
+.nav{display:flex;min-width:max-content;padding:0 8px;align-items:center}
+.nsep{font-size:9px;color:var(--dim);padding:14px 8px;border-right:1px solid var(--bdr);margin-right:4px;white-space:nowrap}
+.nsep2{font-size:9px;color:var(--dim);padding:14px 8px;border-left:1px solid var(--bdr);border-right:1px solid var(--bdr);margin:0 4px;white-space:nowrap}
+.ntab{background:none;border:none;border-bottom:3px solid transparent;color:var(--dim);padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .18s}
 .ntab:hover{color:#fff}
 .ntab.on{color:var(--g);border-bottom-color:var(--g);background:rgba(0,217,126,0.05)}
 
 /* PANELS */
-.panel{display:none;padding:16px;max-width:900px;margin:0 auto;padding-bottom:60px}
+.panel{display:none;padding:16px;max-width:920px;margin:0 auto;padding-bottom:60px}
 .panel.on{display:block;animation:fu .2s ease}
 @keyframes fu{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* BANNERS */
-.bn{border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:12px;line-height:1.8}
-.bn b{color:#fff}
+.bn{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:12px;line-height:1.85}
 .bn.g{background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.25);color:#b8e8d0}
 .bn.a{background:rgba(255,169,77,0.07);border:1px solid rgba(255,169,77,0.25);color:var(--a)}
 .bn.r{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.25);color:var(--r)}
 .bn.b{background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.25);color:var(--b)}
 
 /* SUMMARY STRIP */
-.sumstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
-.sumcard{border-radius:12px;padding:14px;text-align:center}
-.sumcard.ready{background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3)}
-.sumcard.watch{background:rgba(255,169,77,0.08);border:1px solid rgba(255,169,77,0.25)}
-.sumcard.nosig{background:rgba(255,255,255,0.03);border:1px solid var(--bdr)}
+.sumstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.sumc{border-radius:12px;padding:14px;text-align:center}
+.sumc.g{background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3)}
+.sumc.a{background:rgba(255,169,77,0.08);border:1px solid rgba(255,169,77,0.25)}
+.sumc.d{background:rgba(255,255,255,0.03);border:1px solid var(--bdr)}
 .sumnum{font-size:28px;font-weight:900}
-.sumnum.g{color:var(--g)}
-.sumnum.a{color:var(--a)}
-.sumnum.d{color:var(--dim)}
 .sumlbl{font-size:10px;color:var(--dim);margin-top:3px}
 
-/* STATUS BAR */
-#liveStatus{font-size:11px;color:var(--dim);margin-bottom:16px;display:flex;align-items:center;gap:6px}
-.pulse{width:8px;height:8px;background:var(--g);border-radius:50%;animation:pls 2s infinite;display:inline-block;flex-shrink:0}
+/* STATUS */
+.statusbar{font-size:11px;color:var(--dim);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.pulse{width:8px;height:8px;background:var(--g);border-radius:50%;animation:pls 2s infinite;display:inline-block;flex-shrink:0;margin-right:5px}
 @keyframes pls{0%{box-shadow:0 0 0 0 rgba(0,217,126,.6)}70%{box-shadow:0 0 0 7px rgba(0,217,126,0)}100%{box-shadow:0 0 0 0 rgba(0,217,126,0)}}
+.rbtn{background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:var(--g);font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer}
+.rbtn:hover{background:rgba(0,217,126,0.18)}
 
 /* MARKET CARDS */
-.mcard{border-radius:14px;margin-bottom:14px;overflow:hidden;transition:all .2s}
-.mcard.ready{background:var(--card);border:1px solid rgba(0,217,126,0.5);border-left:5px solid var(--g)}
-.mcard.watch{background:var(--card);border:1px solid rgba(255,169,77,0.35);border-left:5px solid var(--a)}
-.mcard.nosig{background:var(--card);border:1px solid var(--bdr);border-left:5px solid var(--dim)}
-.mcard.loading{background:var(--card);border:1px solid var(--bdr);opacity:.6}
+.mcard{border-radius:14px;margin-bottom:12px;overflow:hidden;border:1px solid var(--bdr);background:var(--card)}
+.mcard.ready{border-color:rgba(0,217,126,0.5);border-left:5px solid var(--g)}
+.mcard.watch{border-color:rgba(255,169,77,0.35);border-left:5px solid var(--a)}
+.mcard.nosig{border-left:5px solid var(--dim)}
+.mcard.loading{opacity:.6}
 
-/* CARD TOP */
-.mcard-top{padding:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.mcard-left{flex:1}
-.mcard-name{font-size:17px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-.mcard-dir{font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:1px}
-.mcard-dir.long{background:rgba(0,217,126,0.12);color:var(--g);border:1px solid rgba(0,217,126,0.3)}
-.mcard-dir.short{background:rgba(255,77,109,0.12);color:var(--r);border:1px solid rgba(255,77,109,0.3)}
-.mcard-cat{font-size:10px;color:var(--dim)}
-.mcard-right{text-align:right;flex-shrink:0}
-.mcard-price{font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px}
-.mcard-gbp{font-size:12px;color:var(--dim);margin-top:2px}
-.mcard-chg{font-size:12px;font-weight:600;margin-top:2px}
+.mcard-top{padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mcard-name{font-size:16px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px}
+.dirtag{font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:1px}
+.dirtag.long{background:rgba(0,217,126,0.12);color:var(--g);border:1px solid rgba(0,217,126,0.3)}
+.dirtag.short{background:rgba(255,77,109,0.12);color:var(--r);border:1px solid rgba(255,77,109,0.3)}
+.mcard-sub{font-size:10px;color:var(--dim)}
+.mcard-price{font-size:24px;font-weight:900;color:#fff;text-align:right}
+.mcard-chg{font-size:11px;font-weight:600;text-align:right;margin-top:2px}
 
-/* SIGNAL STATUS */
-.mcard-sig{padding:12px 16px;border-top:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.sigpill{font-size:12px;font-weight:800;padding:6px 16px;border-radius:20px}
-.sigpill.ready{background:rgba(0,217,126,0.15);color:var(--g);border:1px solid rgba(0,217,126,0.4)}
-.sigpill.watch{background:rgba(255,169,77,0.12);color:var(--a);border:1px solid rgba(255,169,77,0.35)}
-.sigpill.nosig{background:rgba(90,100,120,0.12);color:var(--dim);border:1px solid rgba(90,100,120,0.25)}
-.mcard-upd{font-size:10px;color:var(--dim)}
+/* SIGNAL STATUS BAR */
+.sigbar{padding:10px 16px;border-top:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.sigpill{font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px}
+.sigpill.ready{background:rgba(0,217,126,0.12);color:var(--g);border:1px solid rgba(0,217,126,0.35)}
+.sigpill.watch{background:rgba(255,169,77,0.1);color:var(--a);border:1px solid rgba(255,169,77,0.3)}
+.sigpill.nosig{background:rgba(90,100,120,0.1);color:var(--dim);border:1px solid rgba(90,100,120,0.2)}
 
-/* SIGNAL LIGHTS */
-.lights{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:12px 16px;border-top:1px solid var(--bdr)}
-.light{background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:10px;padding:10px;text-align:center}
-.light.ok{border-color:rgba(0,217,126,0.4);background:rgba(0,217,126,0.05)}
-.light.warn{border-color:rgba(255,169,77,0.3)}
-.light.fail{border-color:rgba(255,77,109,0.2)}
-.light-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;margin-bottom:5px;letter-spacing:.5px}
-.light-icon{font-size:20px;margin-bottom:3px;display:block}
-.light-val{font-size:12px;font-weight:700;margin-bottom:2px}
-.light-txt{font-size:9px;color:var(--dim);line-height:1.4}
+/* CHECKLIST */
+.checklist{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px 16px;border-top:1px solid var(--bdr)}
+.chk{background:rgba(0,0,0,0.2);border-radius:9px;padding:9px 11px;border:1px solid var(--bdr)}
+.chk.ok{border-color:rgba(0,217,126,0.35);background:rgba(0,217,126,0.04)}
+.chk.warn{border-color:rgba(255,169,77,0.25)}
+.chk.fail{border-color:rgba(255,77,109,0.2)}
+.chk-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.chk-val{font-size:11px;font-weight:700}
+.chk-txt{font-size:9px;color:var(--dim);margin-top:2px;line-height:1.5}
 
-/* TRADE LEVELS */
-.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 14px}
+/* LEVELS */
+.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 12px}
 .lev{background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;padding:9px;text-align:center}
 .lev-l{font-size:8px;color:var(--dim);text-transform:uppercase;margin-bottom:3px}
 .lev-v{font-size:13px;font-weight:700}
 
-/* GAP WARNING */
-.gap-warn{margin:0 16px 12px;border-radius:9px;padding:11px 13px;font-size:11px;line-height:1.7}
-.gap-warn.against{background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);color:var(--r)}
-.gap-warn.with{background:rgba(255,169,77,0.07);border:1px solid rgba(255,169,77,0.25);color:var(--a)}
+/* ACTION BOX */
+.abox{margin:0 16px 14px;border-radius:10px;padding:13px 15px;font-size:12px;line-height:1.9}
+.abox.trade{background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.3)}
+.abox.wait{background:rgba(255,169,77,0.06);border:1px solid rgba(255,169,77,0.25)}
+.abox.skip{background:rgba(255,255,255,0.02);border:1px solid var(--bdr)}
+.abox-title{font-size:13px;font-weight:800;margin-bottom:8px}
+.abox.trade .abox-title{color:var(--g)}
+.abox.wait .abox-title{color:var(--a)}
+.abox.skip .abox-title{color:var(--dim)}
 
-/* WHAT TO DO BOX */
-.action-box{margin:0 16px 14px;border-radius:10px;padding:13px 15px;font-size:12px;line-height:1.85}
-.action-box.trade{background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.35)}
-.action-box.wait{background:rgba(255,169,77,0.07);border:1px solid rgba(255,169,77,0.3)}
-.action-box.skip{background:rgba(255,255,255,0.03);border:1px solid var(--bdr)}
-.action-title{font-size:13px;font-weight:800;margin-bottom:8px}
-.action-box.trade .action-title{color:var(--g)}
-.action-box.wait .action-title{color:var(--a)}
-.action-box.skip .action-title{color:var(--dim)}
+/* NEWS WARNING */
+.news-warn{margin:0 16px 10px;background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.25);border-radius:9px;padding:10px 13px;font-size:11px;color:var(--r);line-height:1.7}
 
-/* RULES CARDS */
-.rulec{background:var(--card);border:1px solid var(--bdr);border-left:3px solid var(--g);border-radius:12px;margin-bottom:10px;cursor:pointer;overflow:hidden}
-.rulehd{padding:14px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between}
-.rulehd:hover{background:rgba(255,255,255,0.02)}
-.rulenum{width:30px;height:30px;background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--g);flex-shrink:0}
-.rulet{font-size:14px;font-weight:600;color:#fff}
-.chev{color:var(--dim);font-size:16px;transition:transform .2s}
-.rulec.open .chev{transform:rotate(180deg)}
-.rulebody{display:none;padding:12px 16px 16px 58px;font-size:12px;color:#b0ab9e;line-height:1.9;border-top:1px solid var(--bdr)}
-.rulec.open .rulebody{display:block}
+/* CHECKLIST TAB */
+.chkcard{background:var(--card);border:1px solid var(--bdr);border-radius:13px;padding:18px;margin-bottom:12px}
+.chkcard h3{font-size:14px;font-weight:700;color:var(--b);margin-bottom:14px}
+.chkrow{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.chkrow:last-child{border-bottom:none}
+.chkbox{width:22px;height:22px;border:2px solid var(--dim);border-radius:6px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;background:rgba(0,0,0,0.2)}
+.chkbox.checked{background:var(--g);border-color:var(--g);color:#000}
+.chkrow-text{flex:1}
+.chkrow-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:2px}
+.chkrow-desc{font-size:11px;color:var(--dim);line-height:1.7}
+.chk-score{background:rgba(0,0,0,0.3);border-radius:12px;padding:14px;margin-top:14px;text-align:center}
+.chk-score-num{font-size:32px;font-weight:900}
+.chk-score-lbl{font-size:11px;color:var(--dim);margin-top:3px}
 
-/* TRAIL CALC */
-.calcc{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:18px;margin-bottom:14px}
-.calct{font-size:16px;font-weight:700;color:var(--b);margin-bottom:4px}
-.calcs{font-size:11px;color:var(--dim);margin-bottom:18px}
-.frow{display:flex;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
-.frow label{font-size:12px;color:var(--dim);min-width:148px}
-select,.ni{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3);border-radius:8px;color:var(--b);font-family:inherit;font-size:13px;padding:8px 11px;outline:none}
-input[type=range]{-webkit-appearance:none;width:130px;height:5px;background:rgba(77,171,247,0.2);border-radius:3px;outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--b);cursor:pointer;border:2px solid var(--card)}
-.rv{font-size:14px;color:var(--b);font-weight:700;min-width:38px}
-.cbtn{background:rgba(77,171,247,0.12);border:1px solid rgba(77,171,247,0.4);border-radius:10px;color:var(--b);font-family:inherit;font-size:13px;font-weight:700;padding:11px 22px;cursor:pointer;margin-top:5px}
-.cbtn:hover{background:rgba(77,171,247,0.22)}
+/* CALC */
+.calccard{background:var(--card);border:1px solid var(--bdr);border-radius:13px;padding:18px;margin-bottom:12px}
+.calccard h3{font-size:14px;font-weight:700;color:var(--b);margin-bottom:14px}
+.frow{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.frow label{font-size:12px;color:var(--dim);min-width:140px}
+.ni{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3);border-radius:8px;color:var(--b);font-family:inherit;font-size:13px;padding:8px 11px;outline:none;width:140px}
+select.ni{width:auto}
+.cbtn{background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:10px;color:var(--g);font-family:inherit;font-size:13px;font-weight:700;padding:11px 22px;cursor:pointer;margin-top:4px}
+.cbtn:hover{background:rgba(0,217,126,0.2)}
 .resbox{display:none;background:rgba(0,0,0,0.2);border:1px solid rgba(77,171,247,0.2);border-radius:12px;padding:14px;margin-top:14px}
 .resbox.show{display:block}
-.resgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px}
-.resc{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px}
+.resgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.resc{background:rgba(255,255,255,0.03);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px}
 .rescl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
 .rescv{font-size:14px;font-weight:800}
-.phtab{width:100%;border-collapse:collapse;font-size:11px}
-.phtab th{font-size:9px;color:var(--dim);text-align:left;padding:6px 7px;border-bottom:1px solid var(--bdr);letter-spacing:1px;text-transform:uppercase}
-.phtab td{padding:8px 7px;border-bottom:1px solid rgba(255,255,255,0.03);color:#b0ab9e;vertical-align:top}
 
-/* PLATFORMS */
-.platc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer}
-.platc:hover{border-color:rgba(255,255,255,0.14)}
-.platc.open{border-color:var(--bdg);background:rgba(0,217,126,0.04)}
-.plrow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.pll{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.plnum{font-size:11px;color:var(--dim);width:22px}
-.plname{font-size:15px;font-weight:700;color:#fff}
-.pltype{font-size:10px;padding:3px 9px;background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.2);color:var(--g);border-radius:20px}
-.plr{display:flex;align-items:center;gap:12px}
-.plmin{font-size:12px;color:var(--a);font-weight:600}
-.plrat{font-size:14px;font-weight:800;color:var(--g)}
-.pldet{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr);font-size:12px;color:#b0ab9e;line-height:1.9}
-.platc.open .pldet{display:block}
+/* NEWS CALENDAR */
+.newsc{background:var(--card);border:1px solid var(--bdr);border-radius:13px;padding:18px;margin-bottom:12px}
+.newsc h3{font-size:14px;font-weight:700;color:var(--r);margin-bottom:12px}
+.newsrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px}
+.newsrow:last-child{border-bottom:none}
+.newsbadge{font-size:9px;font-weight:800;padding:3px 8px;border-radius:10px;flex-shrink:0}
+.newsbadge.high{background:rgba(255,77,109,0.15);color:var(--r);border:1px solid rgba(255,77,109,0.3)}
+.newsbadge.med{background:rgba(255,169,77,0.12);color:var(--a);border:1px solid rgba(255,169,77,0.25)}
+.newstime{color:var(--dim);font-size:10px;min-width:70px}
+.newsname{color:#fff;font-weight:600}
+.newsavoid{color:var(--dim);font-size:10px;margin-top:2px}
 
-/* EXIT */
-.faqc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:12px}
-.faqq{font-size:13px;font-weight:700;color:#fff;margin-bottom:8px}
-.faqa{font-size:12px;color:#b0ab9e;line-height:1.85}
-.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
-@media(max-width:480px){.exgrid{grid-template-columns:1fr}}
-.exbox{border-radius:12px;padding:16px;font-size:12px;line-height:1.9}
-.exbox.g{background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.25)}
-.exbox.r{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.25)}
-.exboxt{font-size:12px;font-weight:700;margin-bottom:10px}
-.exbox.g .exboxt{color:var(--g)}
-.exbox.r .exboxt{color:var(--r)}
-.daytool{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:18px;margin-top:14px}
-.daytool h3{font-size:14px;font-weight:700;color:var(--b);margin-bottom:14px}
-.dayrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.dayrow label{font-size:12px;color:var(--dim)}
-input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.35);border-radius:8px;color:var(--b);font-family:inherit;font-size:13px;padding:8px 12px;outline:none}
-.daybtn{background:rgba(77,171,247,0.12);border:1px solid rgba(77,171,247,0.35);border-radius:8px;color:var(--b);font-family:inherit;font-size:12px;font-weight:600;padding:8px 14px;cursor:pointer}
-.disc{font-size:10px;color:var(--dim);margin-top:18px;line-height:1.9;padding:13px;background:var(--card);border:1px solid var(--bdr);border-radius:10px}
+/* CORR WARNING */
+.corrcard{background:var(--card);border:1px solid var(--bdr);border-radius:13px;padding:18px;margin-bottom:12px}
+.corrcard h3{font-size:14px;font-weight:700;color:var(--a);margin-bottom:12px}
+.corrrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;font-size:11px}
+.corrpair{background:rgba(255,169,77,0.07);border:1px solid rgba(255,169,77,0.2);border-radius:8px;padding:8px 11px}
+.corrlbl{font-size:9px;color:var(--dim);margin-bottom:3px}
+.corrval{color:var(--a);font-weight:700}
+
+.disc{font-size:10px;color:var(--dim);margin-top:16px;line-height:1.9;padding:12px;background:var(--card);border:1px solid var(--bdr);border-radius:10px}
 </style>
 </head>
 <body>
@@ -196,8 +172,11 @@ input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3
 <!-- TOP BAR -->
 <div class="top">
   <div class="brand">
-    <div class="logo">W</div>
-    <div><div class="bname">Williams Edge</div><div class="bsub">Larry Williams Method &middot; UK Edition</div></div>
+    <div class="logo">T</div>
+    <div>
+      <div class="bname">Trend Edge</div>
+      <div class="bsub">4H SMA Trend Following &middot; UK Edition</div>
+    </div>
   </div>
   <div class="topR">
     <div class="clkbox">
@@ -212,169 +191,214 @@ input[type=date]{background:rgba(0,0,0,0.3);border:1px solid rgba(77,171,247,0.3
   </div>
 </div>
 
-<!-- NAV — only 4 tabs, all genuinely useful -->
+<!-- NAV -->
 <div class="navwrap">
   <div class="nav">
-    <span style="font-size:9px;color:var(--dim);padding:14px 8px;border-right:1px solid var(--bdr);margin-right:4px">SIGNALS</span>
-    <button class="ntab on" onclick="tab('live',this)" title="Larry Williams — %R+COT+Seasonal — 2-5 day holds">&#128218; LW METHOD</button>
-    <button class="ntab" onclick="tab('rsi',this)" title="Daily RSI confluence — 1-3 day holds">&#9889; DAILY RSI</button>
-    <button class="ntab" onclick="tab('bb',this)" title="Bollinger Bands 1H — most frequent, 1-4 hour holds">&#127992; 1H BANDS</button>
-    <span style="font-size:9px;color:var(--dim);padding:14px 8px;border-left:1px solid var(--bdr);border-right:1px solid var(--bdr);margin:0 4px">TOOLS</span>
-    <button class="ntab" onclick="tab('tc',this)">&#128274; STOP CALC</button>
-    <button class="ntab" onclick="tab('exit',this)">&#128682; EXIT GUIDE</button>
+    <span class="nsep">STRATEGIES</span>
+    <button class="ntab on" onclick="tab('s1',this)">&#128200; 4H SMA PULLBACK</button>
+    <button class="ntab" onclick="tab('s2',this)">&#9889; 5/10 CROSSOVER</button>
+    <span class="nsep2">TOOLS</span>
+    <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
+    <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
+    <button class="ntab" onclick="tab('news',this)">&#128680; NEWS & RISK</button>
   </div>
 </div>
 
-<!-- LIVE SIGNALS PANEL -->
-<div id="p-live" class="panel on">
+<!-- STRATEGY 1: 4H SMA PULLBACK -->
+<div id="p-s1" class="panel on">
   <div class="bn g">
-    <b>&#128218; Larry Williams Method &mdash; 8 Markets</b><br>
-    Prices and Williams %R update from <b>Twelve Data</b> via your backend every 15 minutes. 
-    <b style="color:var(--g)">Green card = all 3 Larry Williams signals confirmed = valid trade setup.</b> <b style="color:var(--r)">Williams %R is mandatory — if %R is not in zone, no trade regardless of COT or Seasonal.</b> 
-    Amber = watch. Grey = no signal, stand aside.<br><br>
-    <b>Before entering any trade:</b> check %R light on the card — it is calculated from real live data. Enter at the NEXT session open, never intraday.
+    <b>&#128200; 4H SMA Pullback Strategy</b><br><br>
+    <b>Signal:</b> 20 SMA &gt; 50 SMA, both rising, price pulls back to 20 SMA, bullish confirmation candle closes &rarr; enter next candle.<br>
+    <b>Stop:</b> Beyond recent swing high/low, checked against ATR(14).<br>
+    <b>Target:</b> Minimum 2:1 reward:risk. Trail stop after profit.<br>
+    <b>Check:</b> 4-hour candle closes at 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UK.
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-  <div id="liveStatus"><span class="pulse"></span>Connecting to Twelve Data...</div>
-  <button onclick="manualRefresh()" style="background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:#00d97e;font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer">&#8635; Refresh Now</button>
+  <div class="statusbar">
+    <div id="s1Status"><span class="pulse"></span>Loading 4H data...</div>
+    <button class="rbtn" onclick="loadS1()">&#8635; Refresh (~60s)</button>
+  </div>
+  <div class="sumstrip" id="s1Summary"></div>
+  <div id="s1Cards"></div>
+  <div class="disc">4H SMA Pullback is a trend-following strategy. Signals may take days to develop. Skip trades before major news. Risk only 1-2% per trade. Not financial advice.</div>
 </div>
-  <div class="sumstrip" id="liveSummary"></div>
-  <div id="liveCards"></div>
-  <div class="disc">Live prices from Twelve Data via Netlify Function. Refreshes every 15 minutes. COT data is weekly reference from CFTC reports &mdash; verify at barchart.com (free) every Friday. Seasonal patterns are 30-year historical averages. Not financial advice.</div>
+
+<!-- STRATEGY 2: 5/10 CROSSOVER -->
+<div id="p-s2" class="panel">
+  <div class="bn b">
+    <b>&#9889; 5/10 Momentum Trigger — 4H</b><br><br>
+    The 5/10 crossover is <b>not the signal</b> — it is the <b>trigger</b>. The trade decision is based on trend quality first. The cross simply tells you momentum may be returning.<br><br>
+    <b>Decision based on:</b> Is the 50 SMA rising? Is the 20 SMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
+    <b>Trigger:</b> 5 SMA crosses 10 SMA in the direction of the trend = momentum returning = enter next candle.<br><br>
+    <b style="color:var(--a)">&#9888; Need 4 of 6 checks green before entering. The cross alone is never enough.</b>
+  </div>
+  <div class="statusbar">
+    <div id="s2Status"><span class="pulse"></span>Loading 4H data...</div>
+    <button class="rbtn" onclick="loadS2()">&#8635; Refresh (~60s)</button>
+  </div>
+  <div class="sumstrip" id="s2Summary"></div>
+  <div id="s2Cards"></div>
+  <div class="disc">5/10 SMA Crossover produces more signals but lower accuracy than 20/50 pullback. Use as confirmation tool. Risk only 1-2% per trade. Not financial advice.</div>
 </div>
 
-<!-- TRAIL CALC PANEL -->
-<div id="p-tc" class="panel">
-
-  <!-- POSITION SIZE CALCULATOR -->
-  <div class="calcc" style="border-left:4px solid var(--g);margin-bottom:16px">
-    <div class="calct" style="color:var(--g)">&#127919; Position Size Calculator</div>
-    <div class="calcs">Enter your account balance and the app tells you exactly how many units to trade to keep your risk safe</div>
-
-    <div class="frow"><label>Account Balance:</label>
-      <span style="color:var(--g);font-size:14px;font-weight:700">&pound;</span>
-      <input type="number" id="psBalance" class="ni" value="200" min="50" step="10" style="width:110px" oninput="calcPS()">
+<!-- CHECKLIST TAB -->
+<div id="p-chk" class="panel">
+  <div class="bn g"><b>&#9745; Pre-Trade Checklist</b> &mdash; Run through every check before placing any trade. Only proceed if all 7 are green.</div>
+  <div class="chkcard">
+    <h3>&#128200; 4H SMA Pullback Checklist</h3>
+    <div id="chkList"></div>
+    <div class="chk-score">
+      <div class="chk-score-num" id="chkScore" style="color:var(--dim)">0/7</div>
+      <div class="chk-score-lbl" id="chkVerdict">Tick each condition you have confirmed</div>
     </div>
-    <div class="frow"><label>Risk Per Trade:</label>
-      <input type="range" id="psRisk" min="1" max="5" step="0.5" value="2" oninput="document.getElementById('psRiskV').textContent=this.value+'%';calcPS()">
-      <span class="rv" id="psRiskV">2%</span>
-    </div>
-    <div class="frow"><label>Market:</label>
-      <select id="psMkt" onchange="calcPS()" style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,217,126,0.3);border-radius:8px;color:#00d97e;font-family:inherit;font-size:13px;padding:8px 11px;outline:none">
-        <option value="gbpusd">GBP/USD (30:1 max)</option>
-        <option value="eurusd">EUR/USD (30:1 max)</option>
-        <option value="usdjpy">USD/JPY (30:1 max)</option>
-        <option value="gold">Gold (20:1 max)</option>
-        <option value="oil">Crude Oil (10:1 max)</option>
-        <option value="sp500">S&amp;P 500 (10:1 max)</option>
-        <option value="nas100">Nasdaq 100 (10:1 max)</option>
-        <option value="ftse">FTSE 100 (20:1 max)</option>
+  </div>
+  <div class="calccard">
+    <h3>&#127919; Quick Notes</h3>
+    <textarea id="tradeNotes" style="width:100%;height:120px;background:rgba(0,0,0,0.3);border:1px solid var(--bdr);border-radius:8px;color:#e8e3d8;font-family:inherit;font-size:12px;padding:10px;outline:none;resize:vertical" placeholder="Write down your trade reasoning here before entering. If you can't write a clear reason, don't take the trade."></textarea>
+    <button class="cbtn" style="margin-top:8px" onclick="clearNotes()">Clear Notes</button>
+  </div>
+</div>
+
+<!-- POSITION CALC TAB -->
+<div id="p-calc" class="panel">
+  <div class="bn b"><b>&#128274; Position Size Calculator</b> &mdash; Calculate exact units to trade so you never risk more than 1-2% of your account.</div>
+  <div class="calccard">
+    <h3>Calculate Your Trade Size</h3>
+    <div class="frow"><label>Account Balance</label><input type="number" class="ni" id="cBal" value="500" oninput="calcPos()"></div>
+    <div class="frow"><label>Risk % per trade</label>
+      <select class="ni" id="cRisk" onchange="calcPos()">
+        <option value="1">1% (Conservative)</option>
+        <option value="2" selected>2% (Recommended)</option>
+        <option value="3">3% (Aggressive)</option>
       </select>
     </div>
-    <div class="frow"><label>Entry Price:</label>
-      <input type="number" id="psEntry" class="ni" value="3973" step="0.01" style="width:130px" oninput="calcPS()">
+    <div class="frow"><label>Market</label>
+      <select class="ni" id="cMkt" onchange="calcPos()">
+        <option value="eurusd">EUR/USD</option>
+        <option value="gbpusd">GBP/USD</option>
+        <option value="usdjpy">USD/JPY</option>
+        <option value="usdcad">USD/CAD</option>
+        <option value="audusd">AUD/USD</option>
+        <option value="us500">US 500 (S&P 500)</option>
+        <option value="us100">US Tech 100</option>
+        <option value="uk100">UK 100 (FTSE)</option>
+        <option value="ger40">Germany 40</option>
+        <option value="gold">Gold</option>
+        <option value="silver">Silver</option>
+      </select>
     </div>
-    <div class="frow"><label>Stop Distance:</label>
-      <input type="range" id="psStop" min="0.3" max="3" step="0.1" value="1.0" oninput="document.getElementById('psStopV').textContent=this.value+'%';calcPS()">
-      <span class="rv" id="psStopV">1.0%</span>
-    </div>
-
-    <div id="psResult" style="display:none;margin-top:14px;background:rgba(0,0,0,0.2);border:1px solid rgba(0,217,126,0.25);border-radius:12px;padding:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px" id="psGrid"></div>
-      <div id="psLevGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px"></div>
-      <div id="psNote" style="font-size:10px;color:var(--dim);margin-top:12px;line-height:1.8"></div>
-    </div>
-  </div>
-
-  <div class="bn b"><b>Trailing Stop Calculator</b> &mdash; Enter your real entry price and the app calculates exact stop levels and a phase-by-phase plan.</div>
-  <div class="calcc">
-    <div class="calct">Calculate Your Stop Levels</div>
-    <div class="calcs">Enter your actual entry price from your platform &mdash; get exact levels to set right now</div>
-    <div class="frow"><label>Market:</label><select id="cMkt" onchange="cMC()"><option value="index">Index (FTSE / S&amp;P 500)</option><option value="gold">Gold</option><option value="forex">Forex (GBP/USD)</option><option value="oil">Crude Oil</option></select></div>
-    <div class="frow"><label>Direction:</label><select id="cDir"><option value="long">LONG (Buy)</option><option value="short">SHORT (Sell)</option></select></div>
-    <div class="frow"><label>Your Entry Price:</label><input type="number" id="cEnt" class="ni" value="8000" step="0.01" style="width:128px"></div>
-    <div class="frow"><label>Initial Stop Distance:</label><input type="range" id="cSto" min="0.3" max="3" step="0.1" value="1.5" oninput="document.getElementById('cSV').textContent=this.value+'%'"><span class="rv" id="cSV">1.5%</span></div>
-    <div class="frow"><label>Trail Distance:</label><input type="range" id="cTr" min="0.2" max="2" step="0.1" value="1.0" oninput="document.getElementById('cTV').textContent=this.value+'%'"><span class="rv" id="cTV">1.0%</span></div>
-    <div class="frow"><label>Breakeven Trigger:</label><input type="range" id="cBE" min="0.2" max="2" step="0.1" value="1.0" oninput="document.getElementById('cBV').textContent=this.value+'%'"><span class="rv" id="cBV">1.0%</span></div>
-    <div class="frow"><label>Profit Target:</label><input type="range" id="cTg" min="0.5" max="5" step="0.1" value="2.5" oninput="document.getElementById('cGV').textContent=this.value+'%'"><span class="rv" id="cGV">2.5%</span></div>
-    <div class="frow"><button class="cbtn" onclick="calcTS()">Calculate My Levels</button></div>
-    <div class="resbox" id="resbox">
-      <div class="resgrid" id="resGrid"></div>
-      <table class="phtab"><thead><tr><th>Phase</th><th>When</th><th>Move Stop To</th><th>What It Means</th></tr></thead><tbody id="phBody"></tbody></table>
-    </div>
+    <div class="frow"><label>Entry Price</label><input type="number" class="ni" id="cEntry" placeholder="e.g. 1.13500" step="0.00001" oninput="calcPos()"></div>
+    <div class="frow"><label>Stop Loss Price</label><input type="number" class="ni" id="cStop" placeholder="e.g. 1.13000" step="0.00001" oninput="calcPos()"></div>
+    <div class="frow"><label>Target Price</label><input type="number" class="ni" id="cTarget" placeholder="e.g. 1.14500" step="0.00001" oninput="calcPos()"></div>
+    <div class="resbox show" id="calcRes"></div>
   </div>
 </div>
 
-<!-- EXIT GUIDE PANEL -->
-<div id="p-exit" class="panel">
-  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:16px">Exit Guide</div>
-  <div class="faqc"><div class="faqq">My 3 valid exits &mdash; only these, nothing else</div><div class="faqa"><b style="color:var(--g)">Exit 1 &mdash; Trailing stop triggered (automatic):</b> Best exit. No emotion involved. Platform closes it and locks in your profit.<br><br><b style="color:var(--a)">Exit 2 &mdash; Profit target hit (your choice):</b> Target % reached. Close manually. Take the money. Do not get greedy.<br><br><b style="color:var(--r)">Exit 3 &mdash; 5-day rule (your choice):</b> 5 trading days elapsed. Close at market price regardless. The edge has expired.</div></div>
-  <div class="exgrid">
-    <div class="exbox g"><div class="exboxt">&#10003; Valid Exits</div>Trailing stop triggered automatically<br>Profit target % reached<br>5 trading days elapsed<br>2 days in a row closing against you</div>
-    <div class="exbox r"><div class="exboxt">&#10007; Never Do This</div>Close early out of fear<br>Hold past Day 5<br>Move stop further away<br>Remove your stop loss</div>
+<!-- NEWS & RISK TAB -->
+<div id="p-news" class="panel">
+  <div class="bn r"><b>&#128680; Skip trades before these events.</b> High-impact news causes sudden price spikes that can hit your stop even if you are right about direction. Check <b>forexfactory.com</b> (free) every morning for today's events.</div>
+
+  <div class="newsc">
+    <h3>&#9888; High Impact Events — Always Skip</h3>
+    <div class="newsrow"><span class="newsbadge high">HIGH</span><div><div class="newsname">US Non-Farm Payrolls (NFP)</div><div class="newsavoid">First Friday of every month 13:30 UK &middot; Skip all USD pairs, Gold, indices all day</div></div></div>
+    <div class="newsrow"><span class="newsbadge high">HIGH</span><div><div class="newsname">US CPI (Inflation)</div><div class="newsavoid">Monthly, 13:30 UK &middot; Skip all markets 1 hour before and after</div></div></div>
+    <div class="newsrow"><span class="newsbadge high">HIGH</span><div><div class="newsname">Federal Reserve (FOMC) Decision</div><div class="newsavoid">8 times/year, 19:00 UK &middot; Skip all markets all day</div></div></div>
+    <div class="newsrow"><span class="newsbadge high">HIGH</span><div><div class="newsname">Bank of England (BoE) Decision</div><div class="newsavoid">8 times/year, 12:00 UK &middot; Skip GBP pairs and UK 100 all day</div></div></div>
+    <div class="newsrow"><span class="newsbadge high">HIGH</span><div><div class="newsname">ECB Interest Rate Decision</div><div class="newsavoid">8 times/year, 13:15 UK &middot; Skip EUR pairs all day</div></div></div>
+    <div class="newsrow"><span class="newsbadge high">HIGH</span><div><div class="newsname">US GDP Release</div><div class="newsavoid">Quarterly, 13:30 UK &middot; Skip USD pairs and indices</div></div></div>
+    <div class="newsrow"><span class="newsbadge med">MED</span><div><div class="newsname">UK CPI / GDP</div><div class="newsavoid">Monthly, 07:00 UK &middot; Skip GBP/USD and UK 100</div></div></div>
+    <div class="newsrow"><span class="newsbadge med">MED</span><div><div class="newsname">US ISM / PMI Data</div><div class="newsavoid">Monthly, 15:00 UK &middot; Skip USD pairs</div></div></div>
   </div>
-  <div class="daytool">
-    <h3>&#128197; 5-Day Rule Counter</h3>
-    <div class="dayrow"><label>Entry Date:</label><input type="date" id="eDate"><button class="daybtn" onclick="calcD()">Count Days</button></div>
-    <div id="dRes" style="font-size:13px;color:var(--dim);line-height:1.8"></div>
+
+  <div class="corrcard">
+    <h3>&#9888; Correlation Warning — Don't Trade These Together</h3>
+    <p style="font-size:11px;color:var(--dim);margin-bottom:12px">These pairs move almost identically. Trading both at once doubles your risk on the same idea.</p>
+    <div class="corrrow">
+      <div class="corrpair"><div class="corrlbl">Very high correlation</div><div class="corrval">EUR/USD + GBP/USD</div></div>
+      <div class="corrpair"><div class="corrlbl">Very high correlation</div><div class="corrval">US 500 + US Tech 100</div></div>
+    </div>
+    <div class="corrrow">
+      <div class="corrpair"><div class="corrlbl">High correlation</div><div class="corrval">Gold + EUR/USD</div></div>
+      <div class="corrpair"><div class="corrlbl">High correlation</div><div class="corrval">AUD/USD + Gold</div></div>
+    </div>
+    <div class="corrrow">
+      <div class="corrpair"><div class="corrlbl">Inverse correlation</div><div class="corrval">USD/JPY vs EUR/USD</div></div>
+      <div class="corrpair"><div class="corrlbl">High correlation</div><div class="corrval">US 500 + Germany 40</div></div>
+    </div>
+    <p style="font-size:11px;color:var(--dim);margin-top:10px">Rule: Never have more than one trade open from each correlated group at the same time.</p>
+  </div>
+
+  <div class="newsc">
+    <h3>&#9201; 4-Hour Candle Closes (UK Time)</h3>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">
+      <div style="background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.2);border-radius:8px;padding:10px;text-align:center"><b style="color:var(--g)">00:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">Midnight</div></div>
+      <div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><b>04:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">Asia close</div></div>
+      <div style="background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.2);border-radius:8px;padding:10px;text-align:center"><b style="color:var(--g)">08:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">London open &#11088;</div></div>
+      <div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><b>12:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">Midday</div></div>
+      <div style="background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.2);border-radius:8px;padding:10px;text-align:center"><b style="color:var(--g)">16:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">NY overlap &#11088;</div></div>
+      <div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><b>20:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">NY close</div></div>
+    </div>
+    <p style="font-size:10px;color:var(--dim);margin-top:10px">&#11088; Best signals appear at 08:00 and 16:00 closes when volume is highest. Always wait for the candle to fully CLOSE before acting.</p>
   </div>
 </div>
-
-<!-- PLATFORMS PANEL -->
 
 <script>
 // ═══ CONFIG ═══════════════════════════════════════════════════════
 var cap = 500;
-var MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-var CM = new Date().getMonth();
-var gbpRate = 0.79;
-var liveData = {};
-var liveHistory = {};
-var liveErrors = {};
-var liveCOT = {};
-var liveSeasonal = {};
-var appStartTime = Date.now();
+var TWD_KEY = "43e0b306690347ab9640f991f5c87e3d";
 
-// ═══ MARKETS — all parameters for Larry Williams methodology ═══
-var MARKETS = {
-  gbpusd:{ name:"GBP/USD",    cat:"Forex",     dir:"short", dp:5, sp:1.2, bp:0.6, tp:0.8, gp:1.8, lev:30, cOk:true,  sOk:true,  cTxt:"Large specs long GBP — contrarian short signal", sTxt:"June seasonally bearish for GBP",    eTime:"09:00 UK", note:"SHORT: stop above entry. Trail moves DOWN as price falls." },
-  eurusd:{ name:"EUR/USD",    cat:"Forex",     dir:"long",  dp:5, sp:1.0, bp:0.8, tp:0.8, gp:1.5, lev:30, cOk:false, sOk:false, cTxt:"COT neutral — no clear signal",                sTxt:"Seasonal neutral",                   eTime:"09:00 UK", note:"No signal present. Stand aside." },
-  usdjpy:{ name:"USD/JPY",    cat:"Forex",     dir:"short", dp:3, sp:1.2, bp:0.8, tp:0.8, gp:2.0, lev:30, cOk:true,  sOk:false, cTxt:"JPY commercials hedging USD exposure",         sTxt:"Marginally bearish seasonal",        eTime:"09:00 UK", note:"Partial signal — COT confirms but seasonal neutral." },
-  gold:  { name:"Gold",       cat:"Commodity", dir:"long",  dp:2, sp:1.0, bp:0.8, tp:0.8, gp:1.8, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials reducing shorts — bullish",        sTxt:"June-July historically bullish (68%)", eTime:"08:00 or 13:30 UK", note:"Multi-day hold. Trail 0.8% below each new high." },
-  oil:   { name:"Crude Oil",  cat:"Commodity", dir:"long",  dp:2, sp:1.5, bp:1.5, tp:1.2, gp:3.0, lev:10, cOk:true,  sOk:true,  cTxt:"Producers hedging less — supply confidence",  sTxt:"Summer driving season peak (70%)",   eTime:"13:30 UK", note:"Check EIA inventory report Wed 15:30 UK before entering." },
-  sp500: { name:"S&P 500",    cat:"Index",     dir:"long",  dp:0, sp:0.8, bp:0.6, tp:0.5, gp:1.5, lev:10, cOk:true,  sOk:true,  cTxt:"Large specs flipping long — momentum",        sTxt:"June post-election year bullish (62%)", eTime:"14:30 UK", note:"INTRADAY ONLY. Close by 20:00 UK. Never hold overnight." },
-  nas100:{ name:"Nasdaq 100", cat:"Index",     dir:"long",  dp:0, sp:1.0, bp:0.8, tp:0.8, gp:2.0, lev:10, cOk:true,  sOk:true,  cTxt:"Tech sector COT bullish",                     sTxt:"June seasonally bullish (60%)",      eTime:"14:30 UK", note:"Follow S&P 500 setup timing. Same intraday rules apply." },
-  ftse:  { name:"FTSE 100",   cat:"Index",     dir:"long",  dp:0, sp:1.5, bp:1.0, tp:1.0, gp:2.5, lev:20, cOk:true,  sOk:true,  cTxt:"Commercials NET LONG — institutional buying",  sTxt:"June historically bullish (67%)",    eTime:"08:00 UK", note:"Enter at London open next day. Best UK tax-free via Spreadex." }
+// ═══ MARKETS ══════════════════════════════════════════════════════
+var MARKETS_S1 = {
+  eurusd:{ name:"EUR/USD",   tn:"EUR/USD",              cat:"Forex",  dp:5, atrMult:1.5 },
+  gbpusd:{ name:"GBP/USD",   tn:"GBP/USD",              cat:"Forex",  dp:5, atrMult:1.5 },
+  usdjpy:{ name:"USD/JPY",   tn:"USD/JPY",              cat:"Forex",  dp:3, atrMult:1.5 },
+  usdcad:{ name:"USD/CAD",   tn:"USD/CAD",              cat:"Forex",  dp:5, atrMult:1.5 },
+  audusd:{ name:"AUD/USD",   tn:"AUD/USD",              cat:"Forex",  dp:5, atrMult:1.5 },
+  us100: { name:"US Tech 100",tn:"US Tech 100",         cat:"Index",  dp:1, atrMult:1.5 },
+  us500: { name:"US 500",    tn:"US 500 (Per 1.0)",     cat:"Index",  dp:1, atrMult:1.5 },
+  uk100: { name:"UK 100",    tn:"UK 100",               cat:"Index",  dp:1, atrMult:1.5 },
+  ger40: { name:"Germany 40",tn:"Germany 40",           cat:"Index",  dp:1, atrMult:1.5 },
+  gold:  { name:"Gold",      tn:"Gold (per 0.1)",       cat:"Commodity",dp:2,atrMult:1.5 },
+  silver:{ name:"Silver",    tn:"Silver (Variable Spreads)",cat:"Commodity",dp:3,atrMult:1.5 }
 };
 
-// ═══ CLOCK ═══════════════════════════════════════════════════════
+var SYMBOL_MAP = {
+  eurusd:"EUR/USD", gbpusd:"GBP/USD", usdjpy:"USD/JPY",
+  usdcad:"USD/CAD", audusd:"AUD/USD",
+  us100:"NDX", us500:"SPX", uk100:"FTSE", ger40:"DAX",
+  gold:"XAU/USD", silver:"XAG/USD"
+};
+
+var liveData = {};
+var liveHistory4H = {};
+var liveErrors = {};
+var appStart = Date.now();
+
+// ═══ CLOCK ════════════════════════════════════════════════════════
 function tickClock(){
-  var now = new Date();
-  var utc = now.getTime() + (now.getTimezoneOffset()*60000);
-  var isBST = now.getMonth()>=2 && now.getMonth()<=9;
-  var lon = new Date(utc + ((isBST?60:0)*60000));
+  var now=new Date();
+  var utc=now.getTime()+(now.getTimezoneOffset()*60000);
+  var isBST=now.getMonth()>=2&&now.getMonth()<=9;
+  var lon=new Date(utc+((isBST?60:0)*60000));
   var h=String(lon.getHours()).padStart(2,"0");
   var m=String(lon.getMinutes()).padStart(2,"0");
   var s=String(lon.getSeconds()).padStart(2,"0");
-  var dw=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][lon.getDay()];
+  var days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   document.getElementById("clkT").textContent=h+":"+m+":"+s;
-  document.getElementById("clkD").textContent=dw+" "+lon.getDate()+" "+MO[lon.getMonth()]+" "+lon.getFullYear();
-  var hr=lon.getHours(), day=lon.getDay();
+  document.getElementById("clkD").textContent=days[lon.getDay()]+" "+lon.getDate()+" "+months[lon.getMonth()]+" "+lon.getFullYear();
+  var hr=lon.getHours(),day=lon.getDay();
   var el=document.getElementById("clkS");
+  // Check if near 4H candle close
+  var mins=lon.getMinutes();
+  var isNearClose=(mins>=55||mins<=5)&&[0,4,8,12,16,20].indexOf(hr)>=0;
   if(day===0||day===6){el.textContent="Markets Closed";el.style.background="rgba(255,77,109,0.15)";el.style.color="#ff4d6d";}
-  else if(hr>=8&&hr<16){el.textContent="London Open";el.style.background="rgba(0,217,126,0.15)";el.style.color="#00d97e";}
-  else if(hr>=14&&hr<21){el.textContent="New York Session";el.style.background="rgba(255,169,77,0.15)";el.style.color="#ffa94d";}
-  else{el.textContent="After Hours";el.style.background="rgba(90,100,120,0.12)";el.style.color="#5a6478";}
+  else if(isNearClose){el.textContent="4H Candle Closing Soon!";el.style.background="rgba(255,169,77,0.2)";el.style.color="#ffa94d";}
+  else if(hr>=8&&hr<21){el.textContent="Active Session";el.style.background="rgba(0,217,126,0.15)";el.style.color="#00d97e";}
+  else{el.textContent="Low Volume";el.style.background="rgba(90,100,120,0.12)";el.style.color="#5a6478";}
 }
 setInterval(tickClock,1000); tickClock();
 
-// ═══ CAPITAL ════════════════════════════════════════════════════
-function upCap(){
-  cap = Math.max(100, parseInt(document.getElementById("capI").value)||500);
-  renderLive();
-}
-
-// ═══ TABS ════════════════════════════════════════════════════════
+function upCap(){ cap=Math.max(100,parseInt(document.getElementById("capI").value)||500); calcPos(); }
 function tab(id,btn){
   document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("on");});
   document.querySelectorAll(".ntab").forEach(function(b){b.classList.remove("on");});
@@ -382,1697 +406,493 @@ function tab(id,btn){
   btn.classList.add("on");
 }
 
-// ═══ GBP RATE ════════════════════════════════════════════════════
-function fetchGbpRate(){
-  var xhr=new XMLHttpRequest();
-  try{
-    xhr.open("GET","https://api.frankfurter.app/latest?from=USD&to=GBP",true);
-    xhr.timeout=6000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4&&xhr.status===200){
-        try{ var d=JSON.parse(xhr.responseText); if(d.rates&&d.rates.GBP){ gbpRate=d.rates.GBP; renderLive(); } }catch(e){}
-      }
-    };
-    xhr.onerror=function(){};
-    xhr.send();
-  }catch(e){}
+// ═══ CALCULATIONS ═════════════════════════════════════════════════
+function calcSMA(closes, period){
+  if(!closes||closes.length<period) return null;
+  var sl=closes.slice(-period);
+  return sl.reduce(function(a,b){return a+b;},0)/period;
 }
-fetchGbpRate();
-setInterval(fetchGbpRate, 900000);
 
-// ═══ ATR (Average True Range) ════════════════════════════════════
-function calcATR(key, period){
-  var h = liveHistory[key];
-  period = period || 14;
-  if(!h || h.h.length < period+1) return null;
-  var highs  = h.h.slice(-(period+1));
-  var lows   = h.l.slice(-(period+1));
-  var closes = h.c.slice(-(period+1));
-  var trList = [];
-  for(var i=1; i<=period; i++){
-    var hl  = highs[i]  - lows[i];
-    var hcp = Math.abs(highs[i]  - closes[i-1]);
-    var lcp = Math.abs(lows[i]   - closes[i-1]);
-    trList.push(Math.max(hl, hcp, lcp));
+function calcATR(h,l,c,period){
+  period=period||14;
+  if(!h||h.length<period+1) return null;
+  var trs=[];
+  for(var i=h.length-period;i<h.length;i++){
+    var hl=h[i]-l[i];
+    var hcp=Math.abs(h[i]-c[i-1]);
+    var lcp=Math.abs(l[i]-c[i-1]);
+    trs.push(Math.max(hl,hcp,lcp));
   }
-  var atr = trList.reduce(function(a,b){return a+b;},0) / period;
-  return atr;
+  return trs.reduce(function(a,b){return a+b;},0)/trs.length;
 }
 
-function atrStops(key, price, direction){
-  var atr = calcATR(key, 14);
-  if(!atr) return null;
-  var isL = direction === "long";
-  // Larry Williams / institutional standard:
-  // Initial stop: 1.5x ATR from entry
-  // Trailing stop: 2x ATR from running high/low
-  // Target: 3x ATR from entry (gives 1:2 R/R minimum)
-  var initialStop  = isL ? price - (1.5 * atr) : price + (1.5 * atr);
-  var trailDist    = 2.0 * atr;
-  var target       = isL ? price + (3.0 * atr) : price - (3.0 * atr);
-  var breakeven    = isL ? price + (1.0 * atr) : price - (1.0 * atr);
-  var riskDist     = 1.5 * atr;
-  var rr           = (3.0 / 1.5).toFixed(1); // always 1:2
-  return {
-    atr:         atr,
-    atrPct:      (atr / price * 100).toFixed(2),
-    initialStop: initialStop,
-    trailDist:   trailDist,
-    target:      target,
-    breakeven:   breakeven,
-    riskDist:    riskDist,
-    rr:          rr
-  };
+function isSMADirectional(closes, period, lookback){
+  lookback=lookback||3;
+  if(!closes||closes.length<period+lookback) return null;
+  var smas=[];
+  for(var i=lookback;i>=0;i--){
+    var sl=closes.slice(-(period+i),i>0?-i:undefined);
+    smas.push(sl.reduce(function(a,b){return a+b;},0)/period);
+  }
+  // Rising if each SMA is higher than the previous
+  var rising=true,falling=true;
+  for(var j=1;j<smas.length;j++){
+    if(smas[j]<=smas[j-1]) rising=false;
+    if(smas[j]>=smas[j-1]) falling=false;
+  }
+  return {rising:rising,falling:falling,smas:smas};
 }
 
-// ═══ WILLIAMS %R ═════════════════════════════════════════════════
-function calcWR(key){
-  var h=liveHistory[key];
-  if(!h||h.h.length<14) return null;
-  var highs=h.h.slice(-14), lows=h.l.slice(-14);
-  var close=h.c[h.c.length-1];
-  var hh=Math.max.apply(null,highs), ll=Math.min.apply(null,lows);
-  if(hh===ll) return -50;
-  return ((hh-close)/(hh-ll))*-100;
-}
-
-
-
-// ═══ SIGNAL EVALUATION ═══════════════════════════════════════════
-function evalSig(key){
-  var m=MARKETS[key];
-  var wr=calcWR(key);
-  var rOk=false;
-  if(wr!==null) rOk=(m.dir==="long")?(wr<=-80):(wr>=-20);
-  var cotOk,cotTxt,seaOk,seaTxt;
-  if(liveCOT[key]){
-    var cot=liveCOT[key];
-    cotOk=(m.dir==="long")?cot.bullish:cot.bearish;
-    cotTxt=cot.text+" &#9889;";
-  } else { cotOk=m.cOk; cotTxt=m.cTxt+" (reference snapshot)"; }
-  if(liveSeasonal[key]){
-    var sea=liveSeasonal[key];
-    seaOk=(m.dir==="long")?sea.bullish:sea.bearish;
-    seaTxt=sea.text+" &#9889;";
-  } else { seaOk=m.sOk; seaTxt=m.sTxt+" (reference snapshot)"; }
-  var cnt=(rOk?1:0)+(cotOk?1:0)+(seaOk?1:0);
-  if(!rOk) cnt=Math.min(2,cnt);
-  return {wr:wr,rOk:rOk,cotOk:cotOk,cotTxt:cotTxt,seaOk:seaOk,seaTxt:seaTxt,cnt:cnt};
-}
-
-// ═══ TRADE LEVELS ════════════════════════════════════════════════
-function calcLvls(key,price){
-  var m=MARKETS[key];
-  var isL=m.dir==="long";
-  var sp=m.sp/100,bp=m.bp/100,gp=m.gp/100;
-  var stake=cap*0.1;
-  var exp=stake*m.lev;
-  return {
-    stop:   isL?price*(1-sp):price*(1+sp),
-    be:     isL?price*(1+bp):price*(1-bp),
-    target: isL?price*(1+gp):price*(1-gp),
-    rr:     (gp/sp).toFixed(2),
-    profitEst: (exp*gp).toFixed(2),
-    lossEst:   (stake*0.1).toFixed(2)
-  };
-}
-
-// ═══ GAP WARNING ═════════════════════════════════════════════════
-function gapWarnHtml(key){
+// ═══ STRATEGY 1: 4H SMA PULLBACK ══════════════════════════════════
+function evalS1(key){
+  var hist=liveHistory4H[key];
   var d=liveData[key];
-  if(!d||!d.prev||d.prev===0) return "";
-  var gapPct=((d.price-d.prev)/d.prev)*100;
-  var absGap=Math.abs(gapPct);
-  if(absGap<0.5) return "";
-  var m=MARKETS[key];
-  var helps=(m.dir==="long"&&gapPct>0)||(m.dir==="short"&&gapPct<0);
-  var cls=helps?"with":"against";
-  var msg=helps
-    ?"Price moved "+absGap.toFixed(2)+"% in the expected direction since last close. Some edge may be priced in — re-verify %R is still in zone before entering."
-    :"Price gapped "+absGap.toFixed(2)+"% AGAINST this signal since last close. Re-check %R carefully — this setup may no longer be valid.";
-  return '<div class="gap-warn '+cls+'"><b>'+(helps?"&#9888; Gap with signal":"&#128680; Gap AGAINST signal")+':</b> '+msg+'</div>';
-}
+  if(!hist||!d) return {signal:"none",score:0,checks:[]};
 
-// ═══ FETCH FROM NETLIFY FUNCTION ═════════════════════════════════
-// Route RSI-only markets to appropriate free sources
-var CRYPTO_KEYS = {btc:"bitcoin", eth:"ethereum"};
-var FOREX_EXTRA = {audusd:"AUD", usdcad:"CAD", usdchf:"CHF", nzdusd:"NZD"};
-var COMMODITY_EXTRA = {silver:"XAG"};
+  var closes=hist.c, highs=hist.h, lows=hist.l;
+  var price=d.price;
 
-function fetchRSIMarket(key){
-  if(CRYPTO_KEYS[key])    { fetchCoinGecko(key); return; }
-  if(FOREX_EXTRA[key])    { fetchFrankfurterExtra(key); return; }
-  if(COMMODITY_EXTRA[key]){ fetchSilver(key); return; }
-  // fallback to main function
-  var xhr=new XMLHttpRequest();
-  try{
-    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=price",true);
-    xhr.timeout=12000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4&&xhr.status===200){
-        try{
-          var d=JSON.parse(xhr.responseText);
-          if(d.error){liveErrors[key]=d.error;renderRSI();return;}
-          liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:"Twelve Data"};
-          if(d.history&&d.history.h&&d.history.h.length>=14)liveHistory[key]=d.history;
-          delete liveErrors[key]; renderRSI();
-        }catch(e){liveErrors[key]="Parse error";}
-      } else { liveErrors[key]="HTTP "+xhr.status; renderRSI(); }
-    };
-    xhr.ontimeout=function(){liveErrors[key]="Timeout";};
-    xhr.onerror=function(){liveErrors[key]="Network error";};
-    xhr.send();
-  }catch(e){liveErrors[key]="Exception";}
-}
+  var sma20=calcSMA(closes,20);
+  var sma50=calcSMA(closes,50);
+  var atr=calcATR(highs,lows,closes,14);
+  var dir20=isSMADirectional(closes,20,3);
+  var dir50=isSMADirectional(closes,50,3);
 
-function fetchCoinGecko(key){
-  var coinId = CRYPTO_KEYS[key];
-  var xhr = new XMLHttpRequest();
-  try{
-    xhr.open("GET","https://api.coingecko.com/api/v3/coins/"+coinId+"?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false",true);
-    xhr.timeout=10000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4&&xhr.status===200){
-        try{
-          var d=JSON.parse(xhr.responseText);
-          var price=d.market_data.current_price.usd;
-          var prev=d.market_data.current_price.usd*(1-(d.market_data.price_change_percentage_24h/100));
-          var chgPct=d.market_data.price_change_percentage_24h||0;
-          liveData[key]={price:price,prev:prev,chg:price-prev,chgPct:chgPct,ts:new Date(),src:"CoinGecko"};
-          // Build synthetic history from 7d sparkline if available
-          var spark=d.market_data.sparkline_7d&&d.market_data.sparkline_7d.price;
-          if(spark&&spark.length>=14){
-            var closes=spark.filter(function(v,i){return i%24===0;}).slice(-14);
-            if(closes.length>=14) liveHistory[key]={h:closes,l:closes,c:closes};
-          }
-          delete liveErrors[key]; renderRSI();
-        }catch(e){liveErrors[key]="CoinGecko parse error: "+e.message; renderRSI();}
-      } else { liveErrors[key]="CoinGecko HTTP "+xhr.status; renderRSI(); }
-    };
-    xhr.ontimeout=function(){liveErrors[key]="CoinGecko timeout";};
-    xhr.onerror=function(){liveErrors[key]="CoinGecko network error";};
-    xhr.send();
-  }catch(e){liveErrors[key]="CoinGecko exception";}
-}
+  if(!sma20||!sma50||!atr) return {signal:"none",score:0,checks:[],sma20:sma20,sma50:sma50,atr:atr};
 
-function fetchFrankfurterExtra(key){
-  var ccy=FOREX_EXTRA[key];
-  var isUSDBase=(key.indexOf("usd")===0); // USD/CAD, USD/CHF
-  var from=isUSDBase?"USD":ccy;
-  var to=isUSDBase?ccy:"USD";
-  var xhr=new XMLHttpRequest();
-  try{
-    xhr.open("GET","https://api.frankfurter.app/latest?from="+from+"&to="+to,true);
-    xhr.timeout=8000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4&&xhr.status===200){
-        try{
-          var d=JSON.parse(xhr.responseText);
-          var rate=d.rates[to];
-          var price=rate;
-          liveData[key]={price:price,prev:price,chg:0,chgPct:0,ts:new Date(),src:"Frankfurter"};
-          // Fetch history for RSI
-          fetchFrankfurterExtraHistory(key, from, to);
-          delete liveErrors[key]; renderRSI();
-        }catch(e){liveErrors[key]="Frankfurter parse error"; renderRSI();}
-      } else { liveErrors[key]="Frankfurter HTTP "+xhr.status; renderRSI(); }
-    };
-    xhr.ontimeout=function(){liveErrors[key]="Frankfurter timeout";};
-    xhr.onerror=function(){liveErrors[key]="Frankfurter CORS error";};
-    xhr.send();
-  }catch(e){liveErrors[key]="Frankfurter exception";}
-}
+  var isBull=sma20>sma50;
+  var isBear=sma20<sma50;
+  var smaGap=Math.abs((sma20-sma50)/sma50*100);
 
-function fetchFrankfurterExtraHistory(key, from, to){
-  var end=new Date().toISOString().split("T")[0];
-  var start=new Date(Date.now()-30*86400000).toISOString().split("T")[0];
-  var xhr=new XMLHttpRequest();
-  try{
-    xhr.open("GET","https://api.frankfurter.app/"+start+".."+end+"?from="+from+"&to="+to,true);
-    xhr.timeout=8000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4&&xhr.status===200){
-        try{
-          var d=JSON.parse(xhr.responseText);
-          var dates=Object.keys(d.rates).sort();
-          var prices=dates.map(function(dt){return d.rates[dt][to];});
-          if(prices.length>=14){
-            liveHistory[key]={h:prices,l:prices,c:prices};
-            renderRSI();
-          }
-        }catch(e){}
-      }
-    };
-    xhr.onerror=function(){};
-    xhr.send();
-  }catch(e){}
-}
+  // Check 1: Trend — 20 > 50 (bull) or 20 < 50 (bear)
+  var trendOk=isBull||isBear;
+  var trendDir=isBull?"long":"short";
 
-function fetchSilver(key){
-  // XAG/USD via Frankfurter (silver is available as a currency pair)
-  var xhr=new XMLHttpRequest();
-  try{
-    xhr.open("GET","https://api.frankfurter.app/latest?from=XAG&to=USD",true);
-    xhr.timeout=8000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4){
-        if(xhr.status===200){
-          try{
-            var d=JSON.parse(xhr.responseText);
-            var price=d.rates.USD;
-            liveData[key]={price:price,prev:price,chg:0,chgPct:0,ts:new Date(),src:"Frankfurter"};
-            delete liveErrors[key]; renderRSI();
-          }catch(e){fetchSilverFallback(key);}
-        } else { fetchSilverFallback(key); }
-      }
-    };
-    xhr.onerror=function(){fetchSilverFallback(key);};
-    xhr.send();
-  }catch(e){fetchSilverFallback(key);}
-}
+  // Check 2: SMAs directional (not flat)
+  var smaDir20Ok=dir20?( isBull?dir20.rising:dir20.falling):false;
+  var smaDir50Ok=dir50?(isBull?dir50.rising:dir50.falling):false;
 
-function fetchSilverFallback(key){
-  // GoldAPI.io free tier for silver
-  var xhr=new XMLHttpRequest();
-  try{
-    xhr.open("GET","https://api.metals.live/v1/spot/silver",true);
-    xhr.timeout=8000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4&&xhr.status===200){
-        try{
-          var d=JSON.parse(xhr.responseText);
-          var price=d[0]&&d[0].silver;
-          if(price){
-            liveData[key]={price:price,prev:price,chg:0,chgPct:0,ts:new Date(),src:"Metals.live"};
-            delete liveErrors[key]; renderRSI();
-          }
-        }catch(e){liveErrors[key]="Silver unavailable"; renderRSI();}
-      } else { liveErrors[key]="Silver HTTP "+xhr.status; renderRSI(); }
-    };
-    xhr.onerror=function(){liveErrors[key]="Silver network error"; renderRSI();};
-    xhr.send();
-  }catch(e){liveErrors[key]="Silver exception"; renderRSI();}
-}
+  // Check 3: Pullback — price near 20 SMA (within 0.5% for forex, 1% for indices)
+  var pullbackThreshold=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.0:0.5;
+  var distFrom20=Math.abs(price-sma20)/sma20*100;
+  var atPullback=distFrom20<=pullbackThreshold;
 
-function fetchMarket(key){
-  var xhr=new XMLHttpRequest();
-  try{
-    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=all",true);
-    xhr.timeout=12000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4){
-        if(xhr.status===200){
-          try{
-            var d=JSON.parse(xhr.responseText);
-            if(d.error){liveErrors[key]=d.error; renderLive(); return;}
-            liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:d.source||"Twelve Data"};
-            if(d.history&&d.history.h&&d.history.h.length>=14) liveHistory[key]=d.history;
-            if(d.cot){ liveCOT[key]=d.cot; }
-            if(d.seasonal){ liveSeasonal[key]=d.seasonal; }
-            delete liveErrors[key];
-            renderLive();
-          }catch(e){liveErrors[key]="Parse error"; renderLive();}
-        } else {
-          liveErrors[key]="HTTP "+xhr.status+(xhr.status===404?" — Netlify Function not found. Check get-price.js is in netlify/functions/ folder.":"");
-          renderLive();
-        }
-      }
-    };
-    xhr.ontimeout=function(){liveErrors[key]="Timeout — function took too long"; renderLive();};
-    xhr.onerror=function(){liveErrors[key]="Network error — check function is deployed"; renderLive();};
-    xhr.send();
-  }catch(e){liveErrors[key]="Exception: "+e.message; renderLive();}
-}
+  // Check 4: Confirmation candle
+  var lastClose=closes[closes.length-1];
+  var prevClose=closes[closes.length-2];
+  var lastHigh=highs[highs.length-1];
+  var lastLow=lows[lows.length-1];
+  var bullConfirm=isBull&&lastClose>prevClose&&lastClose>lastHigh-((lastHigh-lastLow)*0.3);
+  var bearConfirm=isBear&&lastClose<prevClose&&lastClose<lastLow+((lastHigh-lastLow)*0.3);
+  var confirmOk=bullConfirm||bearConfirm;
 
-function loadAll(){
-  // Fetch Larry Williams markets
-  Object.keys(MARKETS).forEach(function(key,i){
-    setTimeout(function(){ fetchMarket(key); }, i*300);
-  });
-  // Fetch additional RSI-only markets not in MARKETS
-  var rsiOnly = ["audusd","usdcad","usdchf","nzdusd","silver","btc","eth"];
-  rsiOnly.forEach(function(key,i){
-    if(!MARKETS[key]){
-      setTimeout(function(){ fetchRSIMarket(key); }, (Object.keys(MARKETS).length + i)*300);
-    }
-  });
-}
-loadAll();
-setInterval(loadAll, 900000);
+  // Check 5: SMA gap meaningful (not about to cross)
+  var gapOk=smaGap>0.1;
 
-function manualRefresh(){
-  Object.keys(liveData).forEach(function(k){ delete liveData[k]; });
-  Object.keys(liveErrors).forEach(function(k){ delete liveErrors[k]; });
-  liveLoaded = 0;
-  appStartTime = Date.now();
-  renderLive();
-  loadAll();
-}
-
-// ═══ RENDER LIVE SIGNALS ═════════════════════════════════════════
-function renderLive(){
-  var keys=Object.keys(MARKETS);
-  var ready=0, watch=0, nosig=0;
-  keys.forEach(function(k){
-    var sig=evalSig(k);
-    if(sig.cnt===3) ready++;
-    else if(sig.cnt===2) watch++;
-    else nosig++;
-  });
-
-  // Summary strip
-  document.getElementById("liveSummary").innerHTML=
-    '<div class="sumcard ready"><div class="sumnum g">'+ready+'</div><div class="sumlbl">&#9989; TRADE READY</div></div>'+
-    '<div class="sumcard watch"><div class="sumnum a">'+watch+'</div><div class="sumlbl">&#128993; WATCHING</div></div>'+
-    '<div class="sumcard nosig"><div class="sumnum d">'+nosig+'</div><div class="sumlbl">&#9898; NO SIGNAL</div></div>';
-
-  // Status
-  var loaded=keys.filter(function(k){return liveData[k];}).length;
-  var errCount=Object.keys(liveErrors).length;
-  var el=document.getElementById("liveStatus");
-  if(loaded===keys.length){
-    el.innerHTML='&#9989; All '+keys.length+' markets live &middot; Next refresh in 15 min &middot; Powered by Twelve Data';
-    el.style.color='#00d97e';
-  } else if(errCount>0&&(Date.now()-appStartTime)>15000){
-    var firstErr=liveErrors[Object.keys(liveErrors)[0]];
-    el.innerHTML='&#9888; '+loaded+'/'+keys.length+' loaded &middot; '+firstErr;
-    el.style.color='#ffa94d';
-  } else {
-    el.innerHTML='<span class="pulse"></span>Loading live data... ('+loaded+'/'+keys.length+' markets)';
-    el.style.color='';
-  }
-
-  // Cards
-  var html="";
-  keys.forEach(function(key){
-    var m=MARKETS[key];
-    var d=liveData[key];
-    var sig=evalSig(key);
-    var err=liveErrors[key];
-    var dp=m.dp;
-    function f(n){return parseFloat(n).toFixed(dp);}
-
-    // Loading state
-    if(!d&&!err){
-      html+='<div class="mcard loading"><div class="mcard-top"><div class="mcard-left"><div class="mcard-name">'+m.name+'</div><div class="mcard-cat">'+m.cat+' &middot; Fetching from Twelve Data...</div></div><div class="mcard-right"><div class="mcard-price" style="color:var(--dim)">--</div></div></div></div>';
-      return;
-    }
-
-    // Error state
-    if(!d&&err){
-      html+='<div class="mcard nosig"><div class="mcard-top"><div class="mcard-left"><div class="mcard-name">'+m.name+'</div><div class="mcard-cat" style="color:var(--r)">&#9888; '+err+'</div></div><div class="mcard-right"><div class="mcard-price" style="color:var(--dim)">--</div></div></div></div>';
-      return;
-    }
-
-    var isL=m.dir==="long";
-    var chgPos=d.chg>=0;
-    var lvl=calcLvls(key,d.price);
-    var usdMkts={gold:1,oil:1,sp500:1,nas100:1};
-    var gbpHtml=usdMkts[key]?'<div class="mcard-gbp">&asymp;&pound;'+( d.price*gbpRate).toFixed(0)+'</div>':"";
-    var cardCls=sig.cnt>=3?"ready":sig.cnt===2?"watch":"nosig";
-    var sigLabel;
-    if(sig.cnt===3 && sig.rOk){
-      sigLabel = "&#9989; TRADE READY &mdash; "+m.name+" "+m.dir.toUpperCase();
-    } else if(!sig.rOk){
-      sigLabel = "&#128993; WATCH &mdash; %R at "+(sig.wr!==null?sig.wr.toFixed(1):"...")+", need "+(m.dir==="long"?"below -80":"above -20");
-    } else if(sig.cnt===2){
-      sigLabel = "&#128993; WATCH &mdash; 2 of 3 signals";
-    } else {
-      sigLabel = "&#9898; NO SIGNAL &mdash; Stand aside";
-    }
-
-    // Action box content
-    var actionHtml="";
-    if(sig.cnt===3){
-      var entryDay=sig.rOk?"Confirmed in zone":"Check %R again at close";
-      actionHtml='<div class="action-box trade"><div class="action-title">&#9989; What to do</div>'+
-        '1. Check the %R light on this card — must show '+(isL?"below -80":"above -20")+' at market close. If it shows “Calculating...” press Refresh and wait 30 seconds.<br>'+
-        '2. If confirmed, place order for <b>tomorrow\'s open at '+m.eTime+'</b><br>'+
-        '3. Set initial stop at <b>'+f(lvl.stop)+'</b> the moment the trade opens<br>'+
-        '4. Move stop to breakeven (<b>'+f(d.price)+'</b>) once price reaches <b>'+f(lvl.be)+'</b><br>'+
-        '5. Trail stop '+(isL?"below":"above")+' each new '+(isL?"high":"low")+' after breakeven<br>'+
-        '6. Exit at <b>'+f(lvl.target)+'</b> target or trailing stop &mdash; whichever comes first<br>'+
-        '7. Maximum hold: <b>5 trading days</b><br><br>'+
-        '<b>Estimated on &pound;'+Math.round(cap*0.1)+' stake ('+m.lev+':1):</b> Profit if target hit: <b style="color:var(--g)">+&pound;'+lvl.profitEst+'</b> &middot; Max loss: <b style="color:var(--r)">-&pound;'+lvl.lossEst+'</b>'+
-        '</div>';
-    } else if(sig.cnt===2){
-      actionHtml='<div class="action-box wait"><div class="action-title">&#128993; What to do</div>'+
-        'Two of three signals are aligned. Do not trade yet.<br>'+
-        'Check again at market close each day. When the third signal confirms, this becomes a valid setup.<br><br>'+
-        '<b>Missing:</b> '+(sig.rOk?"":" Williams %R not yet in zone")+(!sig.cotOk?" COT not confirming":"")+(!sig.seaOk?" Seasonal not supportive":"")+'</div>';
-    } else {
-      actionHtml='<div class="action-box skip"><div class="action-title">&#9898; What to do</div>'+
-        'No valid Larry Williams setup on '+m.name+' right now. Stand aside completely. Patience is a position &mdash; do not force a trade that isn\'t there.</div>';
-    }
-
-    html+='<div class="mcard '+cardCls+'">';
-    // Top section
-    html+='<div class="mcard-top">';
-    html+='<div class="mcard-left">';
-    html+='<div class="mcard-name"><span class="mcard-dir '+(isL?"long":"short")+'">'+(isL?"LONG":"SHORT")+'</span>'+m.name+'</div>';
-    html+='<div class="mcard-cat">'+m.cat+' &middot; Updated '+d.ts.toLocaleTimeString("en-GB")+'</div>';
-    html+='</div>';
-    html+='<div class="mcard-right">';
-    html+='<div class="mcard-price">'+f(d.price)+'</div>';
-    html+=gbpHtml;
-    html+='<div class="mcard-chg" style="color:'+(chgPos?"#00d97e":"#ff4d6d")+'">'+(chgPos?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(dp)+' ('+d.chgPct.toFixed(2)+'%)</div>';
-    html+='</div></div>';
-    // Signal status
-    html+='<div class="mcard-sig"><span class="sigpill '+cardCls+'">'+sigLabel+'</span><span class="mcard-upd">'+d.src+'</span></div>';
-    // Signal lights
-    html+='<div class="lights">';
-    var wrTxt=sig.wr!==null?sig.wr.toFixed(1):(Date.now()-appStartTime>15000?"Unavailable":"Calculating...");
-    var wrCls=sig.rOk?"ok":sig.wr!==null?"fail":"";
-    html+='<div class="light '+wrCls+'"><div class="light-lbl">Williams %R</div><span class="light-icon">'+(sig.rOk?"&#9989;":sig.wr!==null?"&#10060;":"&#9744;")+'</span><div class="light-val" style="color:'+(sig.rOk?"#00d97e":sig.wr!==null?"#ff4d6d":"#5a6478")+'">'+wrTxt+'</div><div class="light-txt">Need '+(isL?"below -80":"above -20")+'</div></div>';
-    html+='<div class="light '+(sig.cotOk?"ok":"warn")+'"><div class="light-lbl">COT Signal</div><span class="light-icon">'+(sig.cotOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.cotOk?"#00d97e":"#ffa94d")+'">'+(sig.cotOk?"Confirmed":"Watch")+'</div><div class="light-txt">'+sig.cotTxt+'</div></div>';
-    html+='<div class="light '+(sig.seaOk?"ok":"warn")+'"><div class="light-lbl">Seasonal</div><span class="light-icon">'+(sig.seaOk?"&#9989;":"&#128993;")+'</span><div class="light-val" style="color:'+(sig.seaOk?"#00d97e":"#ffa94d")+'">'+(sig.seaOk?"Confirmed":"Neutral")+'</div><div class="light-txt">'+sig.seaTxt+'</div></div>';
-    html+='</div>';
-    // Gap warning
-    html+=gapWarnHtml(key);
-    // Trade levels (only when 2+ signals)
-    if(sig.cnt>=2){
-      html+='<div class="levels">';
-      html+='<div class="lev"><div class="lev-l">Entry (next open)</div><div class="lev-v" style="color:var(--b)">'+f(d.price)+'</div></div>';
-      html+='<div class="lev"><div class="lev-l">Initial Stop</div><div class="lev-v" style="color:var(--r)">'+f(lvl.stop)+'</div></div>';
-      html+='<div class="lev"><div class="lev-l">Target</div><div class="lev-v" style="color:var(--g)">'+f(lvl.target)+'</div></div>';
-      html+='<div class="lev"><div class="lev-l">Risk/Reward</div><div class="lev-v" style="color:var(--a)">1:'+lvl.rr+'</div></div>';
-      html+='</div>';
-    }
-    // Action box
-    html+=actionHtml;
-    // Market note
-    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 14px;font-style:italic">'+m.note+'</div>';
-    html+='</div>';
-  });
-  document.getElementById("liveCards").innerHTML=html;
-}
-
-// ═══ TRAIL CALC ══════════════════════════════════════════════════
-function cMC(){
-  var defs={index:{e:8000,s:1.5,t:1.0,b:1.0,g:2.5},gold:{e:2350,s:1.0,t:0.8,b:0.8,g:1.8},forex:{e:1.34,s:1.2,t:0.8,b:0.6,g:1.8},oil:{e:78,s:1.5,t:1.2,b:1.5,g:3.0}};
-  var d=defs[document.getElementById("cMkt").value];
-  document.getElementById("cEnt").value=d.e;
-  document.getElementById("cSto").value=d.s; document.getElementById("cSV").textContent=d.s+"%";
-  document.getElementById("cTr").value=d.t;  document.getElementById("cTV").textContent=d.t+"%";
-  document.getElementById("cBE").value=d.b;  document.getElementById("cBV").textContent=d.b+"%";
-  document.getElementById("cTg").value=d.g;  document.getElementById("cGV").textContent=d.g+"%";
-  document.getElementById("resbox").classList.remove("show");
-}
-function calcTS(){
-  var dir=document.getElementById("cDir").value;
-  var ent=parseFloat(document.getElementById("cEnt").value);
-  var sP=parseFloat(document.getElementById("cSto").value)/100;
-  var tP=parseFloat(document.getElementById("cTr").value)/100;
-  var bP=parseFloat(document.getElementById("cBE").value)/100;
-  var gP=parseFloat(document.getElementById("cTg").value)/100;
-  var mk=document.getElementById("cMkt").value;
-  var isL=dir==="long";
-  var dp=mk==="forex"?4:ent>100?0:2;
-  function f(n){return n.toFixed(dp);}
-  var iS=isL?ent*(1-sP):ent*(1+sP);
-  var bE=isL?ent*(1+bP):ent*(1-bP);
-  var tG=isL?ent*(1+gP):ent*(1-gP);
-  var mP=isL?ent*(1+(bP+gP)/2):ent*(1-(bP+gP)/2);
-  var tM=isL?mP*(1-tP):mP*(1+tP);
-  var tT=isL?tG*(1-tP):tG*(1+tP);
-  var mR=Math.abs(ent-iS), rr=(Math.abs(tG-ent)/mR).toFixed(2);
-  document.getElementById("resGrid").innerHTML=
-    '<div class="resc"><div class="rescl">Entry</div><div class="rescv">'+f(ent)+'</div></div>'+
-    '<div class="resc"><div class="rescl">Initial Stop</div><div class="rescv" style="color:var(--r)">'+f(iS)+'</div></div>'+
-    '<div class="resc"><div class="rescl">Max Risk</div><div class="rescv" style="color:var(--r)">'+f(mR)+'</div></div>'+
-    '<div class="resc"><div class="rescl">Breakeven At</div><div class="rescv" style="color:var(--a)">'+f(bE)+'</div></div>'+
-    '<div class="resc"><div class="rescl">Target</div><div class="rescv" style="color:var(--g)">'+f(tG)+'</div></div>'+
-    '<div class="resc"><div class="rescl">R/R Ratio</div><div class="rescv" style="color:var(--g)">1:'+rr+'</div></div>';
-  var dw=isL?"rises":"falls", sw=isL?"below":"above";
-  document.getElementById("phBody").innerHTML=
-    '<tr><td style="color:var(--b)">1</td><td>Trade opens at '+f(ent)+'</td><td style="color:var(--r)">'+f(iS)+'</td><td>Place stop immediately. Max loss = '+f(mR)+'</td></tr>'+
-    '<tr><td style="color:var(--b)">2</td><td>Price '+dw+' to '+f(bE)+'</td><td style="color:var(--a)">'+f(ent)+' (entry price)</td><td>Move stop to entry. You cannot lose money now.</td></tr>'+
-    '<tr><td style="color:var(--b)">3</td><td>Price '+dw+' further</td><td style="color:var(--g)">'+f(tM)+' (trail '+sw+' high)</td><td>Trailing stop active. Profit locked in.</td></tr>'+
-    '<tr><td style="color:var(--b)">4</td><td>Target '+f(tG)+' hit or stop triggered</td><td style="color:var(--r)">CLOSE</td><td>Exit. Record result. Find next setup.</td></tr>';
-  document.getElementById("resbox").classList.add("show");
-}
-
-// ═══ DAY COUNTER ════════════════════════════════════════════════
-function calcD(){
-  var ent=new Date(document.getElementById("eDate").value);
-  if(isNaN(ent.getTime())){document.getElementById("dRes").textContent="Please select a valid entry date.";return;}
-  var today=new Date();
-  var d=new Date(ent); d.setDate(d.getDate()+1);
-  var td=0;
-  while(d<=today){var dw=d.getDay();if(dw!==0&&dw!==6)td++;d.setDate(d.getDate()+1);}
-  var col,msg,act;
-  if(td<=1){col="#00d97e";msg="Day "+(td+1)+" of 5";act="Trade is fresh. Let it run.";}
-  else if(td===2){col="#00d97e";msg="Day 3 of 5";act="Ensure trailing stop is active and at breakeven.";}
-  else if(td===3){col="#ffa94d";msg="Day 4 of 5 \u26a0\ufe0f";act="Tighten trailing stop. Prepare to exit tomorrow.";}
-  else if(td===4){col="#ffa94d";msg="Day 5 of 5 \u26a0\ufe0f";act="LAST DAY. Close at market close today.";}
-  else{col="#ff4d6d";msg=td+" days \u2014 OVERDUE";act="Close immediately at market price.";}
-  document.getElementById("dRes").innerHTML='<span style="font-size:17px;font-weight:800;color:'+col+'">'+msg+'</span><br><span style="color:#b0ab9e">'+act+'</span>';
-}
-
-// ═══ PLATFORMS ══════════════════════════════════════════════════
-var PLATS=[
-  {n:1,nm:"Spreadex",ty:"Spread Bet",mn:"\xa30",rt:"9.5",ts:"Yes",bf:"Tax-free spread betting \xb7 No minimum deposit \xb7 Trailing stops built in \xb7 FTSE, Forex, Gold, Oil"},
-  {n:2,nm:"IG Markets",ty:"CFD / Spread Bet",mn:"\xa3250",rt:"9.4",ts:"Yes",bf:"Largest UK CFD broker \xb7 Guaranteed trailing stops \xb7 All markets"},
-  {n:3,nm:"CMC Markets",ty:"CFD / Spread Bet",mn:"\xa30",rt:"9.3",ts:"Yes",bf:"Excellent charting \xb7 Trailing stops on all CFDs"},
-  {n:4,nm:"Pepperstone",ty:"CFD / Forex",mn:"\xa3200",rt:"9.2",ts:"Yes",bf:"Forex and Gold specialist \xb7 Tight spreads \xb7 MT4/MT5"},
-  {n:5,nm:"City Index",ty:"CFD / Spread Bet",mn:"\xa30",rt:"8.9",ts:"Yes",bf:"Good for commodities \xb7 Educational tools"},
-  {n:6,nm:"Trading 212",ty:"Stocks ISA",mn:"\xa31",rt:"8.8",ts:"Limited",bf:"Best for UK shares in ISA \xb7 Tax-free gains \xb7 Zero commission"},
-  {n:7,nm:"Interactive Brokers",ty:"Stocks / Futures",mn:"\xa30",rt:"9.0",ts:"Yes",bf:"Professional grade \xb7 Futures access \xb7 Lowest commissions"},
-  {n:8,nm:"Hargreaves Lansdown",ty:"Stocks / ISA",mn:"\xa31",rt:"8.7",ts:"Limited",bf:"Best UK ISA for long-term \xb7 SIPP available"},
-  {n:9,nm:"XTB",ty:"CFD / Forex",mn:"\xa30",rt:"8.7",ts:"Yes",bf:"Great mobile app \xb7 Stocks CFD and Forex"}
-];
-function renderPlats(){ return;
-  document.getElementById("platH").innerHTML=PLATS.map(function(p){
-    var tc=p.ts==="Yes"?"#00d97e":p.ts==="Limited"?"#ffa94d":"#ff4d6d";
-    return '<div class="platc" onclick="this.classList.toggle(\'open\')"><div class="plrow"><div class="pll"><span class="plnum">#'+p.n+'</span><span class="plname">'+p.nm+'</span><span class="pltype">'+p.ty+'</span></div><div class="plr"><span class="plmin">'+p.mn+'</span><span class="plrat">'+p.rt+'/10</span></div></div><div class="pldet">Min deposit: '+p.mn+' &middot; <span style="color:var(--g)">Best for:</span> '+p.bf+' &middot; <span style="color:'+tc+'">Trailing stops: '+p.ts+'</span></div></div>';
-  }).join("");
-}
-
-// ═══ POSITION SIZE CALCULATOR ════════════════════════════════════
-var PS_MARKETS = {
-  gbpusd:{ name:"GBP/USD",  maxLev:30, stopPct:1.2, dp:5 },
-  eurusd:{ name:"EUR/USD",  maxLev:30, stopPct:1.0, dp:5 },
-  usdjpy:{ name:"USD/JPY",  maxLev:30, stopPct:1.2, dp:3 },
-  gold:  { name:"Gold",     maxLev:20, stopPct:1.0, dp:2 },
-  oil:   { name:"Crude Oil",maxLev:10, stopPct:1.5, dp:2 },
-  sp500: { name:"S&P 500",  maxLev:10, stopPct:0.8, dp:0 },
-  nas100:{ name:"Nasdaq",   maxLev:10, stopPct:1.0, dp:0 },
-  ftse:  { name:"FTSE 100", maxLev:20, stopPct:1.5, dp:0 }
-};
-
-function calcPS(){
-  var bal   = parseFloat(document.getElementById("psBalance").value) || 200;
-  var risk  = parseFloat(document.getElementById("psRisk").value) || 2;
-  var mkt   = document.getElementById("psMkt").value;
-  var entry = parseFloat(document.getElementById("psEntry").value) || 0;
-  var stopP = parseFloat(document.getElementById("psStop").value) || 1.0;
-  var m     = PS_MARKETS[mkt];
-  if(!entry || !m){ return; }
-
-  var maxRiskGBP = bal * (risk/100);           // e.g. £4 on £200 at 2%
-  var stopDist   = entry * (stopP/100);        // price distance to stop
-  var unitsForRisk = maxRiskGBP / stopDist;    // units where loss = maxRiskGBP
-
-  // Show at 3 leverage levels: conservative, moderate, recommended
-  var levLevels = [
-    { label:"Conservative", lev:Math.min(5,  m.maxLev), col:"#00d97e" },
-    { label:"Moderate",     lev:Math.min(10, m.maxLev), col:"#ffa94d" },
-    { label:"Max allowed",  lev:m.maxLev,               col:"#ff4d6d" }
+  // Score
+  var checks=[
+    {name:"Trend Direction",ok:trendOk,txt:trendOk?"20 SMA "+(isBull?"above":"below")+" 50 SMA — "+(isBull?"uptrend":"downtrend"):"SMAs too close — no clear trend"},
+    {name:"SMAs Rising/Falling",ok:smaDir20Ok&&smaDir50Ok,txt:(smaDir20Ok&&smaDir50Ok)?"Both SMAs clearly "+(isBull?"rising":"falling"):"SMAs flat or mixed — weak trend, skip"},
+    {name:"Price at Pullback",ok:atPullback,txt:atPullback?"Price within "+distFrom20.toFixed(2)+"% of 20 SMA — valid pullback zone":"Price "+distFrom20.toFixed(2)+"% from 20 SMA — wait for pullback"},
+    {name:"Confirmation Candle",ok:confirmOk,txt:confirmOk?"Last 4H candle confirmed "+(isBull?"bullish":"bearish")+" at SMA — wait for this candle to close then enter next":"No confirmation candle yet — wait"},
+    {name:"SMA Separation",ok:gapOk,txt:gapOk?"20/50 gap: "+smaGap.toFixed(2)+"% — clear trend":"SMAs too close ("+smaGap.toFixed(2)+"%) — crossover risk, skip"}
   ];
 
-  document.getElementById("psGrid").innerHTML =
-    '<div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.25);border-radius:9px;padding:11px;text-align:center"><div style="font-size:10px;color:var(--dim);margin-bottom:4px">MAX RISK THIS TRADE</div><div style="font-size:22px;font-weight:900;color:#00d97e">&pound;'+maxRiskGBP.toFixed(2)+'</div><div style="font-size:9px;color:var(--dim)">'+risk+'% of &pound;'+bal+'</div></div>'+
-    '<div style="background:rgba(77,171,247,0.08);border:1px solid rgba(77,171,247,0.25);border-radius:9px;padding:11px;text-align:center"><div style="font-size:10px;color:var(--dim);margin-bottom:4px">STOP LOSS PRICE</div><div style="font-size:22px;font-weight:900;color:#4dabf7">'+(entry*(1-stopP/100)).toFixed(m.dp)+'</div><div style="font-size:9px;color:var(--dim)">'+stopP+'% below entry</div></div>';
+  var score=checks.filter(function(c){return c.ok;}).length;
+  var signal=trendOk?trendDir:"none";
+  if(score<3) signal="none";
 
-  var levHtml = levLevels.map(function(lv){
-    var controlled = unitsForRisk * entry * lv.lev / lv.lev; // position value
-    var units = unitsForRisk;
-    var margin = (units * entry) / lv.lev;
-    var profitEst = units * entry * 0.018; // using gold 1.8% target as example
-    return '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:10px;text-align:center">'+
-      '<div style="font-size:9px;color:var(--dim);margin-bottom:4px">'+lv.label.toUpperCase()+'</div>'+
-      '<div style="font-size:11px;font-weight:700;color:'+lv.col+'">'+lv.lev+':1 leverage</div>'+
-      '<div style="font-size:13px;font-weight:800;color:#fff;margin:5px 0">'+units.toFixed(2)+' units</div>'+
-      '<div style="font-size:9px;color:var(--dim)">Margin: &pound;'+margin.toFixed(2)+'</div>'+
-      '<div style="font-size:9px;color:#00d97e;margin-top:3px">If win: +&pound;'+(maxRiskGBP*1.8).toFixed(2)+'</div>'+
-      '<div style="font-size:9px;color:#ff4d6d">If stop hit: -&pound;'+maxRiskGBP.toFixed(2)+'</div>'+
-      '</div>';
-  }).join("");
+  // Levels
+  var levels=null;
+  if(signal!=="none"&&atr){
+    var isL=signal==="long";
+    var stop=isL?price-(atr*1.5):price+(atr*1.5);
+    var riskDist=Math.abs(price-stop);
+    var target=isL?price+(riskDist*2):price-(riskDist*2);
+    var target3=isL?price+(riskDist*3):price-(riskDist*3);
+    var stake=cap*0.02;
+    var units=(stake/riskDist).toFixed(3);
+    var profEst=(stake*2).toFixed(2);
+    levels={stop:stop,target:target,target3:target3,riskDist:riskDist,units:units,profEst:profEst,atr:atr,stake:stake};
+  }
 
-  document.getElementById("psLevGrid").innerHTML = levHtml;
-  document.getElementById("psNote").innerHTML =
-    "<b>How to use this:</b> Enter the units above into Trade Nation quantity box. " +
-    "Put the stop loss price into Trade Nation Stop Loss field. " +
-    "This ensures you never lose more than &pound;" + maxRiskGBP.toFixed(2) + " on this trade.<br><br>" +
-    "<b style='color:#ffa94d'>&#9888; Beginners:</b> Use Conservative (" + Math.min(5,m.maxLev) + ":1) until you have 20+ profitable trades. " +
-    "Never use Max leverage while learning.";
-
-  document.getElementById("psResult").style.display = "block";
+  return {signal:signal,score:score,checks:checks,sma20:sma20,sma50:sma50,atr:atr,levels:levels,isBull:isBull,isBear:isBear};
 }
 
-// ═══ RSI MEAN REVERSION STRATEGY ════════════════════════════════
-var RSI_MARKETS = {
-  gbpusd:{ name:"GBP/USD",   dp:5, sp:1.0, gp:0.8, liveKey:"gbpusd", eTime:"09:00 UK",          cat:"Forex" },
-  eurusd:{ name:"EUR/USD",   dp:5, sp:1.0, gp:0.8, liveKey:"eurusd", eTime:"09:00 UK",          cat:"Forex" },
-  usdjpy:{ name:"USD/JPY",   dp:3, sp:1.0, gp:0.8, liveKey:"usdjpy", eTime:"09:00 UK",          cat:"Forex" },
-  audusd:{ name:"AUD/USD",   dp:5, sp:1.0, gp:0.8, liveKey:"audusd", eTime:"09:00 UK",          cat:"Forex" },
-  usdcad:{ name:"USD/CAD",   dp:5, sp:1.0, gp:0.8, liveKey:"usdcad", eTime:"14:30 UK",          cat:"Forex" },
-  usdchf:{ name:"USD/CHF",   dp:5, sp:1.0, gp:0.8, liveKey:"usdchf", eTime:"09:00 UK",          cat:"Forex" },
-  nzdusd:{ name:"NZD/USD",   dp:5, sp:1.0, gp:0.8, liveKey:"nzdusd", eTime:"09:00 UK",          cat:"Forex" },
-  gold:  { name:"Gold",      dp:2, sp:0.8, gp:0.7, liveKey:"gold",   eTime:"08:00 or 13:30 UK", cat:"Commodity" },
-  silver:{ name:"Silver",    dp:3, sp:1.2, gp:1.0, liveKey:"silver", eTime:"08:00 or 13:30 UK", cat:"Commodity" },
-  btc:   { name:"Bitcoin",   dp:0, sp:2.0, gp:1.5, liveKey:"btc",    eTime:"Any time (24/7)",   cat:"Crypto" },
-  eth:   { name:"Ethereum",  dp:2, sp:2.5, gp:2.0, liveKey:"eth",    eTime:"Any time (24/7)",   cat:"Crypto" }
-};
+// ═══ STRATEGY 2: 5/10 MOMENTUM TRIGGER ═══════════════════════════
+// The 5/10 cross is NOT the signal — it is the TRIGGER.
+// The decision is based on trend quality. Cross just confirms momentum returning.
+function evalS2(key){
+  var hist=liveHistory4H[key];
+  var d=liveData[key];
+  if(!hist||!d) return {signal:"none",score:0,checks:[]};
 
-function calcRSI(key){
-  var h = liveHistory[key];
-  if(!h || h.c.length < 15) return null;
-  var closes = h.c.slice(-15);
-  var gains = 0, losses = 0;
-  for(var i=1; i<closes.length; i++){
-    var diff = closes[i] - closes[i-1];
-    if(diff > 0) gains += diff;
-    else losses += Math.abs(diff);
-  }
-  var period = closes.length - 1;
-  var avgGain = gains / period;
-  var avgLoss = losses / period;
-  if(avgLoss === 0) return 100;
-  var rs = avgGain / avgLoss;
-  return 100 - (100 / (1+rs));
-}
+  var closes=hist.c, highs=hist.h, lows=hist.l;
+  var price=d.price;
+  var n=closes.length;
 
-function calc50SMA(key){
-  var h = liveHistory[key];
-  if(!h || h.c.length < 14) return null;
-  // Use what we have (20 days max from our fetch)
-  var closes = h.c;
-  var sum = closes.reduce(function(a,b){ return a+b; }, 0);
-  return sum / closes.length;
-}
+  var sma5=calcSMA(closes,5);
+  var sma10=calcSMA(closes,10);
+  var sma20=calcSMA(closes,20);
+  var sma50=calcSMA(closes,50);
+  var sma5prev=calcSMA(closes.slice(0,-1),5);
+  var sma10prev=calcSMA(closes.slice(0,-1),10);
+  var atr=calcATR(highs,lows,closes,14);
+  var dir50=isSMADirectional(closes,50,4);
+  var dir20=isSMADirectional(closes,20,4);
 
-function evalRSI(key){
-  var rsi = calcRSI(key);
-  var d = liveData[key];
-  var h = liveHistory[key];
-  if(!d) return { rsi:null, signal:"none", rules:[], score:0, smaOk:false };
+  if(!sma5||!sma10||!sma50||!atr) return {signal:"none",score:0,checks:[]};
 
-  var rules = [];
-  var price = d.price;
+  // Determine bias from 50 SMA direction
+  var isBull=dir50?dir50.rising:sma20>sma50;
+  var isBear=dir50?dir50.falling:sma20<sma50;
 
-  // ── Rule 1: Uptrend filter — price above 200-day SMA ──────────
-  // We only have 20 days of history so we use 20-day SMA as proxy
-  var sma20 = calc50SMA(key); // our calc50SMA actually uses available data
-  var uptrend = sma20 ? price > sma20 : null;
-  rules.push({
-    name: "Uptrend",
-    ok: uptrend === true,
-    na: uptrend === null,
-    txt: uptrend === true ? "Price above 20-day average — uptrend confirmed" :
-         uptrend === false ? "Price below 20-day average — downtrend, skip BUY signals" :
-         "Trend data loading..."
-  });
+  // Check 1: 50 SMA clearly rising or falling
+  var sma50DirOk=dir50?(isBull?dir50.rising:dir50.falling):false;
 
-  // ── Rule 2: RSI in signal zone ────────────────────────────────
-  var rsiInZone = rsi !== null && (rsi <= 30 || rsi >= 70);
-  var isBuy = rsi !== null && rsi <= 30;
-  var isSell = rsi !== null && rsi >= 70;
-  rules.push({
-    name: "RSI Oversold/Overbought",
-    ok: rsiInZone,
-    na: rsi === null,
-    txt: rsi === null ? "RSI loading..." :
-         rsi <= 30 ? "RSI " + rsi.toFixed(1) + " — oversold, potential BUY" :
-         rsi >= 70 ? "RSI " + rsi.toFixed(1) + " — overbought, potential SELL" :
-         "RSI " + rsi.toFixed(1) + " — neutral zone, no signal"
-  });
+  // Check 2: 20 SMA rising or falling in same direction
+  var sma20DirOk=dir20?(isBull?dir20.rising:dir20.falling):false;
 
-  // ── Rule 3: RSI confirmation — turning back through threshold ──
-  // Check if previous RSI was deeper in zone (RSI now recovering)
-  var prevRsi = null;
-  if(h && h.c.length >= 16){
-    var prevCloses = h.c.slice(-16,-1);
-    var pg=0, pl=0;
-    for(var i=1;i<prevCloses.length;i++){
-      var diff=prevCloses[i]-prevCloses[i-1];
-      if(diff>0) pg+=diff; else pl+=Math.abs(diff);
-    }
-    var avgPG=pg/(prevCloses.length-1), avgPL=pl/(prevCloses.length-1);
-    prevRsi = avgPL===0 ? 100 : 100-(100/(1+(avgPG/avgPL)));
-  }
-  var rsiConfirmed = false;
-  var rsiConfTxt = "Not enough history to confirm";
-  if(prevRsi !== null && rsi !== null){
-    if(isBuy && prevRsi < rsi){
-      rsiConfirmed = true;
-      rsiConfTxt = "RSI turning up from " + prevRsi.toFixed(1) + " to " + rsi.toFixed(1) + " — buyers returning";
-    } else if(isSell && prevRsi > rsi){
-      rsiConfirmed = true;
-      rsiConfTxt = "RSI turning down from " + prevRsi.toFixed(1) + " to " + rsi.toFixed(1) + " — sellers returning";
-    } else if(isBuy){
-      rsiConfTxt = "RSI still falling — wait for RSI to start recovering before entering";
-    } else if(isSell){
-      rsiConfTxt = "RSI still rising — wait for RSI to start declining before entering";
-    }
-  }
-  rules.push({
-    name: "RSI Confirmation",
-    ok: rsiConfirmed,
-    na: prevRsi === null,
-    txt: rsiConfTxt
-  });
-
-  // ── Rule 4: Price near support/resistance ─────────────────────
-  var nearLevel = false;
-  var levelTxt = "Insufficient history";
-  if(h && h.l.length >= 10 && h.h.length >= 10){
-    var recentLows = h.l.slice(-10);
-    var recentHighs = h.h.slice(-10);
-    var swingLow = Math.min.apply(null, recentLows);
-    var swingHigh = Math.max.apply(null, recentHighs);
-    var distFromLow = Math.abs(price - swingLow) / price * 100;
-    var distFromHigh = Math.abs(price - swingHigh) / price * 100;
-    if(isBuy && distFromLow < 2.0){
-      nearLevel = true;
-      levelTxt = "Price within 2% of recent swing low (" + swingLow.toFixed(2) + ") — at support";
-    } else if(isSell && distFromHigh < 2.0){
-      nearLevel = true;
-      levelTxt = "Price within 2% of recent swing high (" + swingHigh.toFixed(2) + ") — at resistance";
-    } else if(isBuy){
-      levelTxt = "Price " + distFromLow.toFixed(1) + "% above recent low — not at clear support yet";
-    } else if(isSell){
-      levelTxt = "Price " + distFromHigh.toFixed(1) + "% below recent high — not at clear resistance yet";
+  // Check 3: Higher highs and higher lows (for bull) or lower highs/lows (for bear)
+  // Compare last 6 candle highs and lows
+  var hhhlOk=false, hhhlTxt="";
+  if(n>=8){
+    var recentHighs=highs.slice(-6);
+    var recentLows=lows.slice(-6);
+    var midHighs=highs.slice(-12,-6);
+    var midLows=lows.slice(-12,-6);
+    var latestHigh=Math.max.apply(null,recentHighs);
+    var latestLow=Math.min.apply(null,recentLows);
+    var prevHigh=Math.max.apply(null,midHighs);
+    var prevLow=Math.min.apply(null,midLows);
+    if(isBull){
+      hhhlOk=latestHigh>prevHigh&&latestLow>prevLow;
+      hhhlTxt=hhhlOk?"Higher highs and higher lows confirmed — uptrend structure intact":
+        "Not making higher highs/lows — trend structure weak or choppy";
     } else {
-      levelTxt = "No signal direction to evaluate support/resistance";
+      hhhlOk=latestHigh<prevHigh&&latestLow<prevLow;
+      hhhlTxt=hhhlOk?"Lower highs and lower lows confirmed — downtrend structure intact":
+        "Not making lower highs/lows — trend structure weak or choppy";
     }
+  } else { hhhlTxt="Need more candle history"; }
+
+  // Check 4: Orderly pullback (price pulled back 20-50% of recent swing, not a crash)
+  var pullbackOk=false, pullbackTxt="";
+  if(n>=6&&sma20){
+    var distFrom20=Math.abs(price-sma20)/sma20*100;
+    var threshold=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.5:0.8;
+    pullbackOk=distFrom20<=threshold;
+    pullbackTxt=pullbackOk?
+      "Price within "+distFrom20.toFixed(2)+"% of 20 SMA — orderly pullback in progress":
+      "Price "+distFrom20.toFixed(2)+"% from 20 SMA — pullback may not be finished yet";
   }
-  rules.push({
-    name: "At Support/Resistance",
-    ok: nearLevel,
-    na: !h || h.l.length < 10,
-    txt: levelTxt
-  });
 
-  // ── Score: count confirmed rules ──────────────────────────────
-  var score = rules.filter(function(r){ return r.ok; }).length;
-  var maxScore = rules.filter(function(r){ return !r.na; }).length;
+  // Check 5: Convincing confirmation candle closed
+  var lastClose=closes[n-1];
+  var prevClose=closes[n-2];
+  var lastHigh=highs[n-1];
+  var lastLow=lows[n-1];
+  var candleRange=lastHigh-lastLow;
+  var bullConvince=lastClose>prevClose&&candleRange>0&&((lastClose-lastLow)/candleRange)>0.6;
+  var bearConvince=lastClose<prevClose&&candleRange>0&&((lastHigh-lastClose)/candleRange)>0.6;
+  var confirmOk=(isBull&&bullConvince)||(isBear&&bearConvince);
+  var confirmTxt=confirmOk?
+    "Convincing "+(isBull?"bullish":"bearish")+" candle closed — closes strongly in signal direction":
+    "Last candle not convincing enough — body should close in top/bottom 40% of range";
 
-  // Signal only fires if RSI is in zone — it is the mandatory gate
-  var signal = "none";
-  if(rsiInZone){ signal = isBuy ? "buy" : "sell"; }
-
-  // smaOk = whether uptrend confirms direction
-  var smaOk = (isBuy && uptrend === true) || (isSell && uptrend === false);
-
-  return {
-    rsi: rsi,
-    prevRsi: prevRsi,
-    signal: signal,
-    rules: rules,
-    score: score,
-    maxScore: maxScore,
-    smaOk: smaOk,
-    sma: sma20,
-    uptrend: uptrend,
-    rsiConfirmed: rsiConfirmed,
-    nearLevel: nearLevel,
-    quality: score >= 3 ? "strong" : score === 2 ? "moderate" : "weak"
-  };
-}
-
-var rsiFilter = "all";
-function filterRSI(type, btn){
-  rsiFilter = type;
-  document.querySelectorAll("#rsiFilters button").forEach(function(b){ b.classList.remove("on"); });
-  btn.classList.add("on");
-  renderRSI();
-}
-
-function renderRSI(){
-  var keys = Object.keys(RSI_MARKETS);
-  var ready=0, watch=0, nosig=0;
-  keys.forEach(function(k){
-    var ev = evalRSI(k);
-    if(ev.signal !== "none" && ev.smaOk) ready++;
-    else if(ev.signal !== "none") watch++;
-    else nosig++;
-  });
-
-  document.getElementById("rsiSummary").innerHTML =
-    '<div class="sumcard ready"><div class="sumnum g">'+ready+'</div><div class="sumlbl">&#9989; RSI READY</div></div>'+
-    '<div class="sumcard watch"><div class="sumnum a">'+watch+'</div><div class="sumlbl">&#128993; WATCHING</div></div>'+
-    '<div class="sumcard nosig"><div class="sumnum d">'+nosig+'</div><div class="sumlbl">&#9898; NO SIGNAL</div></div>';
-
-  var loaded = keys.filter(function(k){ return liveData[k]; }).length;
-  var el = document.getElementById("rsiStatus");
-  if(loaded >= keys.length){
-    el.innerHTML = "&#9989; " + keys.length + " markets loaded &middot; RSI calculated from live data";
-    el.style.color = "#00d97e";
+  // Check 6: 5/10 cross — the momentum TRIGGER
+  var freshCross=false,crossAligned=false,crossTxt="";
+  if(sma5prev&&sma10prev){
+    if(sma5prev<=sma10prev&&sma5>sma10){ freshCross=true; }
+    if(sma5prev>=sma10prev&&sma5<sma10){ freshCross=true; }
+  }
+  crossAligned=(isBull&&sma5>sma10)||(isBear&&sma5<sma10);
+  if(freshCross){
+    crossTxt="Fresh 5/10 cross "+(isBull?"UP":"DOWN")+" — momentum returning &#9889;";
+  } else if(crossAligned){
+    crossTxt="5/10 already aligned with trend — momentum confirmed, no fresh cross yet";
   } else {
-    el.innerHTML = '<span class="pulse"></span>Loading... (' + loaded + '/' + keys.length + ')';
-    el.style.color = "";
+    crossTxt="5/10 not aligned with trend direction — momentum not yet returning";
   }
 
-  // Apply filter
-  var filteredKeys = keys.filter(function(k){
-    if(rsiFilter === "all") return true;
-    if(rsiFilter === "ready"){ var ev=evalRSI(k); return ev.signal!=="none"&&ev.smaOk; }
-    return RSI_MARKETS[k].cat === rsiFilter;
-  });
+  var checks=[
+    {name:"50 SMA Direction",   ok:sma50DirOk, txt:sma50DirOk?"50 SMA clearly "+(isBull?"rising":"falling")+" — primary trend confirmed":"50 SMA flat or against direction — no trade"},
+    {name:"20 SMA Direction",   ok:sma20DirOk, txt:sma20DirOk?"20 SMA clearly "+(isBull?"rising":"falling")+" — trend consistent":"20 SMA not aligned — trend may be weakening"},
+    {name:"Higher Highs/Lows",  ok:hhhlOk,     txt:hhhlTxt},
+    {name:"Orderly Pullback",   ok:pullbackOk,  txt:pullbackTxt},
+    {name:"Convincing Candle",  ok:confirmOk,   txt:confirmTxt},
+    {name:"5/10 Momentum Cross",ok:freshCross||crossAligned, txt:crossTxt}
+  ];
 
-  var html = "";
-  filteredKeys.forEach(function(key){
-    var m = RSI_MARKETS[key];
-    var d = liveData[key];
-    var ev = evalRSI(key);
-    function f(n){ return parseFloat(n).toFixed(m.dp); }
+  var score=checks.filter(function(c){return c.ok;}).length;
+  var signal=(sma50DirOk)?( isBull?"long":"short"):"none";
+  if(score<4) signal="none";
 
-    if(!d){
-      html += '<div class="mcard loading"><div class="mcard-top"><div class="mcard-left"><div class="mcard-name">'+m.name+'</div><div class="mcard-cat">Fetching RSI data...</div></div><div class="mcard-right"><div class="mcard-price" style="color:var(--dim)">--</div></div></div></div>';
-      return;
-    }
-
-    var isReady = ev.signal !== "none" && ev.smaOk;
-    var isWeak  = ev.signal !== "none" && !ev.smaOk;
-    var cardCls = isReady ? "ready" : isWeak ? "watch" : "nosig";
-    var isBuy   = ev.signal === "buy";
-    var dirCls  = isBuy ? "long" : ev.signal === "sell" ? "short" : "";
-
-    var rsiTxt  = ev.rsi ? ev.rsi.toFixed(1) : "Loading...";
-    var rsiCol  = ev.rsi ? (ev.rsi <= 30 ? "#00d97e" : ev.rsi >= 70 ? "#ff4d6d" : "#5a6478") : "#5a6478";
-
-    var sigLabel = isReady
-      ? "&#9989; RSI SIGNAL &mdash; " + m.name + " " + (isBuy ? "BUY" : "SELL")
-      : isWeak
-      ? "&#128993; WEAK &mdash; RSI signal but trend filter against it"
-      : "&#9898; NO SIGNAL &mdash; RSI between 30-70";
-
-    var lvlHtml = "";
-    if(ev.signal !== "none"){
-      var stop   = isBuy ? d.price*(1-m.sp/100) : d.price*(1+m.sp/100);
-      var target = isBuy ? d.price*(1+m.gp/100) : d.price*(1-m.gp/100);
-      var rr     = (m.gp/m.sp).toFixed(2);
-      lvlHtml =
-        '<div class="levels">' +
-        '<div class="lev"><div class="lev-l">Entry (next open)</div><div class="lev-v" style="color:var(--b)">'+f(d.price)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Stop</div><div class="lev-v" style="color:var(--r)">'+f(stop)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Target (RSI 50)</div><div class="lev-v" style="color:var(--g)">'+f(target)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">R/R</div><div class="lev-v" style="color:var(--a)">1:'+rr+'</div></div>'+
-        '</div>';
-    }
-
-    var actionHtml = "";
-    if(isReady){
-      var rsiStop   = isBuy ? d.price*(1-m.sp/100) : d.price*(1+m.sp/100);
-      var rsiTarget = isBuy ? d.price*(1+m.gp/100) : d.price*(1-m.gp/100);
-      var rsiRR     = (m.gp/m.sp).toFixed(2);
-      var stake     = cap * 0.02; // 2% risk
-      var stopDist  = Math.abs(d.price - rsiStop);
-      var units     = stopDist > 0 ? (stake / stopDist).toFixed(2) : "n/a";
-      var profEst   = (stake * (m.gp/m.sp)).toFixed(2);
-      var usdMktsR  = {gold:1,silver:1,btc:1,eth:1};
-      var profGBP   = usdMktsR[key] ? " (≈£"+(parseFloat(profEst)*gbpRate).toFixed(2)+")" : "";
-      actionHtml = '<div class="action-box trade">'+
-        '<div class="action-title">&#9989; What to do &mdash; '+m.name+' '+(isBuy?"BUY":"SELL")+'</div>'+
-        '1. Check the RSI gauge on this card — must show '+(isBuy?"below 30":"above 70")+' at market close. If showing “Calculating...” press Refresh and wait.<br>'+
-        '2. Open Trade Nation &mdash; search <b>'+(
-          key==="gbpusd"?"GBP/USD":key==="eurusd"?"EUR/USD":key==="usdjpy"?"USD/JPY":
-          key==="audusd"?"AUD/USD":key==="usdcad"?"USD/CAD":key==="usdchf"?"USD/CHF":
-          key==="nzdusd"?"NZD/USD":key==="gold"?"Gold / XAU/USD":key==="silver"?"Silver / XAG/USD":
-          key==="btc"?"Bitcoin / BTC":key==="eth"?"Ethereum / ETH":"your market"
-        )+"</b><br>"+
-        "3. Enter at <b>"+m.eTime+"</b> &mdash; set as Limit Order at this price: <b style='color:#4dabf7'>"+parseFloat(d.price).toFixed(m.dp)+"</b><br>"+
-        "4. Set <b>Stop Loss</b> immediately at <b style='color:#ff4d6d'>"+parseFloat(rsiStop).toFixed(m.dp)+"</b><br>"+
-        "5. Set <b>Take Profit</b> at <b style='color:#00d97e'>"+parseFloat(rsiTarget).toFixed(m.dp)+"</b> (RSI returning to 50)<br>"+
-        "6. Quantity: <b>"+units+" units</b> (keeps risk at 2% of £"+cap+")<br>"+
-        "7. Exit if RSI returns to 50 OR after <b>3 trading days maximum</b> &mdash; whichever first<br>"+
-        "8. Do NOT hold alongside a Larry Williams trade on the same market<br><br>"+
-        "<b>Estimated profit if target hit: <span style='color:#00d97e'>+£"+profEst+profGBP+"</span> &middot; Max loss if stop hit: <span style='color:#ff4d6d'>-£"+stake.toFixed(2)+"</span></b>"+
-        '</div>';
-    } else if(isWeak){
-      actionHtml = '<div class="action-box wait"><div class="action-title">&#128993; What to do</div>'+
-        'RSI is in signal zone ('+(ev.rsi?ev.rsi.toFixed(1):"...")+') but the trend filter is against this trade. '+
-        'This means RSI is oversold/overbought but price is moving against the expected direction on the longer trend. '+
-        '<b>Stand aside</b> &mdash; wait until trend aligns, or skip this market and look for a cleaner setup.</div>';
-    } else {
-      var nearBuy = ev.rsi && ev.rsi < 45;
-      var nearSell = ev.rsi && ev.rsi > 55;
-      actionHtml = '<div class="action-box skip"><div class="action-title">&#9898; What to do</div>'+
-        'RSI is '+(ev.rsi?ev.rsi.toFixed(1)+"":"calculating...")+' &mdash; in the neutral zone between 30 and 70. No signal. Stand aside completely.'+
-        (nearBuy?' <b style="color:#ffa94d">Getting closer to oversold (30) &mdash; worth monitoring at market close.</b>':"")+
-        (nearSell?' <b style="color:#ffa94d">Getting closer to overbought (70) &mdash; worth monitoring at market close.</b>':"")+
-        '</div>';
-    }
-
-    // RSI gauge
-    var rsiPct = ev.rsi ? Math.min(100,Math.max(0,ev.rsi)) : 50;
-    var gaugeHtml = ev.rsi ?
-      '<div style="margin:0 16px 14px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px"><span style="color:#00d97e">BUY zone (&lt;30)</span><span>Neutral</span><span style="color:#ff4d6d">SELL zone (&gt;70)</span></div>'+
-      '<div style="background:rgba(255,255,255,0.06);border-radius:20px;height:8px;position:relative">'+
-      '<div style="position:absolute;left:0;top:0;width:30%;height:100%;background:rgba(0,217,126,0.2);border-radius:20px 0 0 20px"></div>'+
-      '<div style="position:absolute;right:0;top:0;width:30%;height:100%;background:rgba(255,77,109,0.2);border-radius:0 20px 20px 0"></div>'+
-      '<div style="position:absolute;top:-3px;width:14px;height:14px;background:'+rsiCol+';border-radius:50%;left:calc('+rsiPct+'% - 7px);border:2px solid #0c1118;transition:left .3s"></div>'+
-      '</div>'+
-      '<div style="text-align:center;margin-top:6px;font-size:13px;font-weight:700;color:'+rsiCol+'">RSI: '+rsiTxt+'</div></div>'
-      : '';
-
-    html += '<div class="mcard '+cardCls+'">';
-    html += '<div class="mcard-top">';
-    html += '<div class="mcard-left">';
-    html += '<div class="mcard-name">'+(ev.signal!=="none"?'<span class="mcard-dir '+dirCls+'">'+(isBuy?"BUY":"SELL")+'</span>':'')+m.name+'</div>';
-    html += '<div class="mcard-cat">'+m.cat+' &middot; RSI Strategy &middot; Updated '+d.ts.toLocaleTimeString("en-GB")+'</div>';
-    html += '</div>';
-    html += '<div class="mcard-right"><div class="mcard-price">'+f(d.price)+'</div>';
-    html += '<div class="mcard-chg" style="color:'+(d.chg>=0?"#00d97e":"#ff4d6d")+'">'+(d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>';
-    html += '</div></div>';
-    html += '<div class="mcard-sig"><span class="sigpill '+cardCls+'">'+sigLabel+'</span><span class="mcard-upd">Twelve Data</span></div>';
-    html += gaugeHtml;
-    html += lvlHtml;
-    html += actionHtml;
-    html += '<div style="font-size:10px;color:var(--dim);padding:0 16px 14px;font-style:italic">RSI period 14 &middot; Max hold 3 days &middot; Exit when RSI returns to 50</div>';
-    html += '</div>';
-  });
-
-  document.getElementById("rsiCards").innerHTML = html;
-}
-
-// Hook renderRSI into the main render cycle
-var _origRenderLive = renderLive;
-renderLive = function(){
-  _origRenderLive();
-  if(document.getElementById("p-rsi")) renderRSI();
-};
-
-// ═══ 4-HOUR RSI STRATEGY ═════════════════════════════════════════
-// Markets — forex and gold only (crypto excluded on 4H)
-var RSI4H_MARKETS = {
-  gbpusd:{ name:"GBP/USD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
-  eurusd:{ name:"EUR/USD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
-  usdjpy:{ name:"USD/JPY",  dp:3, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
-  audusd:{ name:"AUD/USD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (08:00, 12:00, 16:00, 20:00 UK)" },
-  usdcad:{ name:"USD/CAD",  dp:5, cat:"Forex",     eTime:"Next 4H candle open (14:00, 18:00 UK — NY session)" },
-  gold:  { name:"Gold",     dp:2, cat:"Commodity", eTime:"08:00 or 16:00 UK (London/NY open)" }
-};
-
-var liveData4H = {};   // 4H candle history per market
-var liveRSI4H  = {};   // computed 4H RSI per market
-var load4HErrors = {};
-
-function fetch4HCandles_unused(key){
-  var sym4H = {
-    gbpusd:"GBP/USD", eurusd:"EUR/USD", usdjpy:"USD/JPY",
-    audusd:"AUD/USD", usdcad:"USD/CAD", gold:"XAU/USD"
-  }[key];
-  if(!sym4H) return;
-
-  var xhr = new XMLHttpRequest();
-  try{
-    xhr.open("GET", "/api/get-price?key="+encodeURIComponent(key)+"&type=4h", true);
-    xhr.timeout = 12000;
-    xhr.onreadystatechange = function(){
-      if(xhr.readyState===4){
-        if(xhr.status===200){
-          try{
-            var d = JSON.parse(xhr.responseText);
-            if(d.error){ load4HErrors[key]=d.error; render4HRSI(); return; }
-            if(d.history4h && d.history4h.h && d.history4h.h.length>=20){
-              liveData4H[key] = d.history4h;
-              liveRSI4H[key]  = compute4HRSI(d.history4h);
-              delete load4HErrors[key];
-            } else if(d.history && d.history.h){
-              // Fallback: use daily data if 4H not available
-              liveData4H[key] = d.history;
-              liveRSI4H[key]  = compute4HRSI(d.history);
-              load4HErrors[key] = "Using daily data as 4H proxy";
-            } else {
-              load4HErrors[key] = "No candle data returned";
-            }
-            render4HRSI();
-          }catch(e){ load4HErrors[key]="Parse error: "+e.message; render4HRSI(); }
-        } else {
-          load4HErrors[key] = "HTTP "+xhr.status;
-          render4HRSI();
-        }
-      }
-    };
-    xhr.ontimeout = function(){ load4HErrors[key]="Timeout"; render4HRSI(); };
-    xhr.onerror   = function(){ load4HErrors[key]="Network error"; render4HRSI(); };
-    xhr.send();
-  }catch(e){ load4HErrors[key]="Exception: "+e.message; render4HRSI(); }
-}
-
-function compute4HRSI(h){
-  if(!h || h.c.length < 15) return null;
-  var closes = h.c.slice(-15);
-  var gains=0, losses=0;
-  for(var i=1;i<closes.length;i++){
-    var diff = closes[i]-closes[i-1];
-    if(diff>0) gains+=diff; else losses+=Math.abs(diff);
+  var levels=null;
+  if(signal!=="none"&&atr){
+    var isL2=signal==="long";
+    var stop2=isL2?price-(atr*1.5):price+(atr*1.5);
+    var riskDist2=Math.abs(price-stop2);
+    var target2=isL2?price+(riskDist2*2):price-(riskDist2*2);
+    var stake2=cap*0.02;
+    var units2=(stake2/riskDist2).toFixed(3);
+    levels={stop:stop2,target:target2,riskDist:riskDist2,units:units2,
+            profEst:(stake2*2).toFixed(2),atr:atr,stake:stake2};
   }
-  var period = closes.length-1;
-  var avgG = gains/period, avgL = losses/period;
-  if(avgL===0) return 100;
-  return 100-(100/(1+(avgG/avgL)));
+
+  return {signal:signal,score:score,checks:checks,
+          sma5:sma5,sma10:sma10,sma20:sma20,sma50:sma50,
+          atr:atr,levels:levels,freshCross:freshCross,crossAligned:crossAligned,
+          isBull:isBull,isBear:isBear};
 }
 
-function eval4H_unused(key){
-  var h   = liveData4H[key];
-  var rsi = liveRSI4H[key];
-  var d   = liveData[key]; // use live price from main feed
-  var m   = RSI4H_MARKETS[key];
-  if(!rsi || !d) return { rsi:null, signal:"none", score:0, rules:[] };
-
-  var price = d.price;
-  var rules = [];
-
-  // Rule 1: RSI in zone (35/65 thresholds for 4H)
-  var isBuy  = rsi <= 35;
-  var isSell = rsi >= 65;
-  var inZone = isBuy || isSell;
-  rules.push({
-    name:"RSI Signal",
-    ok: inZone,
-    txt: inZone
-      ? "RSI "+rsi.toFixed(1)+(isBuy?" — oversold on 4H":" — overbought on 4H")
-      : "RSI "+rsi.toFixed(1)+" — neutral (need below 35 or above 65)"
-  });
-
-  // Rule 2: Trend filter using available SMA
-  var closes = h ? h.c : [];
-  var sma = closes.length >= 10
-    ? closes.slice(-10).reduce(function(a,b){return a+b;},0)/10
-    : null;
-  var trendOk = sma
-    ? (isBuy ? price > sma : isSell ? price < sma : false)
-    : null;
-  rules.push({
-    name:"Trend Filter (SMA)",
-    ok: trendOk === true,
-    na: trendOk === null,
-    txt: trendOk === true
-      ? "Price "+(isBuy?"above":"below")+" SMA — trend confirms signal"
-      : trendOk === false
-      ? "Price "+(isBuy?"below":"above")+" SMA — trend opposes signal, skip"
-      : "SMA data loading"
-  });
-
-  // Rule 3: RSI turning (confirmation)
-  var prevRSI = null;
-  if(h && h.c.length >= 16){
-    var pc = h.c.slice(-16,-1);
-    var pg=0,pl=0;
-    for(var i=1;i<pc.length;i++){
-      var df=pc[i]-pc[i-1];
-      if(df>0) pg+=df; else pl+=Math.abs(df);
+// ═══ FETCH DATA ═══════════════════════════════════════════════════
+function fetchMarket4H(key, callback){
+  var sym=SYMBOL_MAP[key];
+  if(!sym){ callback(key,"No symbol"); return; }
+  var xhr=new XMLHttpRequest();
+  xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=all",true);
+  xhr.timeout=12000;
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        try{
+          var d=JSON.parse(xhr.responseText);
+          if(d.error){callback(key,d.error);return;}
+          liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:"Twelve Data"};
+          if(d.history&&d.history.h&&d.history.h.length>=50) liveHistory4H[key]=d.history;
+          delete liveErrors[key];
+          callback(key,null);
+        }catch(e){callback(key,"Parse error");}
+      } else { callback(key,"HTTP "+xhr.status); }
     }
-    var prd=pc.length-1;
-    var aPG=pg/prd, aPL=pl/prd;
-    prevRSI = aPL===0?100:100-(100/(1+(aPG/aPL)));
-  }
-  var turning = prevRSI!==null
-    ? (isBuy ? rsi > prevRSI : isSell ? rsi < prevRSI : false)
-    : null;
-  rules.push({
-    name:"RSI Turning",
-    ok: turning === true,
-    na: turning === null,
-    txt: turning === true
-      ? "RSI turning "+(isBuy?"up":"down")+" from "+prevRSI.toFixed(1)+" — momentum shifting"
-      : turning === false
-      ? "RSI still moving deeper — wait for reversal before entering"
-      : "Insufficient data for confirmation"
-  });
-
-  // Rule 4: ATR-based stop feasibility
-  var atr = calcATR(key, 14);
-  var atrOk = atr !== null;
-  rules.push({
-    name:"ATR Stop Available",
-    ok: atrOk,
-    txt: atr
-      ? "ATR: "+atr.toFixed(4)+" ("+((atr/price)*100).toFixed(2)+"% of price) — volatility-based stop calculated"
-      : "ATR not available — use manual stop"
-  });
-
-  var score = rules.filter(function(r){return r.ok;}).length;
-  var signal = inZone ? (isBuy?"buy":"sell") : "none";
-  var smaOk  = trendOk === true;
-
-  return {
-    rsi:rsi, prevRSI:prevRSI, signal:signal,
-    rules:rules, score:score, smaOk:smaOk,
-    atr:atr, sma:sma, price:price,
-    quality: score>=3?"strong":score===2?"moderate":"weak"
   };
+  xhr.ontimeout=function(){callback(key,"Timeout");};
+  xhr.onerror=function(){callback(key,"Network error");};
+  xhr.send();
 }
 
-function render4HRSI(){ return;
-  var keys    = Object.keys(RSI4H_MARKETS);
-  var ready=0, watch=0, nosig=0;
-  keys.forEach(function(k){
-    var ev=eval4H(k);
-    if(ev.signal!=="none"&&ev.score>=3) ready++;
-    else if(ev.signal!=="none") watch++;
-    else nosig++;
-  });
-
-  document.getElementById("rsi4hSummary").innerHTML =
-    '<div class="sumcard ready"><div class="sumnum g">'+ready+'</div><div class="sumlbl">&#9989; 4H READY</div></div>'+
-    '<div class="sumcard watch"><div class="sumnum a">'+watch+'</div><div class="sumlbl">&#128993; WATCHING</div></div>'+
-    '<div class="sumcard nosig"><div class="sumnum d">'+nosig+'</div><div class="sumlbl">&#9898; NO SIGNAL</div></div>';
-
-  var loaded = keys.filter(function(k){return liveData4H[k];}).length;
-  var el = document.getElementById("rsi4hStatus");
-  if(loaded>=keys.length){
-    el.innerHTML="&#9989; "+keys.length+" markets loaded &middot; 4H RSI calculated";
-    el.style.color="#00d97e";
-  } else {
-    el.innerHTML='<span class="pulse"></span>Loading 4H data... ('+loaded+'/'+keys.length+')';
-    el.style.color="";
-  }
-
-  var html="";
-  keys.forEach(function(key){
-    var m   = RSI4H_MARKETS[key];
-    var ev  = eval4H(key);
-    var d   = liveData[key];
-    function f(n){ return parseFloat(n).toFixed(m.dp); }
-
-    if(!d || !liveData4H[key]){
-      var errMsg = load4HErrors[key] || "Loading...";
-      html+='<div class="mcard loading"><div class="mcard-top"><div class="mcard-left"><div class="mcard-name">'+m.name+'</div><div class="mcard-cat" style="color:var(--dim)">'+errMsg+'</div></div><div class="mcard-right"><div class="mcard-price" style="color:var(--dim)">--</div></div></div></div>';
-      return;
-    }
-
-    var isBuy   = ev.signal==="buy";
-    var cardCls = ev.signal!=="none"&&ev.score>=3?"ready":ev.signal!=="none"?"watch":"nosig";
-    var dirCls  = isBuy?"long":ev.signal==="sell"?"short":"";
-    var qualCol = ev.quality==="strong"?"#00d97e":ev.quality==="moderate"?"#ffa94d":"#ff4d6d";
-
-    // ATR stops
-    var atrS = ev.atr ? atrStops(key, ev.price, isBuy?"long":"short") : null;
-
-    // Signal pill
-    var pill = ev.signal!=="none"&&ev.score>=3
-      ? "&#9989; 4H READY &mdash; "+m.name+" "+(isBuy?"BUY":"SELL")+" ("+ev.score+"/4 rules)"
-      : ev.signal!=="none"
-      ? "&#128993; WATCH &mdash; "+ev.score+"/4 rules &mdash; wait for confirmation"
-      : "&#9898; NO SIGNAL";
-
-    // RSI gauge
-    var rsiPct = ev.rsi ? Math.min(100,Math.max(0,ev.rsi)) : 50;
-    var rsiCol = ev.rsi ? (ev.rsi<=35?"#00d97e":ev.rsi>=65?"#ff4d6d":"#5a6478") : "#5a6478";
-    var gauge =
-      '<div style="margin:0 16px 14px">'+
-      '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px">'+
-      '<span style="color:#00d97e">BUY (&lt;35)</span><span>Neutral</span><span style="color:#ff4d6d">SELL (&gt;65)</span></div>'+
-      '<div style="background:rgba(255,255,255,0.06);border-radius:20px;height:8px;position:relative">'+
-      '<div style="position:absolute;left:0;top:0;width:35%;height:100%;background:rgba(0,217,126,0.2);border-radius:20px 0 0 20px"></div>'+
-      '<div style="position:absolute;right:0;top:0;width:35%;height:100%;background:rgba(255,77,109,0.2);border-radius:0 20px 20px 0"></div>'+
-      '<div style="position:absolute;top:-3px;width:14px;height:14px;background:'+rsiCol+';border-radius:50%;left:calc('+rsiPct+'% - 7px);border:2px solid #0c1118;transition:left .3s"></div>'+
-      '</div>'+
-      '<div style="text-align:center;margin-top:6px;font-size:13px;font-weight:700;color:'+rsiCol+'">4H RSI: '+(ev.rsi?ev.rsi.toFixed(1):"Loading...")+'</div></div>';
-
-    // Rules checklist
-    var rulesHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px">';
-    ev.rules.forEach(function(r){
-      var rc = r.ok?"#00d97e":r.na?"#5a6478":"#ff4d6d";
-      var ri = r.ok?"&#9989;":r.na?"&#9744;":"&#10060;";
-      rulesHtml+='<div style="background:rgba(0,0,0,0.2);border:1px solid '+
-        (r.ok?"rgba(0,217,126,0.3)":r.na?"rgba(90,100,120,0.2)":"rgba(255,77,109,0.2)")+
-        ';border-radius:9px;padding:9px 11px">'+
-        '<div style="font-size:9px;color:var(--dim);text-transform:uppercase;margin-bottom:3px">'+r.name+'</div>'+
-        '<div style="font-size:11px">'+ri+' <span style="color:'+rc+'">'+
-        (r.ok?"Confirmed":r.na?"Loading":"Not met")+'</span></div>'+
-        '<div style="font-size:9px;color:var(--dim);margin-top:3px;line-height:1.4">'+r.txt+'</div>'+
-        '</div>';
-    });
-    rulesHtml+='</div>';
-
-    // ATR levels
-    var levHtml = "";
-    if(atrS && ev.signal!=="none"){
-      levHtml='<div class="levels" style="margin-bottom:0">'+
-        '<div class="lev"><div class="lev-l">Entry (next 4H open)</div><div class="lev-v" style="color:var(--b)">'+f(ev.price)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">ATR Stop (1.5x)</div><div class="lev-v" style="color:var(--r)">'+f(atrS.initialStop)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Target (3x ATR)</div><div class="lev-v" style="color:var(--g)">'+f(atrS.target)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Risk/Reward</div><div class="lev-v" style="color:var(--a)">1:'+atrS.rr+'</div></div>'+
-        '</div>'+
-        '<div style="font-size:10px;color:var(--dim);padding:8px 16px">ATR: '+atrS.atr.toFixed(m.dp)+' ('+atrS.atrPct+'% of price) &middot; Trail: move stop '+f(atrS.trailDist)+' behind running '+
-        (isBuy?"high":"low")+' once breakeven hit at '+f(atrS.breakeven)+'</div>';
-    }
-
-    // Action box
-    var actionHtml = "";
-    if(ev.signal!=="none"&&ev.score>=3&&atrS){
-      var tradeName = {gbpusd:"GBP/USD",eurusd:"EUR/USD",usdjpy:"USD/JPY",audusd:"AUD/USD",usdcad:"USD/CAD",gold:"Gold / XAU/USD"}[key]||m.name;
-      var stake = cap*0.02;
-      var units = atrS.riskDist>0?(stake/atrS.riskDist).toFixed(2):"n/a";
-      var prof  = (stake*parseFloat(atrS.rr)).toFixed(2);
-      actionHtml='<div class="action-box trade">'+
-        '<div class="action-title">&#9989; 4H Trade Instructions &mdash; '+m.name+' '+(isBuy?"BUY":"SELL")+'</div>'+
-        "1. Confirm 4H RSI is "+(isBuy?"below 35":"above 65")+" AND turning "+(isBuy?"up":"down")+" on the current candle<br>"+
-        "2. Open Trade Nation &mdash; search <b>"+tradeName+"</b><br>"+
-        "3. Wait for the <b>next 4H candle open</b> &mdash; "+m.eTime+"<br>"+
-        "4. Place <b>"+(isBuy?"BUY":"SELL")+" Limit Order</b> at: <b style='color:#4dabf7'>"+f(ev.price)+"</b><br>"+
-        "5. Set <b>Stop Loss</b> at: <b style='color:#ff4d6d'>"+f(atrS.initialStop)+"</b> (1.5x ATR below entry)<br>"+
-        "6. Set <b>Take Profit</b> at: <b style='color:#00d97e'>"+f(atrS.target)+"</b> (3x ATR from entry)<br>"+
-        "7. Quantity: <b>"+units+" units</b> (2% of £"+cap+" capital at risk)<br>"+
-        "8. Once price reaches breakeven (<b>"+f(atrS.breakeven)+"</b>) — move stop to entry<br>"+
-        "9. Then trail stop <b>"+f(atrS.trailDist)+"</b> behind each new "+(isBuy?"high":"low")+"<br>"+
-        "10. Exit: Take Profit hit OR trailing stop triggered OR <b>after 6 candles (24 hours maximum)</b><br><br>"+
-        "<b>Estimated profit: <span style='color:#00d97e'>+£"+prof+"</span> &middot; Max loss: <span style='color:#ff4d6d'>-£"+stake.toFixed(2)+"</span> &middot; R/R: 1:"+atrS.rr+"</b>"+
-        '</div>';
-    } else if(ev.signal!=="none"){
-      actionHtml='<div class="action-box wait"><div class="action-title">&#128993; Not ready yet &mdash; '+ev.score+'/4 rules confirmed</div>'+
-        "Wait for all key rules to confirm. Specifically: "+(ev.rules.filter(function(r){return !r.ok&&!r.na;}).map(function(r){return r.name;}).join(", ")||"loading data")+
-        ". Check again at the next 4H candle open.</div>";
-    } else {
-      actionHtml='<div class="action-box skip"><div class="action-title">&#9898; No 4H Signal</div>4H RSI is in neutral zone on '+m.name+'. Stand aside. Check at the next 4H candle open.</div>';
-    }
-
-    html+='<div class="mcard '+cardCls+'">';
-    html+='<div class="mcard-top"><div class="mcard-left">'+
-      '<div class="mcard-name">'+(ev.signal!=="none"?'<span class="mcard-dir '+dirCls+'">'+(isBuy?"BUY":"SELL")+'</span>':'')+m.name+'</div>'+
-      '<div class="mcard-cat">'+m.cat+' &middot; 4H RSI Strategy</div></div>'+
-      '<div class="mcard-right"><div class="mcard-price">'+(d?f(d.price):"--")+'</div>'+
-      (d&&d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"#00d97e":"#ff4d6d")+'">'+
-      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':"")+
-      '</div></div>';
-    html+='<div class="mcard-sig"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
-      '<span class="mcard-upd" style="color:'+qualCol+'">'+ev.quality.toUpperCase()+' SETUP</span></div>';
-    html+=gauge;
-    html+=rulesHtml;
-    html+=levHtml;
-    html+=actionHtml;
-    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 14px;font-style:italic">4H RSI period 14 &middot; ATR-based stops &middot; Max hold 24 hours &middot; Exit when RSI returns to 50</div>';
-    html+='</div>';
-  });
-
-  document.getElementById("rsi4hCards").innerHTML=html;
-}
-
-function load4HRSI(){ return;
-  Object.keys(RSI4H_MARKETS).forEach(function(key,i){
-    setTimeout(function(){ fetch4HCandles(key); }, i*350);
-  });
-}
-
-// ═══ BOLLINGER BANDS 1H STRATEGY ════════════════════════════════
-var BB_MARKETS = {
-  gbpusd:{ name:"GBP/USD", dp:5, cat:"Forex",     eTime:"Next 1H candle open" },
-  eurusd:{ name:"EUR/USD", dp:5, cat:"Forex",     eTime:"Next 1H candle open" },
-  usdjpy:{ name:"USD/JPY", dp:3, cat:"Forex",     eTime:"Next 1H candle open" },
-  audusd:{ name:"AUD/USD", dp:5, cat:"Forex",     eTime:"Next 1H candle open" },
-  gold:  { name:"Gold",    dp:2, cat:"Commodity", eTime:"Next 1H candle open during London/NY" }
-};
-
-var liveBBData  = {};
-var liveBBErrors = {};
-
-function calcBB(closes, period, mult){
-  period = period || 20;
-  mult   = mult   || 2;
-  if(!closes || closes.length < period) return null;
-  var slice  = closes.slice(-period);
-  var mean   = slice.reduce(function(a,b){return a+b;},0) / period;
-  var variance = slice.reduce(function(a,b){return a + Math.pow(b-mean,2);},0) / period;
-  var sd     = Math.sqrt(variance);
-  return { upper: mean + mult*sd, middle: mean, lower: mean - mult*sd, sd: sd };
-}
-
-function calc1HRSI(closes){
-  if(!closes || closes.length < 15) return null;
-  var cl = closes.slice(-15);
-  var g=0, l=0;
-  for(var i=1;i<cl.length;i++){
-    var d=cl[i]-cl[i-1];
-    if(d>0) g+=d; else l+=Math.abs(d);
-  }
-  var p=cl.length-1, ag=g/p, al=l/p;
-  return al===0 ? 100 : 100-(100/(1+(ag/al)));
-}
-
-function evalBB(key){
-  var d = liveBBData[key];
-  var price = liveData[key] ? liveData[key].price : null;
-  if(!d || !price) return { signal:"none", score:0, rules:[] };
-
-  var bb  = calcBB(d.c, 20, 2);
-  var rsi = calc1HRSI(d.c);
-  var atr = d.h && d.l ? (function(){
-    var trs=[];
-    for(var i=1;i<Math.min(d.h.length,15);i++){
-      var hl=d.h[i]-d.l[i];
-      var hcp=Math.abs(d.h[i]-d.c[i-1]);
-      var lcp=Math.abs(d.l[i]-d.c[i-1]);
-      trs.push(Math.max(hl,hcp,lcp));
-    }
-    return trs.reduce(function(a,b){return a+b;},0)/trs.length;
-  })() : null;
-
-  if(!bb || !rsi) return { signal:"none", score:0, rules:[], bb:bb, rsi:rsi };
-
-  var rules = [];
-  var isBuy  = price <= bb.lower * 1.001; // within 0.1% of lower band
-  var isSell = price >= bb.upper * 0.999; // within 0.1% of upper band
-
-  // Rule 1: Price at band
-  rules.push({
-    name:"Price at Band",
-    ok: isBuy || isSell,
-    txt: isBuy  ? "Price at/near lower band ("+bb.lower.toFixed(4)+") — oversold zone" :
-         isSell ? "Price at/near upper band ("+bb.upper.toFixed(4)+") — overbought zone" :
-                  "Price between bands — no band signal (upper:"+bb.upper.toFixed(4)+" lower:"+bb.lower.toFixed(4)+")"
-  });
-
-  // Rule 2: RSI confirms
-  var rsiOk = (isBuy && rsi < 40) || (isSell && rsi > 60);
-  rules.push({
-    name:"RSI Confirmation",
-    ok: rsiOk,
-    txt: rsiOk ? "1H RSI "+rsi.toFixed(1)+" confirms "+(isBuy?"oversold":"overbought") :
-                 "1H RSI "+rsi.toFixed(1)+" — "+(isBuy?"need below 40":ev.isSell?"need above 60":"no direction")
-  });
-
-  // Rule 3: Band width (volatility check — avoid squeezes)
-  var bandWidth = (bb.upper - bb.lower) / bb.middle * 100;
-  var goodWidth = bandWidth > 0.3; // at least 0.3% width
-  rules.push({
-    name:"Band Width OK",
-    ok: goodWidth,
-    txt: goodWidth ? "Band width "+bandWidth.toFixed(2)+"% — good volatility for signal" :
-                     "Band squeeze ("+bandWidth.toFixed(2)+"%) — bands too narrow, signal unreliable"
-  });
-
-  // Rule 4: Session check
-  var now = new Date();
-  var hour = now.getUTCHours() + 1; // BST offset
-  var goodSession = (hour >= 8 && hour <= 21);
-  rules.push({
-    name:"Active Session",
-    ok: goodSession,
-    txt: goodSession ? "London/NY session active — good volume for signals" :
-                       "Low volume session (00:00-08:00 UK) — signals less reliable"
-  });
-
-  var score = rules.filter(function(r){return r.ok;}).length;
-  var signal = (isBuy || isSell) ? (isBuy?"buy":"sell") : "none";
-
-  // ATR-based levels
-  var levels = null;
-  if(atr && signal !== "none"){
-    var sl   = isBuy ? price - (1.5*atr) : price + (1.5*atr);
-    var tgt  = bb.middle; // always target the middle band
-    var be   = isBuy ? price + (0.5*atr) : price - (0.5*atr);
-    var rr   = Math.abs(tgt-price) / Math.abs(sl-price);
-    levels = { stop:sl, target:tgt, breakeven:be, rr:rr.toFixed(2), atr:atr,
-               bandWidth:bandWidth };
-  }
-
-  return { signal:signal, score:score, rules:rules, bb:bb, rsi:rsi, atr:atr,
-           levels:levels, isBuy:isBuy, isSell:isSell,
-           quality: score>=3?"strong":score===2?"moderate":"weak" };
-}
-
-function fetch1HCandles(key){
-  var xhr = new XMLHttpRequest();
-  try{
-    xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=1h",true);
-    xhr.timeout=12000;
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4){
-        if(xhr.status===200){
-          try{
-            var d=JSON.parse(xhr.responseText);
-            if(d.error){liveBBErrors[key]=d.error;renderBB();return;}
-            // Store price for display on BB cards
-            if(d.price) liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:"Twelve Data"};
-            if(d.history1h && d.history1h.c && d.history1h.c.length>=20){
-              liveBBData[key]=d.history1h;
-              delete liveBBErrors[key];
-            } else if(d.history){
-              liveBBData[key]=d.history;
-              liveBBErrors[key]="Using daily data proxy";
-            } else {
-              liveBBErrors[key]="No candle data";
-            }
-            renderBB();
-          }catch(e){liveBBErrors[key]="Parse error";renderBB();}
-        } else {
-          liveBBErrors[key]="HTTP "+xhr.status;
-          renderBB();
-        }
-      }
-    };
-    xhr.ontimeout=function(){liveBBErrors[key]="Timeout";};
-    xhr.onerror=function(){liveBBErrors[key]="Network error";};
-    xhr.send();
-  }catch(e){liveBBErrors[key]="Exception";renderBB();}
-}
-
-function renderBB(){
-  var keys   = Object.keys(BB_MARKETS);
+// ═══ RENDER ═══════════════════════════════════════════════════════
+function renderStrategy(tabId, evalFn, markets){
+  var keys=Object.keys(markets);
   var ready=0,watch=0,nosig=0;
   keys.forEach(function(k){
-    var ev=evalBB(k);
-    if(ev.signal!=="none"&&ev.score>=3) ready++;
-    else if(ev.signal!=="none") watch++;
+    var ev=evalFn(k);
+    if(ev.signal!=="none"&&ev.score>=4) ready++;
+    else if(ev.signal!=="none"&&ev.score>=2) watch++;
     else nosig++;
   });
 
-  document.getElementById("bbSummary").innerHTML=
-    '<div class="sumcard ready"><div class="sumnum g">'+ready+'</div><div class="sumlbl">&#9989; BB READY</div></div>'+
-    '<div class="sumcard watch"><div class="sumnum a">'+watch+'</div><div class="sumlbl">&#128993; WATCHING</div></div>'+
-    '<div class="sumcard nosig"><div class="sumnum d">'+nosig+'</div><div class="sumlbl">&#9898; NO SIGNAL</div></div>';
+  document.getElementById(tabId+"Summary").innerHTML=
+    '<div class="sumc g"><div class="sumnum" style="color:var(--g)">'+ready+'</div><div class="sumlbl">&#9989; TRADE READY</div></div>'+
+    '<div class="sumc a"><div class="sumnum" style="color:var(--a)">'+watch+'</div><div class="sumlbl">&#128993; WATCHING</div></div>'+
+    '<div class="sumc d"><div class="sumnum" style="color:var(--dim)">'+nosig+'</div><div class="sumlbl">&#9898; NO SIGNAL</div></div>';
 
-  var loaded=keys.filter(function(k){return liveBBData[k];}).length;
-  var el=document.getElementById("bbStatus");
-  if(loaded>=keys.length){
-    el.innerHTML="&#9989; "+keys.length+" markets loaded &middot; Bollinger Bands calculated";
-    el.style.color="#00d97e";
-  } else {
-    el.innerHTML='<span class="pulse"></span>Loading... ('+loaded+'/'+keys.length+')';
-    el.style.color="";
-  }
+  var loaded=keys.filter(function(k){return liveData[k];}).length;
+  var el=document.getElementById(tabId+"Status");
+  if(loaded>=keys.length){el.innerHTML="&#9989; "+keys.length+" markets loaded";el.style.color="var(--g)";}
+  else{el.innerHTML='<span class="pulse"></span>Loading... ('+loaded+'/'+keys.length+')';el.style.color="";}
 
   var html="";
   keys.forEach(function(key){
-    var m  = BB_MARKETS[key];
-    var ev = evalBB(key);
-    var d  = liveData[key];
-    function f(n){return parseFloat(n).toFixed(m.dp);}
+    var m=markets[key];
+    var d=liveData[key];
+    var ev=evalFn(key);
+    var err=liveErrors[key];
+    function f(n){return n?parseFloat(n).toFixed(m.dp):"--";}
 
-    if(!d||!liveBBData[key]){
-      var err=liveBBErrors[key]||"Loading...";
-      html+='<div class="mcard loading"><div class="mcard-top"><div class="mcard-left"><div class="mcard-name">'+m.name+'</div><div class="mcard-cat" style="color:var(--dim)">'+err+'</div></div><div class="mcard-right"><div class="mcard-price" style="color:var(--dim)">--</div></div></div></div>';
+    if(!d&&!err){
+      html+='<div class="mcard loading"><div class="mcard-top"><div><div class="mcard-name">'+m.name+'</div><div class="mcard-sub">'+m.cat+' &middot; Loading...</div></div><div style="text-align:right"><div class="mcard-price" style="color:var(--dim)">--</div></div></div></div>';
+      return;
+    }
+    if(!d&&err){
+      html+='<div class="mcard nosig"><div class="mcard-top"><div><div class="mcard-name">'+m.name+'</div><div class="mcard-sub" style="color:var(--r)">&#9888; '+err+'</div></div></div></div>';
       return;
     }
 
-    var isBuy  = ev.isBuy;
-    var cardCls= ev.signal!=="none"&&ev.score>=3?"ready":ev.signal!=="none"?"watch":"nosig";
-    var dirCls = isBuy?"long":ev.isSell?"short":"";
-    var qualCol= ev.quality==="strong"?"#00d97e":ev.quality==="moderate"?"#ffa94d":"#ff4d6d";
-    var pill   = ev.signal!=="none"&&ev.score>=3
-      ? "&#9989; BB SIGNAL &mdash; "+m.name+" "+(isBuy?"BUY":"SELL")+" ("+ev.score+"/4)"
-      : ev.signal!=="none"
-      ? "&#128993; WATCH &mdash; "+ev.score+"/4 rules &mdash; wait for full confluence"
-      : "&#9898; NO SIGNAL &mdash; Price between bands";
+    var isL=ev.signal==="long";
+    var cardCls=ev.signal!=="none"&&ev.score>=4?"ready":ev.signal!=="none"&&ev.score>=2?"watch":"nosig";
+    var pill=ev.signal!=="none"&&ev.score>=4?"&#9989; TRADE READY &mdash; "+m.name+" "+(isL?"LONG":"SHORT"):
+             ev.signal!=="none"&&ev.score>=2?"&#128993; WATCH &mdash; "+ev.score+"/"+ev.checks.length+" checks":
+             "&#9898; NO SIGNAL";
 
-    // Band visualiser
-    var bandHtml="";
-    if(ev.bb){
-      var range = ev.bb.upper - ev.bb.lower;
-      var pricePct = range>0 ? Math.min(100,Math.max(0,((d.price-ev.bb.lower)/range)*100)) : 50;
-      bandHtml='<div style="margin:0 16px 14px">'+
-        '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px">'+
-        '<span style="color:#00d97e">Lower '+f(ev.bb.lower)+'</span>'+
-        '<span>Middle '+f(ev.bb.middle)+'</span>'+
-        '<span style="color:#ff4d6d">Upper '+f(ev.bb.upper)+'</span></div>'+
-        '<div style="background:linear-gradient(to right,rgba(0,217,126,0.15),rgba(255,255,255,0.04),rgba(255,77,109,0.15));border-radius:20px;height:10px;position:relative;border:1px solid rgba(255,255,255,0.08)">'+
-        '<div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.2)"></div>'+
-        '<div style="position:absolute;top:-3px;width:16px;height:16px;background:'+(d.price<=ev.bb.lower*1.001?"#00d97e":d.price>=ev.bb.upper*0.999?"#ff4d6d":"#4dabf7")+';border-radius:50%;left:calc('+pricePct+'% - 8px);border:2px solid #0c1118;transition:left .3s"></div>'+
-        '</div>'+
-        '<div style="text-align:center;margin-top:6px;font-size:12px;font-weight:700;color:'+(d.price<=ev.bb.lower*1.001?"#00d97e":d.price>=ev.bb.upper*0.999?"#ff4d6d":"#4dabf7")+'">Price: '+f(d.price)+' &middot; 1H RSI: '+(ev.rsi?ev.rsi.toFixed(1):"...")+'</div></div>';
-    }
-
-    // Rules grid
-    var rulesHtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px">';
-    ev.rules.forEach(function(r){
-      var rc=r.ok?"#00d97e":"#ff4d6d";
-      var ri=r.ok?"&#9989;":"&#10060;";
-      rulesHtml+='<div style="background:rgba(0,0,0,0.2);border:1px solid '+(r.ok?"rgba(0,217,126,0.3)":"rgba(255,77,109,0.2)")+';border-radius:9px;padding:9px 11px">'+
-        '<div style="font-size:9px;color:var(--dim);text-transform:uppercase;margin-bottom:3px">'+r.name+'</div>'+
-        '<div style="font-size:11px">'+ri+' <span style="color:'+rc+'">'+( r.ok?"Confirmed":"Not met")+'</span></div>'+
-        '<div style="font-size:9px;color:var(--dim);margin-top:3px;line-height:1.4">'+r.txt+'</div></div>';
+    // Checks grid
+    var chksHtml='<div class="checklist">';
+    ev.checks.forEach(function(c){
+      chksHtml+='<div class="chk '+(c.ok?"ok":c.na?"":"fail")+'">'+
+        '<div class="chk-lbl">'+c.name+'</div>'+
+        '<div class="chk-val" style="color:'+(c.ok?"var(--g)":c.na?"var(--dim)":"var(--r)")+'">'+(c.ok?"&#9989; Yes":c.na?"&#9744; Loading":"&#10060; No")+'</div>'+
+        '<div class="chk-txt">'+c.txt+'</div></div>';
     });
-    rulesHtml+='</div>';
+    // Add ATR and SMA values as info cells
+    if(ev.sma20||ev.sma5) chksHtml+='<div class="chk"><div class="chk-lbl">SMA Values</div><div class="chk-val" style="color:var(--b);font-size:10px">'+(ev.sma20?"20SMA: "+parseFloat(ev.sma20).toFixed(m.dp)+" &middot; 50SMA: "+parseFloat(ev.sma50).toFixed(m.dp):ev.sma5?"5SMA: "+parseFloat(ev.sma5).toFixed(m.dp)+" &middot; 10SMA: "+parseFloat(ev.sma10).toFixed(m.dp):"")+' </div><div class="chk-txt">ATR(14): '+(ev.atr?parseFloat(ev.atr).toFixed(m.dp):"--")+'</div></div>';
+    chksHtml+='</div>';
 
     // Levels
     var levHtml="";
-    if(ev.levels && ev.signal!=="none"){
+    if(ev.levels){
       var L=ev.levels;
       levHtml='<div class="levels">'+
         '<div class="lev"><div class="lev-l">Entry</div><div class="lev-v" style="color:var(--b)">'+f(d.price)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Stop (ATR)</div><div class="lev-v" style="color:var(--r)">'+f(L.stop)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Target (Mid Band)</div><div class="lev-v" style="color:var(--g)">'+f(L.target)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">R/R</div><div class="lev-v" style="color:var(--a)">1:'+L.rr+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Stop (1.5 ATR)</div><div class="lev-v" style="color:var(--r)">'+f(L.stop)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Target (2:1)</div><div class="lev-v" style="color:var(--g)">'+f(L.target)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Units (2% risk)</div><div class="lev-v" style="color:var(--a)">'+L.units+'</div></div>'+
         '</div>'+
-        '<div style="font-size:10px;color:var(--dim);padding:4px 16px 12px">ATR: '+L.atr.toFixed(m.dp)+' &middot; Band width: '+L.bandWidth.toFixed(2)+"% &middot; Breakeven at: "+f(L.breakeven)+'</div>';
+        '<div style="font-size:10px;color:var(--dim);padding:4px 16px 10px">Risk: &pound;'+L.stake.toFixed(2)+' &middot; Est. profit at 2:1: &pound;'+L.profEst+' &middot; ATR: '+parseFloat(L.atr).toFixed(m.dp)+'</div>';
     }
 
     // Action box
     var actionHtml="";
-    if(ev.signal!=="none"&&ev.score>=3&&ev.levels){
+    if(ev.signal!=="none"&&ev.score>=4&&ev.levels){
       var L=ev.levels;
-      var stake=cap*0.02;
-      var riskDist=Math.abs(d.price-L.stop);
-      var units=riskDist>0?(stake/riskDist).toFixed(2):"n/a";
-      var prof=(stake*parseFloat(L.rr)).toFixed(2);
-      var tname={gbpusd:"GBP/USD",eurusd:"EUR/USD",usdjpy:"USD/JPY",audusd:"AUD/USD",gold:"Gold / XAU/USD"}[key]||m.name;
-      actionHtml='<div class="action-box trade">'+
-        '<div class="action-title">&#9989; 1H BB Trade Instructions &mdash; '+m.name+' '+(isBuy?"BUY":"SELL")+'</div>'+
-        "1. Price has touched the "+(isBuy?"lower":"upper")+" Bollinger Band AND 1H RSI is "+(isBuy?"below 40":"above 60")+"<br>"+
-        "2. Open Trade Nation &mdash; search <b>"+tname+"</b><br>"+
-        "3. Enter at <b>next 1H candle open</b> &mdash; "+m.eTime+"<br>"+
-        "4. Place <b>"+(isBuy?"BUY":"SELL")+"</b> at current price: <b style='color:#4dabf7'>"+f(d.price)+"</b><br>"+
-        "5. Set <b>Stop Loss</b>: <b style='color:#ff4d6d'>"+f(L.stop)+"</b> (1.5x ATR beyond band)<br>"+
-        "6. Set <b>Take Profit</b>: <b style='color:#00d97e'>"+f(L.target)+"</b> (middle band = 20-period average)<br>"+
-        "7. Quantity: <b>"+units+" units</b> (2% of £"+cap+" at risk)<br>"+
-        "8. Exit immediately if price <b>closes outside the band</b> on the 1H chart (signal failed)<br>"+
-        "9. Maximum hold: <b>4 hours</b> regardless — do not hold overnight<br><br>"+
-        "<b>Est. profit: <span style='color:#00d97e'>+£"+prof+"</span> &middot; Max loss: <span style='color:#ff4d6d'>-£"+stake.toFixed(2)+"</span> &middot; R/R: 1:"+L.rr+"</b>"+
+      actionHtml='<div class="abox trade">'+
+        '<div class="abox-title">&#9989; What To Do &mdash; '+m.name+' '+(isL?"LONG":"SHORT")+'</div>'+
+        '1. Confirm current 4H candle has <b>fully CLOSED</b> with confirmation<br>'+
+        '2. Open Trade Nation &mdash; search <b>'+m.tn+'</b><br>'+
+        '3. Enter <b>'+(isL?"BUY":"SELL")+'</b> at next candle open: <b style="color:var(--b)">'+f(d.price)+'</b><br>'+
+        '4. Set <b>Stop Loss</b>: <b style="color:var(--r)">'+f(L.stop)+'</b> (1.5x ATR beyond swing)<br>'+
+        '5. Set <b>Take Profit</b>: <b style="color:var(--g)">'+f(L.target)+'</b> (2:1 minimum)<br>'+
+        '6. Trade size: <b>'+L.units+' units</b> (2% of &pound;'+cap+' = &pound;'+L.stake.toFixed(2)+' risk)<br>'+
+        '7. Once 1:1 profit reached, move stop to breakeven<br>'+
+        '8. Trail stop to lock in profit as trade continues<br>'+
+        '9. Hold until stop hit, target hit, or trend reversal &mdash; <b>not a fixed number of days</b><br><br>'+
+        '<b>&#9888; Check forexfactory.com for major news before entering</b>'+
         '</div>';
-    } else if(ev.signal!=="none"){
-      actionHtml='<div class="action-box wait"><div class="action-title">&#128993; Not enough confluence yet</div>'+
-        "Need "+ev.rules.filter(function(r){return !r.ok;}).map(function(r){return r.name;}).join(" + ")+
-        " to confirm. Wait for the next 1H candle and re-check.</div>";
+    } else if(ev.signal!=="none"&&ev.score>=2){
+      var missing=ev.checks.filter(function(c){return !c.ok&&!c.na;}).map(function(c){return c.name;});
+      actionHtml='<div class="abox wait"><div class="abox-title">&#128993; Not Ready Yet</div>'+
+        'Missing: <b>'+missing.join(", ")+'</b><br>'+
+        'Check again at the next 4H candle close. Do not enter until all conditions are met.</div>';
     } else {
-      actionHtml='<div class="action-box skip"><div class="action-title">&#9898; Price between bands</div>No Bollinger Band signal on '+m.name+' right now. Price needs to reach the upper or lower band before a signal fires. This is normal — check again in 1-4 hours.</div>';
+      actionHtml='<div class="abox skip"><div class="abox-title">&#9898; No Signal</div>'+
+        m.name+' does not have a valid setup right now. Stand aside. Check at next 4H close.</div>';
     }
 
     html+='<div class="mcard '+cardCls+'">';
-    html+='<div class="mcard-top"><div class="mcard-left">'+
-      '<div class="mcard-name">'+(ev.signal!=="none"?'<span class="mcard-dir '+dirCls+'">'+( isBuy?"BUY":"SELL")+'</span>':'')+m.name+'</div>'+
-      '<div class="mcard-cat">'+m.cat+' &middot; 1H Bollinger Bands</div></div>'+
-      '<div class="mcard-right"><div class="mcard-price">'+(d?f(d.price):"--")+'</div>'+
-      (d&&d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"#00d97e":"#ff4d6d")+'">'+
-      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':"")+
-      '</div></div>';
-    html+='<div class="mcard-sig"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
-      '<span class="mcard-upd" style="color:'+qualCol+'">'+ev.quality.toUpperCase()+'</span></div>';
-    html+=bandHtml;
-    html+=rulesHtml;
+    html+='<div class="mcard-top">'+
+      '<div><div class="mcard-name">'+(ev.signal!=="none"?'<span class="dirtag '+(isL?"long":"short")+'">'+(isL?"LONG":"SHORT")+'</span>':'')+m.name+'</div>'+
+      '<div class="mcard-sub">'+m.cat+' &middot; Trade Nation: '+m.tn+' &middot; Updated '+d.ts.toLocaleTimeString("en-GB")+'</div></div>'+
+      '<div><div class="mcard-price">'+f(d.price)+'</div>'+
+      '<div class="mcard-chg" style="color:'+(d.chg>=0?"var(--g)":"var(--r)")+'">'+(d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div></div>'+
+      '</div>';
+    html+='<div class="sigbar"><span class="sigpill '+cardCls+'">'+pill+'</span><span style="font-size:10px;color:var(--dim)">Twelve Data</span></div>';
+    html+=chksHtml;
     html+=levHtml;
     html+=actionHtml;
-    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 14px;font-style:italic">BB(20,2) + 1H RSI(14) &middot; ATR stops &middot; Target middle band &middot; Max 4 hours</div>';
+    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 12px;font-style:italic">4H timeframe &middot; ATR(14) stops &middot; Hold until stop/target/reversal &middot; Trail after 1:1</div>';
     html+='</div>';
   });
 
-  document.getElementById("bbCards").innerHTML=html;
+  document.getElementById(tabId+"Cards").innerHTML=html;
 }
 
-function loadBB(){
-  Object.keys(BB_MARKETS).forEach(function(key,i){
-    setTimeout(function(){ fetch1HCandles(key); }, i*8000);
+function renderS1(){ renderStrategy("s1",evalS1,MARKETS_S1); }
+function renderS2(){ renderStrategy("s2",evalS2,MARKETS_S1); }
+
+// ═══ LOAD DATA ════════════════════════════════════════════════════
+function loadS1(){
+  var keys=Object.keys(MARKETS_S1);
+  keys.forEach(function(k,i){
+    delete liveData[k]; delete liveHistory4H[k]; delete liveErrors[k];
+  });
+  renderS1(); renderS2();
+  keys.forEach(function(k,i){
+    setTimeout(function(){
+      liveErrors[k]=null;
+      fetchMarket4H(k,function(key,err){
+        if(err) liveErrors[key]=err;
+        renderS1(); renderS2();
+      });
+    },i*8000);
   });
 }
 
-// ═══ INIT ════════════════════════════════════════════════════════
+function loadS2(){ loadS1(); } // Same data, different evaluation
+
+// ═══ CHECKLIST ═══════════════════════════════════════════════════
+var CHECKLIST=[
+  {id:"trend",title:"Trend Confirmed",desc:"20 SMA is above (for buys) or below (for sells) the 50 SMA on the 4H chart. Both SMAs are clearly rising or falling, not flat."},
+  {id:"pullback",title:"Pullback to 20 SMA",desc:"Price has pulled back toward the 20 SMA from above (for buys) or below (for sells). Not overextended away from the SMA."},
+  {id:"confirm",title:"Confirmation Candle Closed",desc:"A bullish (for buys) or bearish (for sells) candle has FULLY CLOSED at the 20 SMA. You are waiting for the NEXT candle to open before entering."},
+  {id:"news",title:"No Major News Imminent",desc:"Checked forexfactory.com. No high-impact news in the next 4 hours. Fed, BoE, ECB, CPI, NFP, GDP all clear."},
+  {id:"stop",title:"Logical Stop Loss Set",desc:"Stop is placed beyond the recent swing high (for sells) or swing low (for buys). ATR check done — stop is not unrealistically tight."},
+  {id:"rr",title:"Minimum 2:1 Reward:Risk",desc:"Distance from entry to target is at least 2x the distance from entry to stop. Confirmed before entering."},
+  {id:"size",title:"Position Sized at 1-2%",desc:"Calculated exact units using the Position Calc tab. Risk on this trade is no more than 1-2% of total account balance."}
+];
+var checkedItems={};
+
+function renderChecklist(){
+  var html="";
+  CHECKLIST.forEach(function(c,i){
+    var checked=checkedItems[c.id]===true;
+    var cls=checked?" checked":"";
+    var chk=checked?"&#10003;":"";
+    var oid=c.id;
+    html+="<div class=\"chkrow\">"+
+      "<div class=\"chkbox"+cls+"\" onclick=\"toggleChk('"+oid+"')\">"+(chk)+"</div>"+
+      "<div class=\"chkrow-text\"><div class=\"chkrow-title\">"+(i+1)+". "+c.title+"</div><div class=\"chkrow-desc\">"+c.desc+"</div></div>"+
+      "</div>";
+  });
+  document.getElementById("chkList").innerHTML=html;
+  var score=Object.values(checkedItems).filter(Boolean).length;
+  var el=document.getElementById("chkScore");
+  var vEl=document.getElementById("chkVerdict");
+  el.textContent=score+"/7";
+  if(score===7){el.style.color="var(--g)";vEl.textContent="&#9989; All checks passed — you may enter the trade";}
+  else if(score>=5){el.style.color="var(--a)";vEl.textContent="&#128993; Almost ready — complete remaining checks before entering";}
+  else{el.style.color="var(--dim)";vEl.textContent="Tick each condition you have confirmed on your chart";}
+}
+
+function toggleChk(id){
+  checkedItems[id]=!checkedItems[id];
+  renderChecklist();
+}
+function clearNotes(){ document.getElementById("tradeNotes").value=""; }
+
+// ═══ POSITION CALC ════════════════════════════════════════════════
+var MKT_DP={eurusd:5,gbpusd:5,usdjpy:3,usdcad:5,audusd:5,us500:1,us100:1,uk100:1,ger40:1,gold:2,silver:3};
+
+function calcPos(){
+  var bal=parseFloat(document.getElementById("cBal").value)||500;
+  var risk=parseFloat(document.getElementById("cRisk").value)||2;
+  var mkt=document.getElementById("cMkt").value;
+  var entry=parseFloat(document.getElementById("cEntry").value);
+  var stop=parseFloat(document.getElementById("cStop").value);
+  var target=parseFloat(document.getElementById("cTarget").value);
+  var dp=MKT_DP[mkt]||2;
+
+  var res=document.getElementById("calcRes");
+  if(!entry||!stop||!target){res.innerHTML='<div style="color:var(--dim);font-size:12px">Enter entry, stop and target prices above to calculate.</div>';return;}
+
+  var maxRisk=bal*(risk/100);
+  var stopDist=Math.abs(entry-stop);
+  var profitDist=Math.abs(target-entry);
+  var rr=profitDist/stopDist;
+  var units=maxRisk/stopDist;
+  var profEst=units*profitDist;
+
+  var rrCol=rr>=2?"var(--g)":rr>=1.5?"var(--a)":"var(--r)";
+  var rrNote=rr>=2?"&#9989; Good — meets 2:1 minimum":rr>=1.5?"&#128993; Borderline — try for better entry":
+             "&#10060; Below 2:1 — do not take this trade";
+
+  res.innerHTML=
+    '<div class="resgrid">'+
+    '<div class="resc"><div class="rescl">Max Risk</div><div class="rescv" style="color:var(--r)">&pound;'+maxRisk.toFixed(2)+'</div></div>'+
+    '<div class="resc"><div class="rescl">Stop Distance</div><div class="rescv">'+stopDist.toFixed(dp)+'</div></div>'+
+    '<div class="resc"><div class="rescl">Units to Trade</div><div class="rescv" style="color:var(--b)">'+units.toFixed(3)+'</div></div>'+
+    '<div class="resc"><div class="rescl">Reward:Risk</div><div class="rescv" style="color:'+rrCol+'">1:'+rr.toFixed(2)+'</div></div>'+
+    '<div class="resc"><div class="rescl">Est. Profit</div><div class="rescv" style="color:var(--g)">&pound;'+profEst.toFixed(2)+'</div></div>'+
+    '<div class="resc"><div class="rescl">R/R Rating</div><div class="rescv" style="font-size:11px;color:'+rrCol+'">'+rrNote+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--dim)">Enter <b>'+units.toFixed(3)+'</b> in Trade Nation quantity box. Your maximum loss on this trade is <b>&pound;'+maxRisk.toFixed(2)+'</b>.</div>';
+}
+
+// ═══ INIT ═════════════════════════════════════════════════════════
 upCap();
-renderLive();
-renderRSI();
-renderBB();
-
-// Load all 3 signal tabs simultaneously on page open
-loadAll();                                          // LW METHOD tab
-setTimeout(function(){                              // DAILY RSI tab
-  var rsiOnly=["audusd","usdcad","usdchf","nzdusd","silver","btc","eth"];
-  rsiOnly.forEach(function(k,i){ setTimeout(function(){ fetchRSIMarket(k); }, i*4000); });
-}, 500);
-setTimeout(function(){ loadBB(); }, 1000);          // 1H BANDS tab
+renderChecklist();
+calcPos();
+loadS1();
+setInterval(loadS1, 900000); // refresh every 15 mins
 </script>
-
-<!-- RSI MEAN REVERSION PANEL -->
-<div id="p-rsi" class="panel">
-  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#9889; RSI Strategy &mdash; 11 Markets</div>
-  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Complementary to Larry Williams &mdash; fires 3-8 times per week &mdash; documented 68-75% win rate on major pairs</div>
-
-  <!-- Quick Rules Box -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:13px">
-      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:6px">&#9989; BUY SIGNAL</div>
-      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">RSI <b style="color:#fff">below 30</b><br>Market oversold<br>Price likely to bounce<br>Enter next day open</div>
-    </div>
-    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:13px">
-      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:6px">&#10060; SELL SIGNAL</div>
-      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">RSI <b style="color:#fff">above 70</b><br>Market overbought<br>Price likely to fall<br>Enter next day open</div>
-    </div>
-  </div>
-
-  <!-- Key Rules Strip -->
-  <div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#b0ab9e;line-height:1.9">
-    <b style="color:#4dabf7">Rules:</b>
-    Stop loss at recent swing high/low &middot;
-    Target when RSI returns to 50 &middot;
-    Max hold <b style="color:#fff">3 trading days</b> &middot;
-    Never trade same market as Larry Williams simultaneously &middot;
-    The RSI gauge on each card is calculated from real live data — rely on it directly. Only use TradingView if RSI shows “Calculating...” after two refreshes
-  </div>
-
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-    <div id="rsiStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
-      <span class="pulse"></span>Loading RSI data...
-    </div>
-    <button onclick="manualRefresh()" style="background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:#00d97e;font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer">&#8635; Refresh</button>
-  </div>
-
-  <div class="sumstrip" id="rsiSummary"></div>
-
-  <!-- Category filters -->
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="rsiFilters">
-    <button onclick="filterRSI('all',this)" class="ntab on" style="border-radius:20px;padding:5px 13px;font-size:11px">All</button>
-    <button onclick="filterRSI('Forex',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Forex</button>
-    <button onclick="filterRSI('Commodity',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Commodities</button>
-    <button onclick="filterRSI('Crypto',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">Crypto</button>
-    <button onclick="filterRSI('ready',this)" class="ntab" style="border-radius:20px;padding:5px 13px;font-size:11px">&#9989; Ready Only</button>
-  </div>
-
-  <div id="rsiCards"></div>
-  <div class="disc">RSI Mean Reversion is a documented quantitative strategy. Past win rates do not guarantee future results. Always use a stop loss. Not financial advice. Crypto prices via CoinGecko. Forex via Frankfurter and Twelve Data.</div>
-</div>
-
-
-<!-- BOLLINGER BANDS 1H PANEL -->
-<div id="p-bb" class="panel">
-  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#127992; Bollinger Bands — 1-Hour Strategy</div>
-  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Most frequent signals — fires 5-20 times daily — 62-70% win rate on major pairs — hold 1-4 hours</div>
-
-  <!-- Quick Rules -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:13px">
-      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:6px">&#9989; BUY SIGNAL</div>
-      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">Price touches <b style="color:#fff">lower band</b><br>RSI below <b style="color:#fff">40</b> (confirms)<br>Price closes back inside band<br>Target: middle band (20 SMA)</div>
-    </div>
-    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:13px">
-      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:6px">&#10060; SELL SIGNAL</div>
-      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">Price touches <b style="color:#fff">upper band</b><br>RSI above <b style="color:#fff">60</b> (confirms)<br>Price closes back inside band<br>Target: middle band (20 SMA)</div>
-    </div>
-  </div>
-
-  <!-- Strategy explanation -->
-  <div class="bn b" style="margin-bottom:14px">
-    <b>&#128161; How Bollinger Bands work:</b><br><br>
-    The bands expand and contract based on market volatility. Price naturally returns to the middle band (average) after touching the outer bands — this is mean reversion.<br><br>
-    <b>Upper band</b> = 20-period average + 2 standard deviations — statistically overbought<br>
-    <b>Middle band</b> = 20-period average — your profit target<br>
-    <b>Lower band</b> = 20-period average - 2 standard deviations — statistically oversold<br><br>
-    <b>Combined with RSI</b> = much stronger signal. Band touch alone = 55% win rate. Band touch + RSI confirmation = 62-70% win rate.
-  </div>
-
-  <!-- Rules strip -->
-  <div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#b0ab9e;line-height:1.9">
-    <b style="color:#4dabf7">Key rules:</b>
-    Target = <b style="color:#fff">middle band</b> (not a fixed % move) &middot;
-    Stop = <b style="color:#fff">ATR-based below/above the band touched</b> &middot;
-    Max hold = <b style="color:#fff">4 hours (1 candle cycle)</b> &middot;
-    Exit immediately if price closes <b style="color:#fff">outside the band</b> (signal failed) &middot;
-    Best during <b style="color:#fff">London (08:00-16:00 UK) and NY (14:30-21:00 UK)</b> sessions &middot;
-    <b style="color:#ffa94d">Avoid 00:00-07:00 UK — low volume, unreliable bands</b>
-  </div>
-
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-    <div id="bbStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
-      <span class="pulse"></span>Loading Bollinger Band data...
-    </div>
-    <button onclick="loadBB()" style="background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.4);border-radius:8px;color:#00d97e;font-family:inherit;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer">&#8635; Refresh BB Data</button>
-  </div>
-
-  <div class="sumstrip" id="bbSummary"></div>
-  <div id="bbCards"></div>
-
-  <div class="disc">Bollinger Band Mean Reversion is a short-term intraday strategy. Best results during active market sessions. Past win rates do not guarantee future results. Always use stop loss. Not financial advice.</div>
-</div>
 </body>
 </html>
