@@ -201,6 +201,7 @@ select.ni{width:auto}
     <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
     <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
     <button class="ntab" onclick="tab('news',this)">&#128680; NEWS & RISK</button>
+    <button class="ntab" onclick="tab('journal',this)">&#128221; JOURNAL</button>
   </div>
 </div>
 
@@ -227,7 +228,7 @@ select.ni{width:auto}
   <div class="bn b">
     <b>&#9889; 5/10 Momentum Trigger — 4H</b><br><br>
     The 5/10 crossover is <b>not the signal</b> — it is the <b>trigger</b>. The trade decision is based on trend quality first. The cross simply tells you momentum may be returning.<br><br>
-    <b>Decision based on:</b> Is the 50 SMA rising? Is the 20 SMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
+    <b>Decision based on:</b> Is the 50 EMA rising? Is the 20 EMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
     <b>Trigger:</b> 5 SMA crosses 10 SMA in the direction of the trend = momentum returning = enter next candle.<br><br>
     <b style="color:var(--a)">&#9888; Need 4 of 6 checks green before entering. The cross alone is never enough.</b>
   </div>
@@ -408,9 +409,33 @@ function tab(id,btn){
 
 // ═══ CALCULATIONS ═════════════════════════════════════════════════
 function calcSMA(closes, period){
+  // Kept for compatibility — internally uses EMA calculation
+  return calcEMA(closes, period);
+}
+
+function calcEMA(closes, period){
   if(!closes||closes.length<period) return null;
-  var sl=closes.slice(-period);
-  return sl.reduce(function(a,b){return a+b;},0)/period;
+  // Seed with SMA of first `period` closes
+  var seed = closes.slice(0,period).reduce(function(a,b){return a+b;},0)/period;
+  var k = 2/(period+1); // EMA multiplier
+  var ema = seed;
+  for(var i=period;i<closes.length;i++){
+    ema = closes[i]*k + ema*(1-k);
+  }
+  return ema;
+}
+
+function calcEMASeries(closes, period){
+  // Returns full array of EMA values — needed for directionality check
+  if(!closes||closes.length<period) return null;
+  var k=2/(period+1);
+  var ema=closes.slice(0,period).reduce(function(a,b){return a+b;},0)/period;
+  var series=[ema];
+  for(var i=period;i<closes.length;i++){
+    ema=closes[i]*k+ema*(1-k);
+    series.push(ema);
+  }
+  return series;
 }
 
 function calcATR(h,l,c,period){
@@ -427,20 +452,22 @@ function calcATR(h,l,c,period){
 }
 
 function isSMADirectional(closes, period, lookback){
+  // Now uses EMA series for more accurate directionality
   lookback=lookback||3;
   if(!closes||closes.length<period+lookback) return null;
-  var smas=[];
-  for(var i=lookback;i>=0;i--){
-    var sl=closes.slice(-(period+i),i>0?-i:undefined);
-    smas.push(sl.reduce(function(a,b){return a+b;},0)/period);
-  }
-  // Rising if each SMA is higher than the previous
+  var series=calcEMASeries(closes,period);
+  if(!series||series.length<lookback+1) return null;
+  var recent=series.slice(-(lookback+1));
   var rising=true,falling=true;
-  for(var j=1;j<smas.length;j++){
-    if(smas[j]<=smas[j-1]) rising=false;
-    if(smas[j]>=smas[j-1]) falling=false;
+  for(var j=1;j<recent.length;j++){
+    if(recent[j]<=recent[j-1]) rising=false;
+    if(recent[j]>=recent[j-1]) falling=false;
   }
-  return {rising:rising,falling:falling,smas:smas};
+  // Also check angle — difference between last and first EMA value
+  var diff=recent[recent.length-1]-recent[0];
+  var pctChange=Math.abs(diff/recent[0]*100);
+  var strength=pctChange>0.3?"strong":pctChange>0.1?"moderate":"weak";
+  return {rising:rising,falling:falling,smas:recent,strength:strength,anglePct:pctChange};
 }
 
 // ═══ STRATEGY 1: 4H SMA PULLBACK ══════════════════════════════════
@@ -491,8 +518,8 @@ function evalS1(key){
 
   // Score
   var checks=[
-    {name:"Trend Direction",ok:trendOk,txt:trendOk?"20 SMA "+(isBull?"above":"below")+" 50 SMA — "+(isBull?"uptrend":"downtrend"):"SMAs too close — no clear trend"},
-    {name:"SMAs Rising/Falling",ok:smaDir20Ok&&smaDir50Ok,txt:(smaDir20Ok&&smaDir50Ok)?"Both SMAs clearly "+(isBull?"rising":"falling"):"SMAs flat or mixed — weak trend, skip"},
+    {name:"Trend Direction",ok:trendOk,txt:trendOk?"20 EMA "+(isBull?"above":"below")+" 50 EMA — "+(isBull?"uptrend":"downtrend"):"SMAs too close — no clear trend"},
+    {name:"EMAs Rising/Falling",ok:smaDir20Ok&&smaDir50Ok,txt:(smaDir20Ok&&smaDir50Ok)?"Both EMAs clearly "+(isBull?"rising":"falling")+" ("+(dir20?dir20.strength:"")+" angle)":"EMAs flat or mixed — weak trend, skip"},
     {name:"Price at Pullback",ok:atPullback,txt:atPullback?"Price within "+distFrom20.toFixed(2)+"% of 20 SMA — valid pullback zone":"Price "+distFrom20.toFixed(2)+"% from 20 SMA — wait for pullback"},
     {name:"Confirmation Candle",ok:confirmOk,txt:confirmOk?"Last 4H candle confirmed "+(isBull?"bullish":"bearish")+" at SMA — wait for this candle to close then enter next":"No confirmation candle yet — wait"},
     {name:"SMA Separation",ok:gapOk,txt:gapOk?"20/50 gap: "+smaGap.toFixed(2)+"% — clear trend":"SMAs too close ("+smaGap.toFixed(2)+"%) — crossover risk, skip"}
@@ -725,7 +752,7 @@ function renderStrategy(tabId, evalFn, markets){
         '<div class="chk-txt">'+c.txt+'</div></div>';
     });
     // Add ATR and SMA values as info cells
-    if(ev.sma20||ev.sma5) chksHtml+='<div class="chk"><div class="chk-lbl">SMA Values</div><div class="chk-val" style="color:var(--b);font-size:10px">'+(ev.sma20?"20SMA: "+parseFloat(ev.sma20).toFixed(m.dp)+" &middot; 50SMA: "+parseFloat(ev.sma50).toFixed(m.dp):ev.sma5?"5SMA: "+parseFloat(ev.sma5).toFixed(m.dp)+" &middot; 10SMA: "+parseFloat(ev.sma10).toFixed(m.dp):"")+' </div><div class="chk-txt">ATR(14): '+(ev.atr?parseFloat(ev.atr).toFixed(m.dp):"--")+'</div></div>';
+    if(ev.sma20||ev.sma5) chksHtml+='<div class="chk"><div class="chk-lbl">SMA Values</div><div class="chk-val" style="color:var(--b);font-size:10px">'+(ev.sma20?"20 EMA: "+parseFloat(ev.sma20).toFixed(m.dp)+" &middot; 50 EMA: "+parseFloat(ev.sma50).toFixed(m.dp):ev.sma5?"5 EMA: "+parseFloat(ev.sma5).toFixed(m.dp)+" &middot; 10 EMA: "+parseFloat(ev.sma10).toFixed(m.dp):"")+' </div><div class="chk-txt">ATR(14): '+(ev.atr?parseFloat(ev.atr).toFixed(m.dp):"--")+'</div></div>';
     chksHtml+='</div>';
 
     // Levels
@@ -811,8 +838,8 @@ function loadS2(){ loadS1(); } // Same data, different evaluation
 
 // ═══ CHECKLIST ═══════════════════════════════════════════════════
 var CHECKLIST=[
-  {id:"trend",title:"Trend Confirmed",desc:"20 SMA is above (for buys) or below (for sells) the 50 SMA on the 4H chart. Both SMAs are clearly rising or falling, not flat."},
-  {id:"pullback",title:"Pullback to 20 SMA",desc:"Price has pulled back toward the 20 SMA from above (for buys) or below (for sells). Not overextended away from the SMA."},
+  {id:"trend",title:"Trend Confirmed",desc:"20 EMA is above (for buys) or below (for sells) the 50 EMA on the 4H chart. Both EMAs are clearly rising or falling, not flat. EMA reacts faster than SMA — more accurate."},
+  {id:"pullback",title:"Pullback to 20 SMA",desc:"Price has pulled back toward the 20 EMA from above (for buys) or below (for sells). Not overextended away from the EMA. Closer = better quality entry."},
   {id:"confirm",title:"Confirmation Candle Closed",desc:"A bullish (for buys) or bearish (for sells) candle has FULLY CLOSED at the 20 SMA. You are waiting for the NEXT candle to open before entering."},
   {id:"news",title:"No Major News Imminent",desc:"Checked forexfactory.com. No high-impact news in the next 4 hours. Fed, BoE, ECB, CPI, NFP, GDP all clear."},
   {id:"stop",title:"Logical Stop Loss Set",desc:"Stop is placed beyond the recent swing high (for sells) or swing low (for buys). ATR check done — stop is not unrealistically tight."},
@@ -887,12 +914,284 @@ function calcPos(){
     '<div style="font-size:10px;color:var(--dim)">Enter <b>'+units.toFixed(3)+'</b> in Trade Nation quantity box. Your maximum loss on this trade is <b>&pound;'+maxRisk.toFixed(2)+'</b>.</div>';
 }
 
+// ═══ JOURNAL ══════════════════════════════════════════════════════
+var trades = JSON.parse(localStorage.getItem('trendJournal') || '[]');
+
+function saveTrades(){ localStorage.setItem('trendJournal', JSON.stringify(trades)); }
+
+document.getElementById('jResult').addEventListener('change', function(){
+  document.getElementById('jPLRow').style.display = this.value !== 'open' ? 'flex' : 'none';
+});
+
+// Set today's date as default
+document.getElementById('jDate').value = new Date().toISOString().split('T')[0];
+
+function addTrade(){
+  var date   = document.getElementById('jDate').value;
+  var mkt    = document.getElementById('jMkt').value;
+  var strat  = document.getElementById('jStrat').value;
+  var dir    = document.getElementById('jDir').value;
+  var entry  = parseFloat(document.getElementById('jEntry').value);
+  var stop   = parseFloat(document.getElementById('jStop').value);
+  var tp     = parseFloat(document.getElementById('jTP').value);
+  var units  = parseFloat(document.getElementById('jUnits').value);
+  var risk   = parseFloat(document.getElementById('jRisk').value);
+  var result = document.getElementById('jResult').value;
+  var pl     = parseFloat(document.getElementById('jPL').value) || 0;
+  var exit   = document.getElementById('jExit').value;
+  var notes  = document.getElementById('jNotes').value;
+
+  if(!date||!mkt||!entry||!stop){
+    document.getElementById('jMsg').textContent = '⚠️ Please fill in at least Date, Market, Entry and Stop.';
+    document.getElementById('jMsg').style.color = 'var(--r)';
+    return;
+  }
+
+  var rr = tp && entry && stop ? Math.abs(tp-entry)/Math.abs(stop-entry) : 0;
+
+  trades.unshift({
+    id: Date.now(),
+    date: date,
+    mkt: mkt,
+    strat: strat,
+    dir: dir,
+    entry: entry,
+    stop: stop,
+    tp: tp,
+    units: units,
+    risk: risk,
+    result: result,
+    pl: result === 'open' ? null : pl,
+    exit: exit,
+    notes: notes,
+    rr: rr.toFixed(2)
+  });
+
+  saveTrades();
+  renderJournal();
+  renderJStats();
+
+  // Clear form
+  ['jEntry','jStop','jTP','jUnits','jRisk','jPL','jNotes'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('jResult').value = 'open';
+  document.getElementById('jPLRow').style.display = 'none';
+  document.getElementById('jMsg').textContent = '✅ Trade saved!';
+  document.getElementById('jMsg').style.color = 'var(--g)';
+  setTimeout(function(){ document.getElementById('jMsg').textContent = ''; }, 3000);
+}
+
+function deleteTrade(id){
+  if(!confirm('Delete this trade?')) return;
+  trades = trades.filter(function(t){ return t.id !== id; });
+  saveTrades();
+  renderJournal();
+  renderJStats();
+}
+
+function renderJStats(){
+  var closed = trades.filter(function(t){ return t.result === 'win' || t.result === 'loss'; });
+  var wins   = trades.filter(function(t){ return t.result === 'win'; });
+  var losses = trades.filter(function(t){ return t.result === 'loss'; });
+  var open   = trades.filter(function(t){ return t.result === 'open'; });
+  var totalPL = closed.reduce(function(a,t){ return a + (parseFloat(t.pl)||0); }, 0);
+  var avgWin  = wins.length ? wins.reduce(function(a,t){return a+(parseFloat(t.pl)||0);},0)/wins.length : 0;
+  var avgLoss = losses.length ? losses.reduce(function(a,t){return a+(parseFloat(t.pl)||0);},0)/losses.length : 0;
+  var winRate = closed.length ? (wins.length/closed.length*100).toFixed(1) : 0;
+  var expectancy = closed.length ? (totalPL/closed.length).toFixed(2) : 0;
+  var rrAchieved = closed.length ? (closed.reduce(function(a,t){return a+parseFloat(t.rr||0);},0)/closed.length).toFixed(2) : 0;
+
+  var plCol = totalPL >= 0 ? 'var(--g)' : 'var(--r)';
+  var wrCol = parseFloat(winRate) >= 55 ? 'var(--g)' : parseFloat(winRate) >= 45 ? 'var(--a)' : 'var(--r)';
+
+  var stats = [
+    {l:'Total Trades',v:trades.length,c:'var(--b)'},
+    {l:'Win Rate',v:winRate+'%',c:wrCol},
+    {l:'Wins',v:wins.length,c:'var(--g)'},
+    {l:'Losses',v:losses.length,c:'var(--r)'},
+    {l:'Open',v:open.length,c:'var(--a)'},
+    {l:'Total P&L',v:'£'+totalPL.toFixed(2),c:plCol},
+    {l:'Avg Win',v:'£'+avgWin.toFixed(2),c:'var(--g)'},
+    {l:'Avg Loss',v:'£'+avgLoss.toFixed(2),c:'var(--r)'},
+    {l:'Expectancy/trade',v:'£'+expectancy,c:totalPL>=0?'var(--g)':'var(--r)'},
+    {l:'Avg R:R achieved',v:'1:'+rrAchieved,c:'var(--b)'}
+  ];
+
+  document.getElementById('jStats').innerHTML = stats.map(function(s){
+    return '<div style="background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:11px;text-align:center">'+
+      '<div style="font-size:9px;color:var(--dim);text-transform:uppercase;margin-bottom:4px">'+s.l+'</div>'+
+      '<div style="font-size:18px;font-weight:800;color:'+s.c+'">'+s.v+'</div></div>';
+  }).join('');
+}
+
+function renderJournal(){
+  var fStrat = document.getElementById('jFilterStrat').value;
+  var fRes   = document.getElementById('jFilterRes').value;
+  var filtered = trades.filter(function(t){
+    if(fStrat !== 'all' && t.strat !== fStrat) return false;
+    if(fRes !== 'all' && t.result !== fRes) return false;
+    return true;
+  });
+
+  if(!filtered.length){
+    document.getElementById('jLog').innerHTML = '<div style="color:var(--dim);padding:12px 0">No trades match the current filter.</div>';
+    return;
+  }
+
+  var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html += '<tr style="color:var(--dim);border-bottom:1px solid var(--bdr)">';
+  ['Date','Market','Strategy','Dir','Entry','Stop','Target','R:R','Units','Risk','Result','P&L','Exit',''].forEach(function(h){
+    html += '<th style="padding:7px 8px;text-align:left;white-space:nowrap;font-weight:600">'+h+'</th>';
+  });
+  html += '</tr>';
+
+  filtered.forEach(function(t){
+    var resCol = t.result==='win'?'var(--g)':t.result==='loss'?'var(--r)':t.result==='open'?'var(--a)':'var(--dim)';
+    var resIcon = t.result==='win'?'✅':t.result==='loss'?'❌':t.result==='open'?'🔄':'➖';
+    var plTxt = t.pl !== null ? (parseFloat(t.pl)>=0?'+':'')+'£'+parseFloat(t.pl).toFixed(2) : '—';
+    var plCol = t.pl !== null ? (parseFloat(t.pl)>=0?'var(--g)':'var(--r)') : 'var(--dim)';
+    html += '<tr style="border-bottom:1px solid var(--bdr)">';
+    html += '<td style="padding:7px 8px;color:var(--dim)">'+t.date+'</td>';
+    html += '<td style="padding:7px 8px;font-weight:600;color:#fff">'+t.mkt+'</td>';
+    html += '<td style="padding:7px 8px;color:var(--dim)">'+t.strat+'</td>';
+    html += '<td style="padding:7px 8px"><span style="background:'+(t.dir==='LONG'?'rgba(0,217,126,0.12)':'rgba(255,77,109,0.12)')+';color:'+(t.dir==='LONG'?'var(--g)':'var(--r)')+';padding:2px 7px;border-radius:10px;font-weight:700">'+t.dir+'</span></td>';
+    html += '<td style="padding:7px 8px">'+t.entry+'</td>';
+    html += '<td style="padding:7px 8px;color:var(--r)">'+t.stop+'</td>';
+    html += '<td style="padding:7px 8px;color:var(--g)">'+t.tp+'</td>';
+    html += '<td style="padding:7px 8px;color:var(--b)">1:'+t.rr+'</td>';
+    html += '<td style="padding:7px 8px">'+t.units+'</td>';
+    html += '<td style="padding:7px 8px;color:var(--a)">£'+parseFloat(t.risk||0).toFixed(2)+'</td>';
+    html += '<td style="padding:7px 8px;color:'+resCol+'">'+resIcon+' '+t.result+'</td>';
+    html += '<td style="padding:7px 8px;font-weight:700;color:'+plCol+'">'+plTxt+'</td>';
+    html += '<td style="padding:7px 8px;color:var(--dim)">'+t.exit+'</td>';
+    html += '<td style="padding:7px 8px"><button onclick="deleteTrade('+t.id+')" style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);border-radius:6px;color:var(--r);cursor:pointer;font-size:10px;padding:3px 7px">&#128465;</button></td>';
+    html += '</tr>';
+    if(t.notes){
+      html += '<tr style="border-bottom:1px solid var(--bdr)"><td colspan="14" style="padding:4px 8px 10px;color:var(--dim);font-style:italic">&#128221; '+t.notes+'</td></tr>';
+    }
+  });
+  html += '</table></div>';
+  document.getElementById('jLog').innerHTML = html;
+}
+
+function exportJournal(){
+  if(!trades.length){ alert('No trades to export.'); return; }
+  var rows = ["Date,Market,Strategy,Direction,Entry,Stop,Target,RR,Units,Risk,Result,PL,Exit,Notes"];
+  trades.forEach(function(t){
+    var note = (t.notes||'').replace(/,/g,' ').replace(/"/g,"'");
+    rows.push([t.date,t.mkt,t.strat,t.dir,t.entry,t.stop,t.tp,t.rr,t.units,t.risk||'',t.result,t.pl||'',t.exit||'',note].join(','));
+  });
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.join('\n'));
+  a.download = 'trade_journal_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+
 // ═══ INIT ═════════════════════════════════════════════════════════
 upCap();
 renderChecklist();
 calcPos();
+renderJournal();
+renderJStats();
 loadS1();
 setInterval(loadS1, 900000); // refresh every 15 mins
 </script>
+
+<!-- JOURNAL PANEL -->
+<div id="p-journal" class="panel">
+  <div class="bn g"><b>&#128221; Trade Journal</b> &mdash; Log every trade. Your journal is saved in your browser and persists between sessions. After 30 trades you will have real data on your performance.</div>
+
+  <!-- Stats strip -->
+  <div id="jStats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:16px"></div>
+
+  <!-- Add trade form -->
+  <div class="calccard" id="jForm">
+    <h3>&#10133; Log a Trade</h3>
+    <div class="frow"><label>Date</label><input type="date" class="ni" id="jDate"></div>
+    <div class="frow"><label>Market</label>
+      <select class="ni" id="jMkt">
+        <option value="EUR/USD">EUR/USD</option>
+        <option value="GBP/USD">GBP/USD</option>
+        <option value="USD/JPY">USD/JPY</option>
+        <option value="USD/CAD">USD/CAD</option>
+        <option value="AUD/USD">AUD/USD</option>
+        <option value="US Tech 100">US Tech 100</option>
+        <option value="US 500">US 500</option>
+        <option value="UK 100">UK 100</option>
+        <option value="Germany 40">Germany 40</option>
+        <option value="Gold">Gold</option>
+        <option value="Silver">Silver</option>
+      </select>
+    </div>
+    <div class="frow"><label>Strategy</label>
+      <select class="ni" id="jStrat">
+        <option value="4H SMA Pullback">4H SMA Pullback</option>
+        <option value="5/10 Momentum">5/10 Momentum</option>
+      </select>
+    </div>
+    <div class="frow"><label>Direction</label>
+      <select class="ni" id="jDir">
+        <option value="LONG">LONG (Buy)</option>
+        <option value="SHORT">SHORT (Sell)</option>
+      </select>
+    </div>
+    <div class="frow"><label>Entry Price</label><input type="number" class="ni" id="jEntry" step="0.00001" placeholder="e.g. 1.13500"></div>
+    <div class="frow"><label>Stop Loss</label><input type="number" class="ni" id="jStop" step="0.00001" placeholder="e.g. 1.13000"></div>
+    <div class="frow"><label>Take Profit</label><input type="number" class="ni" id="jTP" step="0.00001" placeholder="e.g. 1.14500"></div>
+    <div class="frow"><label>Units Traded</label><input type="number" class="ni" id="jUnits" step="0.001" placeholder="e.g. 0.450"></div>
+    <div class="frow"><label>Risk (£)</label><input type="number" class="ni" id="jRisk" step="0.01" placeholder="e.g. 10.00"></div>
+    <div class="frow"><label>Result</label>
+      <select class="ni" id="jResult">
+        <option value="open">Still Open</option>
+        <option value="win">Win &#9989;</option>
+        <option value="loss">Loss &#10060;</option>
+        <option value="breakeven">Breakeven &#9644;</option>
+      </select>
+    </div>
+    <div class="frow" id="jPLRow" style="display:none"><label>Profit/Loss (£)</label><input type="number" class="ni" id="jPL" step="0.01" placeholder="e.g. +20.00 or -10.00"></div>
+    <div class="frow"><label>Exit Reason</label>
+      <select class="ni" id="jExit">
+        <option value="">Select...</option>
+        <option value="Target hit">Target hit &#127919;</option>
+        <option value="Stop hit">Stop hit &#128721;</option>
+        <option value="Trailing stop">Trailing stop hit</option>
+        <option value="Manual exit">Manual exit</option>
+        <option value="Still open">Still open</option>
+      </select>
+    </div>
+    <div class="frow"><label>Notes</label><textarea class="ni" id="jNotes" style="width:250px;height:60px;resize:vertical" placeholder="What did you see? What went right or wrong?"></textarea></div>
+    <button class="cbtn" onclick="addTrade()">&#128190; Save Trade</button>
+    <div id="jMsg" style="font-size:11px;margin-top:8px;color:var(--g)"></div>
+  </div>
+
+  <!-- Trade log -->
+  <div class="calccard">
+    <h3 style="display:flex;align-items:center;justify-content:space-between">
+      <span>&#128203; Trade Log</span>
+      <span style="display:flex;gap:8px">
+        <select class="ni" id="jFilterStrat" onchange="renderJournal()" style="font-size:10px;padding:4px 8px">
+          <option value="all">All strategies</option>
+          <option value="4H SMA Pullback">4H SMA Pullback</option>
+          <option value="5/10 Momentum">5/10 Momentum</option>
+        </select>
+        <select class="ni" id="jFilterRes" onchange="renderJournal()" style="font-size:10px;padding:4px 8px">
+          <option value="all">All results</option>
+          <option value="win">Wins only</option>
+          <option value="loss">Losses only</option>
+          <option value="open">Open only</option>
+        </select>
+      </span>
+    </h3>
+    <div id="jLog" style="font-size:11px;color:var(--dim)">No trades logged yet. Add your first trade above.</div>
+  </div>
+
+  <div class="calccard">
+    <h3 style="color:var(--r)">&#9888; Data Notice</h3>
+    <p style="font-size:11px;color:var(--dim);line-height:1.9">Your journal is saved in your browser&apos;s local storage. It stays between sessions on the same device and browser. If you clear browser data or switch devices, trades will be lost. To back up: copy your journal entries into a notes app or spreadsheet periodically.</p>
+    <button class="cbtn" onclick="exportJournal()" style="margin-top:8px;background:rgba(77,171,247,0.1);border-color:rgba(77,171,247,0.4);color:var(--b)">&#128229; Export CSV</button>
+    <button class="cbtn" onclick="if(confirm('Delete ALL trades? This cannot be undone.')){localStorage.removeItem('trendJournal');trades=[];renderJournal();renderJStats();}" style="margin-top:8px;background:rgba(255,77,109,0.08);border-color:rgba(255,77,109,0.3);color:var(--r)">&#128465; Clear All</button>
+  </div>
+</div>
 </body>
 </html>
