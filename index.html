@@ -209,10 +209,10 @@ select.ni{width:auto}
 <div id="p-s1" class="panel on">
   <div class="bn g">
     <b>&#128200; 4H SMA Pullback Strategy</b><br><br>
-    <b>Signal:</b> 20 SMA &gt; 50 SMA, both rising, price pulls back to 20 SMA, bullish confirmation candle closes &rarr; enter next candle.<br>
+    <b>Signal:</b> 20 EMA &gt; 50 EMA, both rising, price pulls back to 20 EMA, bullish confirmation candle closes &rarr; enter next candle.<br>
     <b>Stop:</b> Beyond recent swing high/low, checked against ATR(14).<br>
     <b>Target:</b> Minimum 2:1 reward:risk. Trail stop after profit.<br>
-    <b>Check:</b> 4-hour candle closes at 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UK.
+    <b>Check:</b> 4-hour candle closes at 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UK. EMA reacts faster than SMA — more accurate pullback zones.
   </div>
   <div class="statusbar">
     <div id="s1Status"><span class="pulse"></span>Loading 4H data...</div>
@@ -499,7 +499,7 @@ function evalS1(key){
   var smaDir20Ok=dir20?( isBull?dir20.rising:dir20.falling):false;
   var smaDir50Ok=dir50?(isBull?dir50.rising:dir50.falling):false;
 
-  // Check 3: Pullback — price near 20 SMA (within 0.5% for forex, 1% for indices)
+  // Check 3: Pullback — price near 20 EMA (within 0.5% for forex, 1% for indices)
   var pullbackThreshold=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.0:0.5;
   var distFrom20=Math.abs(price-sma20)/sma20*100;
   var atPullback=distFrom20<=pullbackThreshold;
@@ -520,7 +520,7 @@ function evalS1(key){
   var checks=[
     {name:"Trend Direction",ok:trendOk,txt:trendOk?"20 EMA "+(isBull?"above":"below")+" 50 EMA — "+(isBull?"uptrend":"downtrend"):"SMAs too close — no clear trend"},
     {name:"EMAs Rising/Falling",ok:smaDir20Ok&&smaDir50Ok,txt:(smaDir20Ok&&smaDir50Ok)?"Both EMAs clearly "+(isBull?"rising":"falling")+" ("+(dir20?dir20.strength:"")+" angle)":"EMAs flat or mixed — weak trend, skip"},
-    {name:"Price at Pullback",ok:atPullback,txt:atPullback?"Price within "+distFrom20.toFixed(2)+"% of 20 SMA — valid pullback zone":"Price "+distFrom20.toFixed(2)+"% from 20 SMA — wait for pullback"},
+    {name:"Price at Pullback",ok:atPullback,txt:atPullback?"Price within "+distFrom20.toFixed(2)+"% of 20 EMA — valid pullback zone":"Price "+distFrom20.toFixed(2)+"% from 20 EMA — wait for pullback"},
     {name:"Confirmation Candle",ok:confirmOk,txt:confirmOk?"Last 4H candle confirmed "+(isBull?"bullish":"bearish")+" at SMA — wait for this candle to close then enter next":"No confirmation candle yet — wait"},
     {name:"SMA Separation",ok:gapOk,txt:gapOk?"20/50 gap: "+smaGap.toFixed(2)+"% — clear trend":"SMAs too close ("+smaGap.toFixed(2)+"%) — crossover risk, skip"}
   ];
@@ -570,14 +570,14 @@ function evalS2(key){
 
   if(!sma5||!sma10||!sma50||!atr) return {signal:"none",score:0,checks:[]};
 
-  // Determine bias from 50 SMA direction
+  // Determine bias from 50 EMA direction
   var isBull=dir50?dir50.rising:sma20>sma50;
   var isBear=dir50?dir50.falling:sma20<sma50;
 
-  // Check 1: 50 SMA clearly rising or falling
+  // Check 1: 50 EMA clearly rising or falling
   var sma50DirOk=dir50?(isBull?dir50.rising:dir50.falling):false;
 
-  // Check 2: 20 SMA rising or falling in same direction
+  // Check 2: 20 EMA rising or falling in same direction
   var sma20DirOk=dir20?(isBull?dir20.rising:dir20.falling):false;
 
   // Check 3: Higher highs and higher lows (for bull) or lower highs/lows (for bear)
@@ -610,8 +610,8 @@ function evalS2(key){
     var threshold=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.5:0.8;
     pullbackOk=distFrom20<=threshold;
     pullbackTxt=pullbackOk?
-      "Price within "+distFrom20.toFixed(2)+"% of 20 SMA — orderly pullback in progress":
-      "Price "+distFrom20.toFixed(2)+"% from 20 SMA — pullback may not be finished yet";
+      "Price within "+distFrom20.toFixed(2)+"% of 20 EMA — orderly pullback in progress":
+      "Price "+distFrom20.toFixed(2)+"% from 20 EMA — pullback may not be finished yet";
   }
 
   // Check 5: Convincing confirmation candle closed
@@ -643,8 +643,8 @@ function evalS2(key){
   }
 
   var checks=[
-    {name:"50 SMA Direction",   ok:sma50DirOk, txt:sma50DirOk?"50 SMA clearly "+(isBull?"rising":"falling")+" — primary trend confirmed":"50 SMA flat or against direction — no trade"},
-    {name:"20 SMA Direction",   ok:sma20DirOk, txt:sma20DirOk?"20 SMA clearly "+(isBull?"rising":"falling")+" — trend consistent":"20 SMA not aligned — trend may be weakening"},
+    {name:"50 EMA Direction",   ok:sma50DirOk, txt:sma50DirOk?"50 EMA clearly "+(isBull?"rising":"falling")+" — primary trend confirmed":"50 EMA flat or against direction — no trade"},
+    {name:"20 EMA Direction",   ok:sma20DirOk, txt:sma20DirOk?"20 EMA clearly "+(isBull?"rising":"falling")+" — trend consistent":"20 EMA not aligned — trend may be weakening"},
     {name:"Higher Highs/Lows",  ok:hhhlOk,     txt:hhhlTxt},
     {name:"Orderly Pullback",   ok:pullbackOk,  txt:pullbackTxt},
     {name:"Convincing Candle",  ok:confirmOk,   txt:confirmTxt},
@@ -839,8 +839,8 @@ function loadS2(){ loadS1(); } // Same data, different evaluation
 // ═══ CHECKLIST ═══════════════════════════════════════════════════
 var CHECKLIST=[
   {id:"trend",title:"Trend Confirmed",desc:"20 EMA is above (for buys) or below (for sells) the 50 EMA on the 4H chart. Both EMAs are clearly rising or falling, not flat. EMA reacts faster than SMA — more accurate."},
-  {id:"pullback",title:"Pullback to 20 SMA",desc:"Price has pulled back toward the 20 EMA from above (for buys) or below (for sells). Not overextended away from the EMA. Closer = better quality entry."},
-  {id:"confirm",title:"Confirmation Candle Closed",desc:"A bullish (for buys) or bearish (for sells) candle has FULLY CLOSED at the 20 SMA. You are waiting for the NEXT candle to open before entering."},
+  {id:"pullback",title:"Pullback to 20 EMA",desc:"Price has pulled back toward the 20 EMA from above (for buys) or below (for sells). Not overextended away from the EMA. Closer = better quality entry."},
+  {id:"confirm",title:"Confirmation Candle Closed",desc:"A bullish (for buys) or bearish (for sells) candle has FULLY CLOSED at the 20 EMA. You are waiting for the NEXT candle to open before entering."},
   {id:"news",title:"No Major News Imminent",desc:"Checked forexfactory.com. No high-impact news in the next 4 hours. Fed, BoE, ECB, CPI, NFP, GDP all clear."},
   {id:"stop",title:"Logical Stop Loss Set",desc:"Stop is placed beyond the recent swing high (for sells) or swing low (for buys). ATR check done — stop is not unrealistically tight."},
   {id:"rr",title:"Minimum 2:1 Reward:Risk",desc:"Distance from entry to target is at least 2x the distance from entry to stop. Confirmed before entering."},
