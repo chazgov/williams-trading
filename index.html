@@ -195,8 +195,8 @@ select.ni{width:auto}
 <div class="navwrap">
   <div class="nav">
     <span class="nsep">STRATEGIES</span>
-    <button class="ntab on" onclick="tab('s1',this)">&#128200; 4H SMA PULLBACK</button>
-    <button class="ntab" onclick="tab('s2',this)">&#9889; 5/10 CROSSOVER</button>
+    <button class="ntab on" onclick="tab('s1',this)">&#128200; 9/20 EMA PULLBACK</button>
+    <button class="ntab" onclick="tab('s2',this)">&#9889; 9 EMA MOMENTUM</button>
     <span class="nsep2">TOOLS</span>
     <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
     <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
@@ -230,7 +230,7 @@ select.ni{width:auto}
     The 5/10 crossover is <b>not the signal</b> — it is the <b>trigger</b>. The trade decision is based on trend quality first. The cross simply tells you momentum may be returning.<br><br>
     <b>Decision based on:</b> Is the 50 EMA rising? Is the 20 EMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
     <b>Trigger:</b> 5 SMA crosses 10 SMA in the direction of the trend = momentum returning = enter next candle.<br><br>
-    <b style="color:var(--a)">&#9888; Need 4 of 6 checks green before entering. The cross alone is never enough.</b>
+    <b style="color:var(--a)">&#9888; Need 4 of 7 checks green. The 9 EMA cross is the trigger — not the signal. Trend quality comes first. 200 EMA is the non-negotiable gate.</b>
   </div>
   <div class="statusbar">
     <div id="s2Status"><span class="pulse"></span>Loading 4H data...</div>
@@ -349,22 +349,28 @@ var TWD_KEY = "43e0b306690347ab9640f991f5c87e3d";
 
 // ═══ MARKETS ══════════════════════════════════════════════════════
 var MARKETS_S1 = {
-  eurusd:{ name:"EUR/USD",   tn:"EUR/USD",              cat:"Forex",  dp:5, atrMult:1.5 },
-  gbpusd:{ name:"GBP/USD",   tn:"GBP/USD",              cat:"Forex",  dp:5, atrMult:1.5 },
-  usdjpy:{ name:"USD/JPY",   tn:"USD/JPY",              cat:"Forex",  dp:3, atrMult:1.5 },
-  usdcad:{ name:"USD/CAD",   tn:"USD/CAD",              cat:"Forex",  dp:5, atrMult:1.5 },
-  audusd:{ name:"AUD/USD",   tn:"AUD/USD",              cat:"Forex",  dp:5, atrMult:1.5 },
-  us100: { name:"US Tech 100",tn:"US Tech 100",         cat:"Index",  dp:1, atrMult:1.5 },
-  us500: { name:"US 500",    tn:"US 500 (Per 1.0)",     cat:"Index",  dp:1, atrMult:1.5 },
-  uk100: { name:"UK 100",    tn:"UK 100",               cat:"Index",  dp:1, atrMult:1.5 },
-  ger40: { name:"Germany 40",tn:"Germany 40",           cat:"Index",  dp:1, atrMult:1.5 },
-  gold:  { name:"Gold",      tn:"Gold (per 0.1)",       cat:"Commodity",dp:2,atrMult:1.5 },
-  silver:{ name:"Silver",    tn:"Silver (Variable Spreads)",cat:"Commodity",dp:3,atrMult:1.5 }
+  eurusd:{ name:"EUR/USD",    tn:"EUR/USD",                      cat:"Forex",     dp:5, atrMult:1.5 },
+  gbpusd:{ name:"GBP/USD",    tn:"GBP/USD",                      cat:"Forex",     dp:5, atrMult:1.5 },
+  usdjpy:{ name:"USD/JPY",    tn:"USD/JPY",                      cat:"Forex",     dp:3, atrMult:1.5 },
+  usdcad:{ name:"USD/CAD",    tn:"USD/CAD",                      cat:"Forex",     dp:5, atrMult:1.5 },
+  audusd:{ name:"AUD/USD",    tn:"AUD/USD",                      cat:"Forex",     dp:5, atrMult:1.5 },
+  usdchf:{ name:"USD/CHF",    tn:"USD/CHF",                      cat:"Forex",     dp:5, atrMult:1.5 },
+  nzdusd:{ name:"NZD/USD",    tn:"NZD/USD",                      cat:"Forex",     dp:5, atrMult:1.5 },
+  us100: { name:"US Tech 100",tn:"US Tech 100",                  cat:"Index",     dp:1, atrMult:1.5 },
+  us500: { name:"US 500",     tn:"US 500 (Per 1.0)",             cat:"Index",     dp:1, atrMult:1.5 },
+  uk100: { name:"UK 100",     tn:"UK 100",                       cat:"Index",     dp:1, atrMult:1.5 },
+  ger40: { name:"Germany 40", tn:"Germany 40",                   cat:"Index",     dp:1, atrMult:1.5 },
+  gold:  { name:"Gold",       tn:"Gold (per 0.1)",               cat:"Commodity", dp:2, atrMult:1.5 },
+  silver:{ name:"Silver",     tn:"Silver (Variable Spreads)",    cat:"Commodity", dp:3, atrMult:1.5 }
 };
+
+// Strategy labels
+var STRAT1_NAME = "9/20 EMA Pullback + 200 EMA Filter";
+var STRAT2_NAME = "9 EMA Momentum + 200 EMA Filter";
 
 var SYMBOL_MAP = {
   eurusd:"EUR/USD", gbpusd:"GBP/USD", usdjpy:"USD/JPY",
-  usdcad:"USD/CAD", audusd:"AUD/USD",
+  usdcad:"USD/CAD", audusd:"AUD/USD", usdchf:"USD/CHF", nzdusd:"NZD/USD",
   us100:"NDX", us500:"SPX", uk100:"FTSE", ger40:"DAX",
   gold:"XAU/USD", silver:"XAG/USD"
 };
@@ -503,7 +509,7 @@ function isSMADirectional(closes, period, lookback){
   return {rising:rising,falling:falling,smas:recent,strength:strength,anglePct:pctChange};
 }
 
-// ═══ STRATEGY 1: 4H SMA PULLBACK ══════════════════════════════════
+// ═══ STRATEGY 1: 9/20 EMA PULLBACK + 200 EMA FILTER ══════════════
 function evalS1(key){
   var hist=liveHistory4H[key];
   var d=liveData[key];
@@ -511,110 +517,126 @@ function evalS1(key){
 
   var closes=hist.c, highs=hist.h, lows=hist.l;
   var price=d.price;
+  var n=closes.length;
 
-  var sma20=calcSMA(closes,20);
-  var sma50=calcSMA(closes,50);
-  var atr=calcATR(highs,lows,closes,14);
-  var dir20=isSMADirectional(closes,20,3);
-  var dir50=isSMADirectional(closes,50,3);
+  var ema9  = calcEMA(closes,9);
+  var ema20 = calcEMA(closes,20);
+  var ema200= closes.length>=200?calcEMA(closes,200):null;
+  var atr   = calcATR(highs,lows,closes,14);
+  var dir9  = isSMADirectional(closes,9,3);
+  var dir20 = isSMADirectional(closes,20,3);
 
-  if(!sma20||!sma50||!atr) return {signal:"none",score:0,checks:[],sma20:sma20,sma50:sma50,atr:atr};
+  if(!ema9||!ema20||!atr) return {signal:"none",score:0,checks:[],ema9:ema9,ema20:ema20,atr:atr};
 
-  var isBull=sma20>sma50;
-  var isBear=sma20<sma50;
-  var smaGap=Math.abs((sma20-sma50)/sma50*100);
+  // Direction based on 9 vs 20 EMA
+  var isBull = ema9 > ema20;
+  var isBear = ema9 < ema20;
+  var trendDir = isBull?"long":"short";
 
-  // Check 1: Trend — 20 > 50 (bull) or 20 < 50 (bear)
-  var trendOk=isBull||isBear;
-  var trendDir=isBull?"long":"short";
+  // Check 1: 200 EMA trend gate — most important filter
+  var ema200Ok = ema200 ? (isBull ? price>ema200 : price<ema200) : null;
+  var ema200Txt = ema200
+    ? (ema200Ok ? "Price "+(isBull?"above":"below")+" 200 EMA ("+parseFloat(ema200).toFixed(5)+") — major trend confirmed ✅"
+                : "Price "+(isBull?"below":"above")+" 200 EMA — trading AGAINST major trend, high risk")
+    : "200 EMA needs 200 candles — using 9/20 only (load more data)";
 
-  // Check 2: SMAs directional (not flat)
-  var smaDir20Ok=dir20?( isBull?dir20.rising:dir20.falling):false;
-  var smaDir50Ok=dir50?(isBull?dir50.rising:dir50.falling):false;
+  // Check 2: 9 EMA above/below 20 EMA (trend direction)
+  var trendOk = isBull || isBear;
+  var emaGap  = Math.abs((ema9-ema20)/ema20*100);
 
-  // Check 3: Pullback — price near 20 SMA (within 0.5% for forex, 1% for indices)
-  var pullbackThreshold=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.0:0.5;
-  var distFrom20=Math.abs(price-sma20)/sma20*100;
-  var atPullback=distFrom20<=pullbackThreshold;
+  // Check 3: Both EMAs directional (not flat)
+  var dir9Ok  = dir9  ? (isBull?dir9.rising:dir9.falling)  : false;
+  var dir20Ok = dir20 ? (isBull?dir20.rising:dir20.falling): false;
 
-  // Check 4: Confirmation candle
-  var lastClose=closes[closes.length-1];
-  var prevClose=closes[closes.length-2];
-  var lastHigh=highs[highs.length-1];
-  var lastLow=lows[lows.length-1];
-  var bullConfirm=isBull&&lastClose>prevClose&&lastClose>lastHigh-((lastHigh-lastLow)*0.3);
-  var bearConfirm=isBear&&lastClose<prevClose&&lastClose<lastLow+((lastHigh-lastLow)*0.3);
-  var confirmOk=bullConfirm||bearConfirm;
+  // Check 4: Price pulled back to 20 EMA zone
+  var distFrom20   = Math.abs(price-ema20)/ema20*100;
+  var pullThresh   = key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.2:0.6;
+  var atPullback   = distFrom20 <= pullThresh;
 
-  // Check 5: SMA gap meaningful (not about to cross)
-  var gapOk=smaGap>0.1;
+  // Check 5: 9 EMA momentum — has it crossed back above 20 EMA after pullback?
+  var ema9Prev  = calcEMA(closes.slice(0,-1),9);
+  var ema20Prev = calcEMA(closes.slice(0,-1),20);
+  var freshCross= ema9Prev&&ema20Prev?(
+    (isBull&&ema9Prev<=ema20Prev&&ema9>ema20)||
+    (isBear&&ema9Prev>=ema20Prev&&ema9<ema20)
+  ):false;
+  var crossAligned=(isBull&&ema9>ema20)||(isBear&&ema9<ema20);
 
-  // Score
-  var checks=[
-    {name:"Trend Direction",ok:trendOk,txt:trendOk?"20 EMA "+(isBull?"above":"below")+" 50 EMA — "+(isBull?"uptrend":"downtrend"):"SMAs too close — no clear trend"},
-    {name:"EMAs Rising/Falling",ok:smaDir20Ok&&smaDir50Ok,txt:(smaDir20Ok&&smaDir50Ok)?"Both EMAs clearly "+(isBull?"rising":"falling")+" ("+(dir20?dir20.strength:"")+" angle)":"EMAs flat or mixed — weak trend, skip"},
-    {name:"Price at Pullback",ok:atPullback,txt:atPullback?"Price within "+distFrom20.toFixed(2)+"% of 20 SMA — valid pullback zone":"Price "+distFrom20.toFixed(2)+"% from 20 SMA — wait for pullback"},
-    {name:"Confirmation Candle",ok:confirmOk,txt:confirmOk?"Last 4H candle confirmed "+(isBull?"bullish":"bearish")+" at SMA — wait for this candle to close then enter next":"No confirmation candle yet — wait"},
-    {name:"SMA Separation",ok:gapOk,txt:gapOk?"20/50 gap: "+smaGap.toFixed(2)+"% — clear trend":"SMAs too close ("+smaGap.toFixed(2)+"%) — crossover risk, skip"}
-  ];
+  // Check 6: Confirmation candle
+  var lastClose=closes[n-1], prevClose=closes[n-2];
+  var lastHigh=highs[n-1], lastLow=lows[n-1];
+  var range=lastHigh-lastLow;
+  var bullCandle=lastClose>prevClose&&range>0&&((lastClose-lastLow)/range)>0.5;
+  var bearCandle=lastClose<prevClose&&range>0&&((lastHigh-lastClose)/range)>0.5;
+  var confirmOk=(isBull&&bullCandle)||(isBear&&bearCandle);
 
-  var score=checks.filter(function(c){return c.ok;}).length;
-  var signal=trendOk?trendDir:"none";
-  if(score<3) signal="none";
-
-  // Volume check (indices only — forex volume unreliable)
+  // Volume check (indices only)
   var volOk=null, volTxt="Volume N/A for forex";
   var isIndex=key==="us100"||key==="us500"||key==="uk100"||key==="ger40";
-  if(isIndex && hist.v && hist.v.length>=14){
+  if(isIndex&&hist.v&&hist.v.length>=14){
     var avgVol=calcAvgVolume(hist.v,14);
     var lastVol=hist.v[hist.v.length-1];
-    if(avgVol && avgVol>0){
+    if(avgVol&&avgVol>0){
       var volRatio=lastVol/avgVol;
       volOk=volRatio>=1.1;
-      volTxt="Volume: "+(volRatio*100).toFixed(0)+"% of average — "+(volOk?"above average confirms signal":"below average — weaker signal, proceed carefully");
+      volTxt="Volume: "+(volRatio*100).toFixed(0)+"% of 14-bar avg — "+(volOk?"above avg confirms signal":"below avg, weaker signal");
     }
   }
 
-  // Levels — using swing lows/highs for stop, ATR for sanity check
+  var checks=[
+    {name:"200 EMA Trend Gate", ok:ema200Ok===true, na:ema200===null,
+     txt:ema200Txt},
+    {name:"9/20 EMA Direction", ok:trendOk,
+     txt:trendOk?"9 EMA "+(isBull?"above":"below")+" 20 EMA — "+(isBull?"uptrend":"downtrend")+" (gap "+emaGap.toFixed(2)+"%)":"EMAs crossed — no clear direction"},
+    {name:"EMAs Directional",   ok:dir9Ok&&dir20Ok,
+     txt:(dir9Ok&&dir20Ok)?"Both EMAs clearly "+(isBull?"rising":"falling")+" ("+(dir9?dir9.strength:"")+" angle)":"EMAs flat or mixed — weak trend, skip"},
+    {name:"Pullback to 20 EMA", ok:atPullback,
+     txt:atPullback?"Price within "+distFrom20.toFixed(2)+"% of 20 EMA — valid pullback zone ✅":
+         "Price "+distFrom20.toFixed(2)+"% from 20 EMA — wait for price to return to 20 EMA"},
+    {name:"9 EMA Cross Trigger",ok:freshCross||crossAligned,
+     txt:freshCross?"Fresh 9 EMA cross "+(isBull?"above":"below")+" 20 EMA — momentum returning ⚡":
+         crossAligned?"9/20 aligned — momentum confirmed":"9 EMA not yet crossed — wait for trigger"},
+    {name:"Confirmation Candle",ok:confirmOk,
+     txt:confirmOk?"Strong "+(isBull?"bullish":"bearish")+" candle closed — enter on NEXT candle open":
+         "Candle not convincing yet — wait for a strong close"}
+  ];
+
+  var score=checks.filter(function(c){return c.ok;}).length;
+  var signal=(trendOk&&(ema200Ok!==false))?trendDir:"none";
+  if(score<4) signal="none";
+
+  // Swing stop + ATR sanity
   var levels=null;
   if(signal!=="none"&&atr){
     var isL=signal==="long";
-    // Find swing stop
     var swingStop=isL?findSwingLow(lows,closes,20):findSwingHigh(highs,20);
-    var swingBuf=atr*0.1; // small buffer beyond swing
-    var swingStopBuf=isL?swingStop-swingBuf:swingStop+swingBuf;
-    var atrStop=isL?price-(atr*1.5):price+(atr*1.5);
-    // ATR sanity check
-    var swingDist=Math.abs(price-swingStopBuf);
-    var atrDist=atr*1.5;
-    var stopTooWide=swingDist>atr*2.5;
-    var stopTooTight=swingDist<atr*0.5;
-    // Use swing stop unless too wide (then use ATR)
-    var finalStop=stopTooWide?atrStop:swingStopBuf;
+    var buf=atr*0.1;
+    var swingFinal=isL?swingStop-buf:swingStop+buf;
+    var swingDist=Math.abs(price-swingFinal);
+    var tooWide=swingDist>atr*2.5;
+    var finalStop=tooWide?(isL?price-(atr*1.5):price+(atr*1.5)):swingFinal;
     var riskDist=Math.abs(price-finalStop);
     var target=isL?price+(riskDist*2):price-(riskDist*2);
     var target3=isL?price+(riskDist*3):price-(riskDist*3);
     var stake=cap*0.02;
     var units=(stake/riskDist).toFixed(3);
-    var profEst=(stake*2).toFixed(2);
-    var stopNote=stopTooWide?"⚠️ Swing too far — using ATR stop instead. Consider skipping.":
-                 stopTooTight?"⚠️ Swing very close — may get stopped out by normal noise.":
-                 "✅ Swing stop valid — placed below recent structure";
-    levels={stop:finalStop,swingStop:swingStop,atrStop:atrStop,
-            target:target,target3:target3,riskDist:riskDist,
-            units:units,profEst:profEst,atr:atr,stake:stake,
-            stopTooWide:stopTooWide,stopNote:stopNote,
+    var stopNote=tooWide?"⚠️ Swing too far — using ATR stop. Consider skipping.":
+      "✅ Stop placed just beyond recent swing "+(isL?"low":"high");
+    levels={stop:finalStop,target:target,target3:target3,
+            riskDist:riskDist,units:units,profEst:(stake*2).toFixed(2),
+            atr:atr,stake:stake,stopNote:stopNote,stopTooWide:tooWide,
             volOk:volOk,volTxt:volTxt};
   }
 
-  return {signal:signal,score:score,checks:checks,sma20:sma20,sma50:sma50,
-          atr:atr,levels:levels,isBull:isBull,isBear:isBear,
-          volOk:volOk,volTxt:volTxt};
+  return {signal:signal,score:score,checks:checks,
+          ema9:ema9,ema20:ema20,ema200:ema200,atr:atr,
+          levels:levels,isBull:isBull,isBear:isBear};
 }
 
-// ═══ STRATEGY 2: 5/10 MOMENTUM TRIGGER ═══════════════════════════
-// The 5/10 cross is NOT the signal — it is the TRIGGER.
-// The decision is based on trend quality. Cross just confirms momentum returning.
+// ═══ STRATEGY 2: 9 EMA MOMENTUM TRIGGER + 200 EMA FILTER ═════════
+// Uses 9/20/200 EMA with 9 EMA as the momentum trigger
+// Decision: Is 200 EMA confirming? Is 20 EMA trending? Structure intact? Candle convincing?
+// Trigger: 9 EMA crosses or hooks above/below 20 EMA = momentum returning
 function evalS2(key){
   var hist=liveHistory4H[key];
   var d=liveData[key];
@@ -624,127 +646,118 @@ function evalS2(key){
   var price=d.price;
   var n=closes.length;
 
-  var sma5=calcSMA(closes,5);
-  var sma10=calcSMA(closes,10);
-  var sma20=calcSMA(closes,20);
-  var sma50=calcSMA(closes,50);
-  var sma5prev=calcSMA(closes.slice(0,-1),5);
-  var sma10prev=calcSMA(closes.slice(0,-1),10);
-  var atr=calcATR(highs,lows,closes,14);
-  var dir50=isSMADirectional(closes,50,4);
-  var dir20=isSMADirectional(closes,20,4);
+  var ema9   = calcEMA(closes,9);
+  var ema20  = calcEMA(closes,20);
+  var ema200 = closes.length>=200?calcEMA(closes,200):null;
+  var atr    = calcATR(highs,lows,closes,14);
+  var dir20  = isSMADirectional(closes,20,4);
+  var dir9   = isSMADirectional(closes,9,3);
 
-  if(!sma5||!sma10||!sma50||!atr) return {signal:"none",score:0,checks:[]};
+  if(!ema9||!ema20||!atr) return {signal:"none",score:0,checks:[]};
 
-  // Determine bias from 50 SMA direction
-  var isBull=dir50?dir50.rising:sma20>sma50;
-  var isBear=dir50?dir50.falling:sma20<sma50;
+  var isBull = ema20 > (ema200||ema20*0.999); // 20 above 200, or just use 20 direction
+  var isBear = ema20 < (ema200||ema20*1.001);
+  // Override with 9/20 relationship if no 200
+  if(!ema200){ isBull=dir20?dir20.rising:ema9>ema20; isBear=dir20?dir20.falling:ema9<ema20; }
 
-  // Check 1: 50 SMA clearly rising or falling
-  var sma50DirOk=dir50?(isBull?dir50.rising:dir50.falling):false;
+  // Check 1: 200 EMA gate
+  var ema200Ok=ema200?(isBull?price>ema200:price<ema200):null;
+  var ema200Txt=ema200?
+    (ema200Ok?"Price "+(isBull?"above":"below")+" 200 EMA — major trend confirmed ✅":
+               "Against 200 EMA — high risk, skip this signal"):
+    "200 EMA unavailable — using 20 EMA trend instead";
 
-  // Check 2: 20 SMA rising or falling in same direction
-  var sma20DirOk=dir20?(isBull?dir20.rising:dir20.falling):false;
+  // Check 2: 20 EMA clearly directional
+  var dir20Ok=dir20?(isBull?dir20.rising:dir20.falling):false;
 
-  // Check 3: Higher highs and higher lows (for bull) or lower highs/lows (for bear)
-  // Compare last 6 candle highs and lows
+  // Check 3: Higher highs and higher lows structure
   var hhhlOk=false, hhhlTxt="";
-  if(n>=8){
-    var recentHighs=highs.slice(-6);
-    var recentLows=lows.slice(-6);
-    var midHighs=highs.slice(-12,-6);
-    var midLows=lows.slice(-12,-6);
-    var latestHigh=Math.max.apply(null,recentHighs);
-    var latestLow=Math.min.apply(null,recentLows);
-    var prevHigh=Math.max.apply(null,midHighs);
-    var prevLow=Math.min.apply(null,midLows);
-    if(isBull){
-      hhhlOk=latestHigh>prevHigh&&latestLow>prevLow;
-      hhhlTxt=hhhlOk?"Higher highs and higher lows confirmed — uptrend structure intact":
-        "Not making higher highs/lows — trend structure weak or choppy";
-    } else {
-      hhhlOk=latestHigh<prevHigh&&latestLow<prevLow;
-      hhhlTxt=hhhlOk?"Lower highs and lower lows confirmed — downtrend structure intact":
-        "Not making lower highs/lows — trend structure weak or choppy";
-    }
-  } else { hhhlTxt="Need more candle history"; }
-
-  // Check 4: Orderly pullback (price pulled back 20-50% of recent swing, not a crash)
-  var pullbackOk=false, pullbackTxt="";
-  if(n>=6&&sma20){
-    var distFrom20=Math.abs(price-sma20)/sma20*100;
-    var threshold=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.5:0.8;
-    pullbackOk=distFrom20<=threshold;
-    pullbackTxt=pullbackOk?
-      "Price within "+distFrom20.toFixed(2)+"% of 20 SMA — orderly pullback in progress":
-      "Price "+distFrom20.toFixed(2)+"% from 20 SMA — pullback may not be finished yet";
+  if(n>=12){
+    var rH=highs.slice(-6), rL=lows.slice(-6);
+    var mH=highs.slice(-12,-6), mL=lows.slice(-12,-6);
+    var lHigh=Math.max.apply(null,rH), lLow=Math.min.apply(null,rL);
+    var pHigh=Math.max.apply(null,mH), pLow=Math.min.apply(null,mL);
+    if(isBull){ hhhlOk=lHigh>pHigh&&lLow>pLow; hhhlTxt=hhhlOk?"Higher highs and higher lows — uptrend structure intact ✅":"Structure broken — not making higher highs/lows, skip";}
+    else       { hhhlOk=lHigh<pHigh&&lLow<pLow; hhhlTxt=hhhlOk?"Lower highs and lower lows — downtrend structure intact ✅":"Structure broken — not making lower highs/lows, skip";}
   }
 
-  // Check 5: Convincing confirmation candle closed
-  var lastClose=closes[n-1];
-  var prevClose=closes[n-2];
-  var lastHigh=highs[n-1];
-  var lastLow=lows[n-1];
-  var candleRange=lastHigh-lastLow;
-  var bullConvince=lastClose>prevClose&&candleRange>0&&((lastClose-lastLow)/candleRange)>0.6;
-  var bearConvince=lastClose<prevClose&&candleRange>0&&((lastHigh-lastClose)/candleRange)>0.6;
+  // Check 4: Orderly pullback toward 20 EMA
+  var dist20=Math.abs(price-ema20)/ema20*100;
+  var thresh=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.5:0.8;
+  var pullbackOk=dist20<=thresh;
+  var pullbackTxt=pullbackOk?
+    "Price within "+dist20.toFixed(2)+"% of 20 EMA — orderly pullback ✅":
+    "Price "+dist20.toFixed(2)+"% from 20 EMA — pullback not finished yet";
+
+  // Check 5: 9 EMA momentum hook/cross
+  var ema9Prev=calcEMA(closes.slice(0,-1),9);
+  var ema20Prev=calcEMA(closes.slice(0,-1),20);
+  var freshCross=false;
+  if(ema9Prev&&ema20Prev){
+    freshCross=(isBull&&ema9Prev<=ema20Prev&&ema9>ema20)||
+               (isBear&&ema9Prev>=ema20Prev&&ema9<ema20);
+  }
+  // Also check for 9 EMA hook — curling back in trend direction from near 20 EMA
+  var dir9Ok2=dir9?(isBull?dir9.rising:dir9.falling):false;
+  var momentumOk=freshCross||( dir9Ok2&&Math.abs(ema9-ema20)/ema20<0.005);
+  var momentumTxt=freshCross?
+    "Fresh 9 EMA cross "+(isBull?"above":"below")+" 20 EMA — momentum returning ⚡⚡":
+    momentumOk?"9 EMA hooking in trend direction — momentum building ⚡":
+    "9 EMA not yet confirming momentum — wait";
+
+  // Check 6: Convincing confirmation candle (closes in top/bottom 40% of range)
+  var lastClose=closes[n-1], prevClose=closes[n-2];
+  var lastHigh=highs[n-1], lastLow=lows[n-1];
+  var cRange=lastHigh-lastLow;
+  var bullConvince=lastClose>prevClose&&cRange>0&&((lastClose-lastLow)/cRange)>0.6;
+  var bearConvince=lastClose<prevClose&&cRange>0&&((lastHigh-lastClose)/cRange)>0.6;
   var confirmOk=(isBull&&bullConvince)||(isBear&&bearConvince);
   var confirmTxt=confirmOk?
-    "Convincing "+(isBull?"bullish":"bearish")+" candle closed — closes strongly in signal direction":
-    "Last candle not convincing enough — body should close in top/bottom 40% of range";
+    "Convincing "+(isBull?"bullish":"bearish")+" close — strong momentum ✅":
+    "Candle body weak — wait for a strong convincing close";
 
-  // Check 6: 5/10 cross — the momentum TRIGGER
-  var freshCross=false,crossAligned=false,crossTxt="";
-  if(sma5prev&&sma10prev){
-    if(sma5prev<=sma10prev&&sma5>sma10){ freshCross=true; }
-    if(sma5prev>=sma10prev&&sma5<sma10){ freshCross=true; }
-  }
-  crossAligned=(isBull&&sma5>sma10)||(isBear&&sma5<sma10);
-  if(freshCross){
-    crossTxt="Fresh 5/10 cross "+(isBull?"UP":"DOWN")+" — momentum returning &#9889;";
-  } else if(crossAligned){
-    crossTxt="5/10 already aligned with trend — momentum confirmed, no fresh cross yet";
-  } else {
-    crossTxt="5/10 not aligned with trend direction — momentum not yet returning";
-  }
+  // Check 7: 9 EMA angle strength
+  var angleOk=dir9?(dir9.strength==="strong"||dir9.strength==="moderate"):false;
+  var angleTxt=dir9?"9 EMA angle: "+dir9.strength+" ("+dir9.anglePct.toFixed(2)+"% move over 3 candles)":"Angle data unavailable";
 
   var checks=[
-    {name:"50 SMA Direction",   ok:sma50DirOk, txt:sma50DirOk?"50 SMA clearly "+(isBull?"rising":"falling")+" — primary trend confirmed":"50 SMA flat or against direction — no trade"},
-    {name:"20 SMA Direction",   ok:sma20DirOk, txt:sma20DirOk?"20 SMA clearly "+(isBull?"rising":"falling")+" — trend consistent":"20 SMA not aligned — trend may be weakening"},
-    {name:"Higher Highs/Lows",  ok:hhhlOk,     txt:hhhlTxt},
-    {name:"Orderly Pullback",   ok:pullbackOk,  txt:pullbackTxt},
-    {name:"Convincing Candle",  ok:confirmOk,   txt:confirmTxt},
-    {name:"5/10 Momentum Cross",ok:freshCross||crossAligned, txt:crossTxt}
+    {name:"200 EMA Trend Gate",   ok:ema200Ok===true, na:ema200===null, txt:ema200Txt},
+    {name:"20 EMA Directional",   ok:dir20Ok,  txt:dir20Ok?"20 EMA clearly "+(isBull?"rising":"falling")+" ("+(dir20?dir20.strength:"")+" angle) ✅":"20 EMA flat — no clear trend, skip"},
+    {name:"Trend Structure",      ok:hhhlOk,   txt:hhhlTxt},
+    {name:"Pullback to 20 EMA",   ok:pullbackOk, txt:pullbackTxt},
+    {name:"9 EMA Momentum",       ok:momentumOk, txt:momentumTxt},
+    {name:"Confirmation Candle",  ok:confirmOk,  txt:confirmTxt},
+    {name:"9 EMA Angle",          ok:angleOk,    txt:angleTxt}
   ];
 
   var score=checks.filter(function(c){return c.ok;}).length;
-  var signal=(sma50DirOk)?( isBull?"long":"short"):"none";
+  var signal=(dir20Ok&&(ema200Ok!==false))?(isBull?"long":"short"):"none";
   if(score<4) signal="none";
 
+  // Swing stop
   var levels=null;
   if(signal!=="none"&&atr){
-    var isL2=signal==="long";
-    var swingStop2=isL2?findSwingLow(lows,closes,20):findSwingHigh(highs,20);
-    var swingBuf2=atr*0.1;
-    var swingStopFinal2=isL2?swingStop2-swingBuf2:swingStop2+swingBuf2;
-    var swingDist2=Math.abs(price-swingStopFinal2);
-    var tooWide2=swingDist2>atr*2.5;
-    var finalStop2=tooWide2?(isL2?price-(atr*1.5):price+(atr*1.5)):swingStopFinal2;
-    var riskDist2=Math.abs(price-finalStop2);
-    var target2=isL2?price+(riskDist2*2):price-(riskDist2*2);
-    var stake2=cap*0.02;
-    var units2=(stake2/riskDist2).toFixed(3);
-    var stopNote2=tooWide2?"⚠️ Swing too far — using ATR stop. Consider skipping.":"✅ Stop placed below recent swing structure";
-    levels={stop:finalStop2,target:target2,riskDist:riskDist2,units:units2,
-            profEst:(stake2*2).toFixed(2),atr:atr,stake:stake2,
-            stopNote:stopNote2,stopTooWide:tooWide2,
-            target3:isL2?price+(riskDist2*3):price-(riskDist2*3)};
+    var isL=signal==="long";
+    var swingStop=isL?findSwingLow(lows,closes,20):findSwingHigh(highs,20);
+    var buf=atr*0.1;
+    var swingFinal=isL?swingStop-buf:swingStop+buf;
+    var swingDist=Math.abs(price-swingFinal);
+    var tooWide=swingDist>atr*2.5;
+    var finalStop=tooWide?(isL?price-(atr*1.5):price+(atr*1.5)):swingFinal;
+    var riskDist=Math.abs(price-finalStop);
+    var target=isL?price+(riskDist*2):price-(riskDist*2);
+    var target3=isL?price+(riskDist*3):price-(riskDist*3);
+    var stake=cap*0.02;
+    var stopNote=tooWide?"⚠️ Swing too wide — using ATR stop instead":"✅ Stop beyond recent swing "+(isL?"low":"high");
+    levels={stop:finalStop,target:target,target3:target3,
+            riskDist:riskDist,units:(stake/riskDist).toFixed(3),
+            profEst:(stake*2).toFixed(2),atr:atr,stake:stake,
+            stopNote:stopNote,stopTooWide:tooWide};
   }
 
   return {signal:signal,score:score,checks:checks,
-          sma5:sma5,sma10:sma10,sma20:sma20,sma50:sma50,
-          atr:atr,levels:levels,freshCross:freshCross,crossAligned:crossAligned,
-          isBull:isBull,isBear:isBear};
+          ema9:ema9,ema20:ema20,ema200:ema200,atr:atr,
+          levels:levels,isBull:isBull,isBear:isBear,freshCross:freshCross};
 }
 
 // ═══ FETCH DATA ═══════════════════════════════════════════════════
@@ -826,7 +839,7 @@ function renderStrategy(tabId, evalFn, markets){
         '<div class="chk-txt">'+c.txt+'</div></div>';
     });
     // Add ATR and SMA values as info cells
-    if(ev.sma20||ev.sma5) chksHtml+='<div class="chk"><div class="chk-lbl">SMA Values</div><div class="chk-val" style="color:var(--b);font-size:10px">'+(ev.sma20?"20 EMA: "+parseFloat(ev.sma20).toFixed(m.dp)+" &middot; 50 EMA: "+parseFloat(ev.sma50).toFixed(m.dp):ev.sma5?"5 EMA: "+parseFloat(ev.sma5).toFixed(m.dp)+" &middot; 10 EMA: "+parseFloat(ev.sma10).toFixed(m.dp):"")+' </div><div class="chk-txt">ATR(14): '+(ev.atr?parseFloat(ev.atr).toFixed(m.dp):"--")+'</div></div>';
+    if(ev.sma20||ev.sma5) chksHtml+='<div class="chk"><div class="chk-lbl">SMA Values</div><div class="chk-val" style="color:var(--b);font-size:10px">'+(ev.sma20?"9 EMA: "+(ev.ema9?parseFloat(ev.ema9).toFixed(m.dp):"--")+" &middot; 20 EMA: "+(ev.ema20?parseFloat(ev.ema20).toFixed(m.dp):"--")+(ev.ema200?" &middot; 200 EMA: "+parseFloat(ev.ema200).toFixed(m.dp):""):ev.sma5?"9 EMA: "+(ev.ema9?parseFloat(ev.ema9).toFixed(m.dp):"--")+" &middot; 20 EMA: "+(ev.ema20?parseFloat(ev.ema20).toFixed(m.dp):"--")+(ev.ema200?" &middot; 200 EMA: "+parseFloat(ev.ema200).toFixed(m.dp):""):"")+' </div><div class="chk-txt">ATR(14): '+(ev.atr?parseFloat(ev.atr).toFixed(m.dp):"--")+'</div></div>';
     chksHtml+='</div>';
 
     // Levels
@@ -917,7 +930,7 @@ function loadS2(){ loadS1(); } // Same data, different evaluation
 
 // ═══ CHECKLIST ═══════════════════════════════════════════════════
 var CHECKLIST=[
-  {id:"trend",title:"Trend Confirmed",desc:"20 EMA is above (for buys) or below (for sells) the 50 EMA on the 4H chart. Both EMAs are clearly rising or falling, not flat. EMA reacts faster than SMA — more accurate."},
+  {id:"trend",title:"Trend Confirmed",desc:"Price must be above the 200 EMA for buys (below for sells) — this is the non-negotiable trend gate. Then 9 EMA above 20 EMA confirms the 4H trend direction."},
   {id:"pullback",title:"Pullback to 20 SMA",desc:"Price has pulled back toward the 20 EMA from above (for buys) or below (for sells). Not overextended away from the EMA. Closer = better quality entry."},
   {id:"confirm",title:"Confirmation Candle Closed",desc:"A bullish (for buys) or bearish (for sells) candle has FULLY CLOSED at the 20 SMA. You are waiting for the NEXT candle to open before entering."},
   {id:"news",title:"No Major News Imminent",desc:"Checked forexfactory.com. No high-impact news in the next 4 hours. Fed, BoE, ECB, CPI, NFP, GDP all clear."},
