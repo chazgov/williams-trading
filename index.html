@@ -175,7 +175,7 @@ select.ni{width:auto}
     <div class="logo">T</div>
     <div>
       <div class="bname">Trend Edge</div>
-      <div class="bsub">4H EMA Trend Following &middot; UK Edition</div>
+      <div class="bsub">4H &amp; 1H EMA Trend Following &middot; UK Edition</div>
     </div>
   </div>
   <div class="topR">
@@ -195,8 +195,8 @@ select.ni{width:auto}
 <div class="navwrap">
   <div class="nav">
     <span class="nsep">STRATEGIES</span>
-    <button class="ntab on" onclick="tab('s1',this)">&#128200; 9/20 EMA PULLBACK</button>
-    <button class="ntab" onclick="tab('s2',this)">&#9889; 9 EMA MOMENTUM</button>
+    <button class="ntab on" onclick="tab('s1',this)">&#128200; 4H PULLBACK</button>
+    <button class="ntab" onclick="tab('s2',this)">&#9889; 1H MOMENTUM</button>
     <span class="nsep2">TOOLS</span>
     <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
     <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
@@ -226,10 +226,10 @@ select.ni{width:auto}
 <!-- STRATEGY 2: 5/10 CROSSOVER -->
 <div id="p-s2" class="panel">
   <div class="bn b">
-    <b>&#9889; 5/10 Momentum Trigger — 4H</b><br><br>
-    The 5/10 crossover is <b>not the signal</b> — it is the <b>trigger</b>. The trade decision is based on trend quality first. The cross simply tells you momentum may be returning.<br><br>
-    <b>Decision based on:</b> Is the 50 EMA rising? Is the 20 EMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
-    <b>Trigger:</b> 5 EMA crosses 10 EMA in the direction of the trend = momentum returning = enter next candle.<br><br>
+    <b>&#9889; 9 EMA Momentum Trigger — 1H</b><br><br>
+    Uses the 1-hour chart for more frequent signals. The 9 EMA cross/hook above the 20 EMA is the <b>trigger</b>. The trade decision is based on trend quality first.<br><br>
+    <b>Decision based on:</b> Is the 20 EMA rising? Is the 9 EMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
+    <b>Trigger:</b> 9 EMA hooks or crosses above 20 EMA (for buys) after pullback = momentum returning = enter next 1H candle.<br><br>
     <b style="color:var(--a)">&#9888; Need 4 of 7 checks green. The 9 EMA cross is the trigger — not the signal. Trend quality comes first. Optionally verify 200 EMA on TradingView for extra confluence.</b>
   </div>
   <div class="statusbar">
@@ -329,7 +329,7 @@ select.ni{width:auto}
   </div>
 
   <div class="newsc">
-    <h3>&#9201; 4-Hour Candle Closes (UK Time)</h3>
+    <h3>&#9201; Candle Closes (UK Time)</h3>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">
       <div style="background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.2);border-radius:8px;padding:10px;text-align:center"><b style="color:var(--g)">00:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">Midnight</div></div>
       <div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><b>04:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">Asia close</div></div>
@@ -338,7 +338,7 @@ select.ni{width:auto}
       <div style="background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.2);border-radius:8px;padding:10px;text-align:center"><b style="color:var(--g)">16:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">NY overlap &#11088;</div></div>
       <div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><b>20:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">NY close</div></div>
     </div>
-    <p style="font-size:10px;color:var(--dim);margin-top:10px">&#11088; Best signals appear at 08:00 and 16:00 closes when volume is highest. Always wait for the candle to fully CLOSE before acting.</p>
+    <p style="font-size:10px;color:var(--dim);margin-top:10px">&#11088; 4H best signals: 08:00 and 16:00 UK. 1H signals fire every hour — best quality during London (08:00-16:00) and NY overlap (13:30-20:00). Always wait for candle to CLOSE.</p>
   </div>
 </div>
 
@@ -542,7 +542,7 @@ function evalS1(key){
 
   // Check 4: Price pulled back to 20 EMA zone
   var distFrom20   = Math.abs(price-ema20)/ema20*100;
-  var pullThresh   = key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.2:0.6;
+  var pullThresh   = key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?2.0:1.0;
   var atPullback   = distFrom20 <= pullThresh;
 
   // Check 5: 9 EMA momentum — has it crossed back above 20 EMA after pullback?
@@ -593,7 +593,7 @@ function evalS1(key){
 
   var score=checks.filter(function(c){return c.ok;}).length;
   var signal=trendOk?trendDir:"none";
-  if(score<4) signal="none";
+  if(score<3) signal="none"; // Need 3 of 5
 
   // Swing stop + ATR sanity
   var levels=null;
@@ -663,7 +663,7 @@ function evalS2(key){
 
   // Check 4: Orderly pullback toward 20 EMA
   var dist20=Math.abs(price-ema20)/ema20*100;
-  var thresh=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?1.5:0.8;
+  var thresh=key==="us100"||key==="us500"||key==="uk100"||key==="ger40"?2.5:1.2;
   var pullbackOk=dist20<=thresh;
   var pullbackTxt=pullbackOk?
     "Price within "+dist20.toFixed(2)+"% of 20 EMA — orderly pullback ✅":
@@ -711,7 +711,7 @@ function evalS2(key){
 
   var score=checks.filter(function(c){return c.ok;}).length;
   var signal=dir20Ok?(isBull?"long":"short"):"none";
-  if(score<4) signal="none";
+  if(score<3) signal="none"; // Need 3 of 6
 
   // Swing stop
   var levels=null;
@@ -771,7 +771,7 @@ function renderStrategy(tabId, evalFn, markets){
   var ready=0,watch=0,nosig=0;
   keys.forEach(function(k){
     var ev=evalFn(k);
-    if(ev.signal!=="none"&&ev.score>=4) ready++;
+    if(ev.signal!=="none"&&ev.score>=3) ready++;
     else if(ev.signal!=="none"&&ev.score>=2) watch++;
     else nosig++;
   });
@@ -804,8 +804,8 @@ function renderStrategy(tabId, evalFn, markets){
     }
 
     var isL=ev.signal==="long";
-    var cardCls=ev.signal!=="none"&&ev.score>=4?"ready":ev.signal!=="none"&&ev.score>=2?"watch":"nosig";
-    var pill=ev.signal!=="none"&&ev.score>=4?"&#9989; TRADE READY &mdash; "+m.name+" "+(isL?"LONG":"SHORT"):
+    var cardCls=ev.signal!=="none"&&ev.score>=3?"ready":ev.signal!=="none"&&ev.score>=2?"watch":"nosig";
+    var pill=ev.signal!=="none"&&ev.score>=3?"&#9989; TRADE READY &mdash; "+m.name+" "+(isL?"LONG":"SHORT"):
              ev.signal!=="none"&&ev.score>=2?"&#128993; WATCH &mdash; "+ev.score+"/"+ev.checks.length+" checks":
              "&#9898; NO SIGNAL";
 
@@ -841,7 +841,7 @@ function renderStrategy(tabId, evalFn, markets){
 
     // Action box
     var actionHtml="";
-    if(ev.signal!=="none"&&ev.score>=4&&ev.levels){
+    if(ev.signal!=="none"&&ev.score>=3&&ev.levels){
       var L=ev.levels;
       actionHtml='<div class="abox trade">'+
         '<div class="abox-title">&#9989; What To Do &mdash; '+m.name+' '+(isL?"LONG":"SHORT")+'</div>'+
@@ -909,7 +909,7 @@ function loadS2(){ loadS1(); } // Same data, different evaluation
 
 // ═══ CHECKLIST ═══════════════════════════════════════════════════
 var CHECKLIST=[
-  {id:"trend",title:"Trend Confirmed",desc:"9 EMA above 20 EMA confirms uptrend direction. Both EMAs should be clearly rising (not flat). Optionally check the 200 EMA on TradingView for longer-term trend context."},
+  {id:"trend",title:"Trend Confirmed",desc:"9 EMA above 20 EMA confirms uptrend (below for downtrend). Both should be clearly directional not flat. Optional: check 200 EMA on TradingView for added confidence."},
   {id:"pullback",title:"Pullback to 20 EMA",desc:"Price has pulled back toward the 20 EMA from above (for buys) or below (for sells). Not overextended away from the EMA. Closer = better quality entry."},
   {id:"confirm",title:"Confirmation Candle Closed",desc:"A bullish (for buys) or bearish (for sells) candle has FULLY CLOSED at the 20 EMA. You are waiting for the NEXT candle to open before entering."},
   {id:"news",title:"No Major News Imminent",desc:"Checked forexfactory.com. No high-impact news in the next 4 hours. Fed, BoE, ECB, CPI, NFP, GDP all clear."},
@@ -937,7 +937,7 @@ function renderChecklist(){
   var vEl=document.getElementById("chkVerdict");
   el.textContent=score+"/7";
   if(score===7){el.style.color="var(--g)";vEl.textContent="&#9989; All checks passed — you may enter the trade";}
-  else if(score>=5){el.style.color="var(--a)";vEl.textContent="&#128993; Almost ready — complete remaining checks before entering";}
+  else if(score>=4){el.style.color="var(--a)";vEl.textContent="&#128993; Almost ready — complete remaining checks before entering";}
   else{el.style.color="var(--dim)";vEl.textContent="Tick each condition you have confirmed on your chart";}
 }
 
