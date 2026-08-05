@@ -212,7 +212,7 @@ select.ni{width:auto}
     <b>Signal:</b> 20 EMA &gt; 50 EMA, both rising, price pulls back to 20 EMA, bullish confirmation candle closes &rarr; enter next candle.<br>
     <b>Stop:</b> Beyond recent swing high/low, checked against ATR(14).<br>
     <b>Target:</b> Minimum 2:1 reward:risk. Trail stop after profit.<br>
-    <b>Check:</b> 4-hour candle closes at 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UK.
+    <b>When to check:</b> 08:05, 12:05, 16:05, 20:05 UK (5 mins after each 4H candle closes). <b>Signal valid until the next 4H candle close.</b> Do not chase — if you miss the entry candle, wait for the next signal.
   </div>
   <div class="statusbar">
     <div id="s1Status"><span class="pulse"></span>Loading 4H data...</div>
@@ -230,7 +230,8 @@ select.ni{width:auto}
     Uses the 1-hour chart for more frequent signals. The 9 EMA cross/hook above the 20 EMA is the <b>trigger</b>. The trade decision is based on trend quality first.<br><br>
     <b>Decision based on:</b> Is the 20 EMA rising? Is the 9 EMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
     <b>Trigger:</b> 9 EMA hooks or crosses above 20 EMA (for buys) after pullback = momentum returning = enter next 1H candle.<br><br>
-    <b style="color:var(--a)">&#9888; Need 4 of 7 checks green. The 9 EMA cross is the trigger — not the signal. Trend quality comes first. Optionally verify 200 EMA on TradingView for extra confluence.</b>
+    <b style="color:var(--a)">&#9888; Need 3 of 6 checks green. The 9 EMA cross/hook is the trigger — not the signal. Trend quality comes first.</b><br>
+    <b>When to check:</b> Every hour at :05 past the hour (09:05, 10:05, 11:05 UK etc). <b>Signal valid for that 1H candle only.</b> Miss it? Wait for next signal — never chase.
   </div>
   <div class="statusbar">
     <div id="s2Status"><span class="pulse"></span>Loading 1H data...</div>
@@ -338,7 +339,7 @@ select.ni{width:auto}
       <div style="background:rgba(0,217,126,0.07);border:1px solid rgba(0,217,126,0.2);border-radius:8px;padding:10px;text-align:center"><b style="color:var(--g)">16:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">NY overlap &#11088;</div></div>
       <div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><b>20:00</b><div style="color:var(--dim);font-size:10px;margin-top:3px">NY close</div></div>
     </div>
-    <p style="font-size:10px;color:var(--dim);margin-top:10px">&#11088; 4H best signals: 08:00 and 16:00 UK. 1H signals fire every hour — best quality during London (08:00-16:00) and NY overlap (13:30-20:00). Always wait for candle to CLOSE.</p>
+    <p style="font-size:10px;color:var(--dim);margin-top:10px">&#11088; <b>4H PULLBACK:</b> Best signals at 08:00 and 16:00 UK closes. Signal valid for the full 4-hour candle after it fires.<br>&#9889; <b>1H MOMENTUM:</b> Check every hour on the hour. Signal valid for that 1-hour candle only — if you miss the entry, wait for the next signal. Do not chase.</p>
   </div>
 </div>
 
@@ -395,7 +396,7 @@ function tickClock(){
   document.getElementById("clkD").textContent=days[lon.getDay()]+" "+lon.getDate()+" "+months[lon.getMonth()]+" "+lon.getFullYear();
   var hr=lon.getHours(),day=lon.getDay();
   var el=document.getElementById("clkS");
-  // Check if near 4H candle close
+  // Check if near 1H candle close
   var mins=lon.getMinutes();
   var isNearClose=(mins>=55||mins<=5)&&[0,4,8,12,16,20].indexOf(hr)>=0;
   if(day===0||day===6){el.textContent="Markets Closed";el.style.background="rgba(255,77,109,0.15)";el.style.color="#ff4d6d";}
@@ -872,14 +873,15 @@ function renderStrategy(tabId, evalFn, markets){
         '6. Trade size: <b>'+L.units+' units</b> (2% of &pound;'+cap+' = &pound;'+L.stake.toFixed(2)+' risk)<br>'+
         '7. Once 1:1 profit reached, move stop to breakeven<br>'+
         '8. Trail stop to lock in profit as trade continues<br>'+
-        '9. Hold until stop hit, target hit, or trend reversal &mdash; <b>not a fixed number of days</b><br><br>'+
+        '9. Hold until stop hit, target hit, or trend reversal &mdash; <b>not a fixed number of days</b><br>'+
+        '<b style="color:var(--a)">&#9201; Signal valid for this candle only — re-check at next candle close before entering if delayed</b><br><br>'+
         '<b>&#9888; Check forexfactory.com for major news before entering</b>'+
         '</div>';
     } else if(ev.signal!=="none"&&ev.score>=2){
       var missing=ev.checks.filter(function(c){return !c.ok&&!c.na;}).map(function(c){return c.name;});
       actionHtml='<div class="abox wait"><div class="abox-title">&#128993; Not Ready Yet</div>'+
         'Missing: <b>'+missing.join(", ")+'</b><br>'+
-        'Check again at the next 4H candle close. Do not enter until all conditions are met.</div>';
+        'Check again at the next 1H candle close. Do not enter until all conditions are met.</div>';
     } else {
       actionHtml='<div class="abox skip"><div class="abox-title">&#9898; No Signal</div>'+
         m.name+' does not have a valid setup right now. Stand aside. Check at next 4H close.</div>';
@@ -892,7 +894,21 @@ function renderStrategy(tabId, evalFn, markets){
       '<div><div class="mcard-price">'+f(d.price)+'</div>'+
       '<div class="mcard-chg" style="color:'+(d.chg>=0?"var(--g)":"var(--r)")+'">'+(d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div></div>'+
       '</div>';
-    html+='<div class="sigbar"><span class="sigpill '+cardCls+'">'+pill+'</span><span style="font-size:10px;color:var(--dim)">Twelve Data</span></div>';
+    // Signal validity window
+    var validityHtml = "";
+    if(ev.signal !== "none" && ev.score >= 3){
+      var now = new Date();
+      var validMins = tabId==="s1" ? 240 : 60; // 4H tab = valid 4hrs, 1H tab = valid 1hr
+      var validUntil = new Date(now.getTime() + validMins*60000);
+      var fmtTime = function(dt){
+        return String(dt.getHours()).padStart(2,"0")+":"+String(dt.getMinutes()).padStart(2,"0");
+      };
+      var validLabel = tabId==="s1"
+        ? "Valid until next 4H close (~"+fmtTime(validUntil)+" UK)"
+        : "Valid until next 1H close (~"+fmtTime(validUntil)+" UK)";
+      validityHtml = '<span style="font-size:10px;color:var(--a);margin-left:8px">&#9201; '+validLabel+'</span>';
+    }
+    html+='<div class="sigbar"><span class="sigpill '+cardCls+'">'+pill+'</span>'+validityHtml+'<span style="font-size:10px;color:var(--dim)">'+d.ts.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+' UK</span></div>';
     html+=chksHtml;
     html+=levHtml;
     html+=actionHtml;
