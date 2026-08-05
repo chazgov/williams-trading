@@ -233,7 +233,7 @@ select.ni{width:auto}
     <b style="color:var(--a)">&#9888; Need 4 of 7 checks green. The 9 EMA cross is the trigger — not the signal. Trend quality comes first. Optionally verify 200 EMA on TradingView for extra confluence.</b>
   </div>
   <div class="statusbar">
-    <div id="s2Status"><span class="pulse"></span>Loading 4H data...</div>
+    <div id="s2Status"><span class="pulse"></span>Loading 1H data...</div>
     <button class="rbtn" onclick="loadS2()">&#8635; Refresh (~60s)</button>
   </div>
   <div class="sumstrip" id="s2Summary"></div>
@@ -628,7 +628,7 @@ function evalS1(key){
 // Decision: Is 200 EMA confirming? Is 20 EMA trending? Structure intact? Candle convincing?
 // Trigger: 9 EMA crosses or hooks above/below 20 EMA = momentum returning
 function evalS2(key){
-  var hist=liveHistory4H[key];
+  var hist=liveHistory1H[key]; // Uses 1H candle data
   var d=liveData[key];
   if(!hist||!d) return {signal:"none",score:0,checks:[]};
 
@@ -740,30 +740,49 @@ function evalS2(key){
 }
 
 // ═══ FETCH DATA ═══════════════════════════════════════════════════
-function fetchMarket4H(key, callback){
-  var sym=SYMBOL_MAP[key];
-  if(!sym){ callback(key,"No symbol"); return; }
+// Separate storage for 1H and 4H history
+var liveHistory1H = {};
+
+function fetchCandles(key, interval, callback){
   var xhr=new XMLHttpRequest();
-  xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&type=all",true);
-  xhr.timeout=12000;
+  xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&interval="+interval,true);
+  xhr.timeout=15000;
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
       if(xhr.status===200){
         try{
           var d=JSON.parse(xhr.responseText);
-          if(d.error){callback(key,d.error);return;}
-          liveData[key]={price:d.price,prev:d.prev||d.price,chg:d.change||0,chgPct:d.changePct||0,ts:new Date(),src:"Twelve Data"};
-          if(d.history&&d.history.h&&d.history.h.length>=50) liveHistory4H[key]=d.history;
-          delete liveErrors[key];
-          callback(key,null);
-        }catch(e){callback(key,"Parse error");}
-      } else { callback(key,"HTTP "+xhr.status); }
+          if(d.error){ callback(d.error,null); return; }
+          callback(null,d);
+        }catch(e){ callback("Parse error",null); }
+      } else { callback("HTTP "+xhr.status,null); }
     }
   };
-  xhr.ontimeout=function(){callback(key,"Timeout");};
-  xhr.onerror=function(){callback(key,"Network error");};
+  xhr.ontimeout=function(){ callback("Timeout",null); };
+  xhr.onerror=function(){ callback("Network error",null); };
   xhr.send();
 }
+
+function fetchMarket4H(key, callback){
+  fetchCandles(key,"4h",function(err,data){
+    if(err){ liveErrors[key]=err; callback(key,err); return; }
+    liveData[key]={price:data.price,prev:data.prev,chg:data.change,chgPct:data.changePct,ts:new Date(),src:"Twelve Data"};
+    if(data.history&&data.history.h&&data.history.h.length>=9) liveHistory4H[key]=data.history;
+    delete liveErrors[key];
+    callback(key,null);
+  });
+}
+
+function fetchMarket1H(key, callback){
+  fetchCandles(key,"1h",function(err,data){
+    if(err){ liveErrors[key]=err; callback(key,err); return; }
+    if(!liveData[key]) liveData[key]={price:data.price,prev:data.prev,chg:data.change,chgPct:data.changePct,ts:new Date(),src:"Twelve Data"};
+    if(data.history&&data.history.h&&data.history.h.length>=9) liveHistory1H[key]=data.history;
+    delete liveErrors[key];
+    callback(key,null);
+  });
+}
+
 
 // ═══ RENDER ═══════════════════════════════════════════════════════
 function renderStrategy(tabId, evalFn, markets){
@@ -890,22 +909,31 @@ function renderS2(){ renderStrategy("s2",evalS2,MARKETS_S1); }
 // ═══ LOAD DATA ════════════════════════════════════════════════════
 function loadS1(){
   var keys=Object.keys(MARKETS_S1);
-  keys.forEach(function(k,i){
-    delete liveData[k]; delete liveHistory4H[k]; delete liveErrors[k];
-  });
-  renderS1(); renderS2();
+  keys.forEach(function(k){ delete liveData[k]; delete liveHistory4H[k]; delete liveErrors[k]; });
+  renderS1();
   keys.forEach(function(k,i){
     setTimeout(function(){
-      liveErrors[k]=null;
       fetchMarket4H(k,function(key,err){
         if(err) liveErrors[key]=err;
-        renderS1(); renderS2();
+        renderS1();
       });
-    },i*8000);
+    },i*6000);
   });
 }
 
-function loadS2(){ loadS1(); } // Same data, different evaluation
+function loadS2(){
+  var keys=Object.keys(MARKETS_S1);
+  keys.forEach(function(k){ delete liveHistory1H[k]; });
+  renderS2();
+  keys.forEach(function(k,i){
+    setTimeout(function(){
+      fetchMarket1H(k,function(key,err){
+        if(err) liveErrors[key]=err;
+        renderS2();
+      });
+    },i*6000);
+  });
+}
 
 // ═══ CHECKLIST ═══════════════════════════════════════════════════
 var CHECKLIST=[
@@ -1166,7 +1194,8 @@ calcPos();
 renderJournal();
 renderJStats();
 loadS1();
-setInterval(loadS1, 900000); // refresh every 15 mins
+setTimeout(function(){ loadS2(); }, 1000);
+setInterval(function(){ loadS1(); loadS2(); }, 900000);
 </script>
 
 <!-- JOURNAL PANEL -->
