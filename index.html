@@ -842,23 +842,61 @@ function renderStrategy(tabId, evalFn, markets){
     chksHtml+='</div>';
 
     // Levels
-    var levHtml="";
+    var levHtml = "";
     if(ev.levels){
       var L=ev.levels;
       var stopCol=L.stopTooWide?"var(--a)":"var(--r)";
-      levHtml='<div class="levels">'+
+      var isLong=ev.signal==="long";
+      var ema20v=ev.ema20?parseFloat(ev.ema20):parseFloat(d.price);
+      var atrv=L.atr?parseFloat(L.atr):0;
+      var entryAgg=parseFloat(d.price);
+      var entryStd=ema20v;
+      var entryCons=isLong?(ema20v-(atrv*0.3)):(ema20v+(atrv*0.3));
+      // Next candle close
+      var nowMs=Date.now();
+      var candleMins=tabId==="s1"?240:60;
+      var elapsed=(new Date().getHours()*60+new Date().getMinutes())%candleMins;
+      var toClose=candleMins-elapsed;
+      var closeT=new Date(nowMs+toClose*60000);
+      var closeStr=String(closeT.getHours()).padStart(2,"0")+":"+String(closeT.getMinutes()).padStart(2,"0");
+
+      levHtml=
+        '<div class="levels">'+
         '<div class="lev"><div class="lev-l">Entry (next open)</div><div class="lev-v" style="color:var(--b)">'+f(d.price)+'</div></div>'+
         '<div class="lev"><div class="lev-l">Stop (Swing)</div><div class="lev-v" style="color:'+stopCol+'">'+f(L.stop)+'</div></div>'+
         '<div class="lev"><div class="lev-l">Target 1 (2:1)</div><div class="lev-v" style="color:var(--g)">'+f(L.target)+'</div></div>'+
         '<div class="lev"><div class="lev-l">Target 2 (3:1)</div><div class="lev-v" style="color:var(--g);opacity:.7">'+f(L.target3)+'</div></div>'+
         '</div>'+
-        '<div style="font-size:10px;color:var(--dim);padding:4px 16px 4px;line-height:1.8">'+
+        '<div style="font-size:10px;color:var(--dim);padding:4px 16px 8px;line-height:1.8">'+
         'Units: '+L.units+' &middot; Risk: &pound;'+L.stake.toFixed(2)+' &middot; Est. profit: &pound;'+L.profEst+' &middot; ATR: '+parseFloat(L.atr).toFixed(m.dp)+'<br>'+
         '<span style="color:'+(L.stopTooWide?"var(--a)":"var(--g)")+'">'+L.stopNote+'</span>'+
-        (L.volTxt?'<br><span style="color:'+(L.volOk?"var(--g)":L.volOk===false?"var(--a)":"var(--dim)")+'">'+L.volTxt+'</span>':'\'')+
-        '</div>';
-    }
+        (L.volTxt?"<br><span style='color:"+(L.volOk?"var(--g)":L.volOk===false?"var(--a)":"var(--dim)")+"'>"+L.volTxt+"</span>":"")+
+        '</div>'+
 
+        '<div style="margin:0 16px 14px;background:rgba(77,171,247,0.06);border:1px solid rgba(77,171,247,0.25);border-radius:11px;padding:13px">'+
+        '<div style="font-size:11px;font-weight:800;color:#4dabf7;margin-bottom:10px">&#9654; LIMIT ORDER — Buy the dip, not the chase</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">'+
+        '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(77,171,247,0.2);border-radius:8px;padding:9px;text-align:center">'+
+          '<div style="font-size:9px;color:var(--dim);margin-bottom:3px">AGGRESSIVE</div>'+
+          '<div style="font-size:14px;font-weight:800;color:#4dabf7">'+entryAgg.toFixed(m.dp)+'</div>'+
+          '<div style="font-size:9px;color:var(--dim);margin-top:2px">Current price<br>Fills immediately</div></div>'+
+        '<div style="background:rgba(0,217,126,0.07);border:2px solid rgba(0,217,126,0.4);border-radius:8px;padding:9px;text-align:center">'+
+          '<div style="font-size:9px;color:var(--g);font-weight:800;margin-bottom:3px">&#9989; RECOMMENDED</div>'+
+          '<div style="font-size:14px;font-weight:800;color:#00d97e">'+entryStd.toFixed(m.dp)+'</div>'+
+          '<div style="font-size:9px;color:var(--dim);margin-top:2px">20 EMA level<br>Best R/R</div></div>'+
+        '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,169,77,0.2);border-radius:8px;padding:9px;text-align:center">'+
+          '<div style="font-size:9px;color:var(--a);margin-bottom:3px">CONSERVATIVE</div>'+
+          '<div style="font-size:14px;font-weight:800;color:var(--a)">'+entryCons.toFixed(m.dp)+'</div>'+
+          '<div style="font-size:9px;color:var(--dim);margin-top:2px">Below EMA (0.3 ATR)<br>May not fill</div></div>'+
+        '</div>'+
+        '<div style="font-size:11px;color:#b0ab9e;line-height:1.9">'+
+        '<b style="color:#4dabf7">On Trade Nation:</b> Toggle <b>Place as Order ON</b> &rarr; '+
+        'Price: <b style="color:#00d97e">'+entryStd.toFixed(m.dp)+'</b> &rarr; '+
+        'Stop: <b style="color:#ff4d6d">'+f(L.stop)+'</b> &rarr; '+
+        'Target: <b style="color:#00d97e">'+f(L.target)+'</b> &rarr; '+
+        '<b style="color:var(--a)">Cancel if unfilled by '+closeStr+' UK</b>'+
+        '</div></div>';
+    }
     // Action box
     var actionHtml="";
     if(ev.signal!=="none"&&ev.score>=3&&ev.levels){
