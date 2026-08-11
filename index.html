@@ -212,7 +212,7 @@ select.ni{width:auto}
     <b>Signal:</b> 20 EMA &gt; 50 EMA, both rising, price pulls back to 20 EMA, bullish confirmation candle closes &rarr; enter next candle.<br>
     <b>Stop:</b> Beyond recent swing high/low, checked against ATR(14).<br>
     <b>Target:</b> Minimum 2:1 reward:risk. Trail stop after profit.<br>
-    <b>When to check:</b> 08:05, 12:05, 16:05, 20:05 UK (5 mins after each 4H candle closes). <b>Signal valid until the next 4H candle close.</b> Do not chase — if you miss the entry candle, wait for the next signal.
+    <b>When to check:</b> Ideally at 08:05, 12:05, 16:05, 20:05 UK — but you can check <b>any time</b> and still enter mid-candle if price is still near the 20 EMA. The entry quality indicator on each card tells you whether to enter now, set a limit, or wait.
   </div>
   <div class="statusbar">
     <div id="s1Status"><span class="pulse"></span>Loading 4H data...</div>
@@ -231,7 +231,7 @@ select.ni{width:auto}
     <b>Decision based on:</b> Is the 20 EMA rising? Is the 9 EMA rising? Higher highs and higher lows? Orderly pullback? Convincing candle? No major news?<br>
     <b>Trigger:</b> 9 EMA hooks or crosses above 20 EMA (for buys) after pullback = momentum returning = enter next 1H candle.<br><br>
     <b style="color:var(--a)">&#9888; Need 3 of 6 checks green. The 9 EMA cross/hook is the trigger — not the signal. Trend quality comes first.</b><br>
-    <b>When to check:</b> Every hour at :05 past the hour (09:05, 10:05, 11:05 UK etc). <b>Signal valid for that 1H candle only.</b> Miss it? Wait for next signal — never chase.
+    <b>When to check:</b> Every hour at :05 past — but you can check <b>any time</b> and enter mid-candle if price is still near the EMA. The entry quality indicator on each card tells you whether the entry is still valid.
   </div>
   <div class="statusbar">
     <div id="s2Status"><span class="pulse"></span>Loading 1H data...</div>
@@ -443,6 +443,117 @@ function calcEMASeries(closes, period){
     series.push(ema);
   }
   return series;
+}
+
+// ═══ 1H PATTERN DETECTION AT EMA LEVEL ══════════════════════════
+function detect1HPattern(key, ema20val, isLong){
+  var h1 = liveHistory1H[key];
+  if(!h1 || !h1.c || h1.c.length < 5) return null;
+
+  var closes = h1.c;
+  var highs  = h1.h;
+  var lows   = h1.l;
+  var n      = closes.length;
+
+  // Last 3 completed 1H candles
+  var c0=closes[n-1], c1=closes[n-2], c2=closes[n-3]; // most recent first
+  var h0=highs[n-1],  h1v=highs[n-2];
+  var l0=lows[n-1],   l1=lows[n-2],   l2=lows[n-3];
+  var range0=h0-l0;
+
+  // How close is the most recent 1H candle to the 20 EMA level?
+  var distFromEMA = ema20val>0 ? Math.abs(c0-ema20val)/ema20val*100 : 999;
+  var atEMA = distFromEMA < 0.5; // within 0.5% of EMA
+
+  var patterns = [];
+
+  // 1. Hammer / Pin Bar (bullish) — long lower wick, small body at top
+  if(isLong && range0>0){
+    var bodyTop    = Math.max(c0, closes[n-2]||c0);
+    var bodyBottom = Math.min(c0, closes[n-2]||c0);
+    var lowerWick  = bodyBottom - l0;
+    var upperWick  = h0 - bodyTop;
+    var body       = Math.abs(c0 - (closes[n-2]||c0));
+    if(lowerWick > range0*0.6 && upperWick < range0*0.3){
+      patterns.push({name:"Hammer / Pin Bar", strength:"strong",
+        txt:"Long lower wick rejecting the EMA — buyers defending this level strongly"});
+    }
+  }
+
+  // 2. Shooting Star (bearish)
+  if(!isLong && range0>0){
+    var upperWickS = h0 - Math.max(c0, closes[n-2]||c0);
+    var lowerWickS = Math.min(c0, closes[n-2]||c0) - l0;
+    if(upperWickS > range0*0.6 && lowerWickS < range0*0.3){
+      patterns.push({name:"Shooting Star", strength:"strong",
+        txt:"Long upper wick rejecting the EMA — sellers defending this level strongly"});
+    }
+  }
+
+  // 3. Bullish Engulfing
+  if(isLong && n>=3){
+    var prevBearish = c1 < closes[n-3]; // previous candle was red
+    var currBullish = c0 > c1;          // current candle is green
+    var engulfs     = c0 > closes[n-3] && l0 < l2; // current body engulfs prev
+    if(prevBearish && currBullish && engulfs){
+      patterns.push({name:"Bullish Engulfing", strength:"strong",
+        txt:"Green candle fully engulfs previous red — buyers have taken control"});
+    }
+  }
+
+  // 4. Bearish Engulfing
+  if(!isLong && n>=3){
+    var prevBullish2 = c1 > closes[n-3];
+    var currBearish2 = c0 < c1;
+    var engulfs2     = c0 < closes[n-3] && h0 > h1v;
+    if(prevBullish2 && currBearish2 && engulfs2){
+      patterns.push({name:"Bearish Engulfing", strength:"strong",
+        txt:"Red candle fully engulfs previous green — sellers have taken control"});
+    }
+  }
+
+  // 5. Double bottom at EMA (two consecutive 1H candles with similar lows near EMA)
+  if(isLong && n>=4){
+    var l3 = lows[n-4];
+    var doubleBotDiff = Math.abs(l0-l1)/Math.max(l0,l1)*100;
+    if(doubleBotDiff < 0.3 && c0 > c1){ // two similar lows, second candle closing higher
+      patterns.push({name:"Double Bottom", strength:"moderate",
+        txt:"Two 1H candles with similar lows at EMA — strong support level confirmed"});
+    }
+  }
+
+  // 6. 1H RSI oversold/overbought at EMA
+  var h1Closes = closes.slice(-15);
+  var rsi1H = (function(){
+    if(h1Closes.length<14) return null;
+    var g=0,l=0;
+    for(var i=1;i<h1Closes.length;i++){
+      var d=h1Closes[i]-h1Closes[i-1];
+      if(d>0) g+=d; else l+=Math.abs(d);
+    }
+    var p=h1Closes.length-1;
+    return l===0?100:100-(100/(1+(g/p)/(l/p)));
+  })();
+
+  if(rsi1H!==null){
+    if(isLong && rsi1H<35){
+      patterns.push({name:"1H RSI Oversold ("+rsi1H.toFixed(1)+")", strength:"moderate",
+        txt:"1H RSI below 35 at EMA — momentum exhausted, bounce likely"});
+    } else if(!isLong && rsi1H>65){
+      patterns.push({name:"1H RSI Overbought ("+rsi1H.toFixed(1)+")", strength:"moderate",
+        txt:"1H RSI above 65 at EMA — momentum exhausted, reversal likely"});
+    }
+  }
+
+  return {
+    patterns:   patterns,
+    atEMA:      atEMA,
+    distFromEMA:distFromEMA,
+    rsi1H:      rsi1H,
+    hasPattern: patterns.length > 0,
+    strongPattern: patterns.some(function(p){return p.strength==="strong";}),
+    confirmed:  atEMA && patterns.length > 0
+  };
 }
 
 function findSwingLow(lows, closes, lookback){
@@ -873,22 +984,94 @@ function renderStrategy(tabId, evalFn, markets){
         (L.volTxt?"<br><span style='color:"+(L.volOk?"var(--g)":L.volOk===false?"var(--a)":"var(--dim)")+"'>"+L.volTxt+"</span>":"")+
         '</div>'+
 
-        '<div style="margin:0 16px 14px;background:rgba(77,171,247,0.06);border:1px solid rgba(77,171,247,0.25);border-radius:11px;padding:13px">'+
+        // 1H Pattern confirmation (only show on 4H tab)
+        (function(){
+          if(tabId!=="s1") return;
+          var pat = detect1HPattern(key, ema20v, isLong);
+          if(!pat){ levHtml += '<div style="margin:0 16px 8px;padding:9px 13px;border-radius:9px;background:rgba(90,100,120,0.1);border:1px solid var(--bdr);font-size:11px;color:var(--dim)">&#9202; 1H Pattern Check: Loading 1H data... (check 1H MOMENTUM tab first)</div>'; return; }
+
+          var pColor = pat.confirmed?"#00d97e":pat.hasPattern?"#ffa94d":"#5a6478";
+          var pIcon  = pat.confirmed?"&#9989;":pat.hasPattern?"&#128993;":"&#9898;";
+          var pTitle = pat.confirmed?"1H PATTERN CONFIRMED AT EMA":
+                       pat.hasPattern?"1H PATTERN FORMING (not yet at EMA)":
+                       pat.atEMA?"AT EMA — No pattern yet, wait":"NOT YET AT EMA — Wait for pullback";
+
+          levHtml += '<div style="margin:0 16px 8px;background:'+pColor+'11;border:1px solid '+pColor+'44;border-radius:10px;padding:12px 14px">';
+          levHtml += '<div style="font-size:11px;font-weight:800;color:'+pColor+';margin-bottom:6px">&#9202; 1H PATTERN CHECK: '+pTitle+'</div>';
+
+          if(pat.patterns.length>0){
+            pat.patterns.forEach(function(p){
+              var sc = p.strength==="strong"?"#00d97e":"#ffa94d";
+              levHtml += '<div style="font-size:10px;margin-bottom:4px"><span style="color:'+sc+';font-weight:700">'+p.name+'</span> &mdash; <span style="color:#b0ab9e">'+p.txt+'</span></div>';
+            });
+          } else {
+            levHtml += '<div style="font-size:10px;color:#b0ab9e">No 1H confirmation pattern yet. Set a limit at the EMA and watch for a hammer, engulfing or double bottom before confirming entry.</div>';
+          }
+
+          levHtml += '<div style="font-size:10px;color:var(--dim);margin-top:6px">1H RSI: '+(pat.rsi1H?pat.rsi1H.toFixed(1):"--")+' &middot; Distance from EMA: '+pat.distFromEMA.toFixed(2)+'%</div>';
+          levHtml += '</div>';
+        })();
+
+        levHtml += '<div style="margin:0 16px 14px;background:rgba(77,171,247,0.06);border:1px solid rgba(77,171,247,0.25);border-radius:11px;padding:13px">'+
         '<div style="font-size:11px;font-weight:800;color:#4dabf7;margin-bottom:10px">&#9654; LIMIT ORDER — Buy the dip, not the chase</div>'+
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">'+
-        '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(77,171,247,0.2);border-radius:8px;padding:9px;text-align:center">'+
-          '<div style="font-size:9px;color:var(--dim);margin-bottom:3px">AGGRESSIVE</div>'+
-          '<div style="font-size:14px;font-weight:800;color:#4dabf7">'+entryAgg.toFixed(m.dp)+'</div>'+
-          '<div style="font-size:9px;color:var(--dim);margin-top:2px">Current price<br>Fills immediately</div></div>'+
-        '<div style="background:rgba(0,217,126,0.07);border:2px solid rgba(0,217,126,0.4);border-radius:8px;padding:9px;text-align:center">'+
-          '<div style="font-size:9px;color:var(--g);font-weight:800;margin-bottom:3px">&#9989; RECOMMENDED</div>'+
-          '<div style="font-size:14px;font-weight:800;color:#00d97e">'+entryStd.toFixed(m.dp)+'</div>'+
-          '<div style="font-size:9px;color:var(--dim);margin-top:2px">20 EMA level<br>Best R/R</div></div>'+
-        '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,169,77,0.2);border-radius:8px;padding:9px;text-align:center">'+
-          '<div style="font-size:9px;color:var(--a);margin-bottom:3px">CONSERVATIVE</div>'+
-          '<div style="font-size:14px;font-weight:800;color:var(--a)">'+entryCons.toFixed(m.dp)+'</div>'+
-          '<div style="font-size:9px;color:var(--dim);margin-top:2px">Below EMA (0.3 ATR)<br>May not fill</div></div>'+
-        '</div>'+
+        (function(){
+          // Dynamic stop and R/R for each entry level
+          function calcDynamic(entry, isL, swingStop, atrV){
+            var stop = isL ? Math.min(swingStop, entry-(atrV*1.2)) : Math.max(swingStop, entry+(atrV*1.2));
+            var risk = Math.abs(entry-stop);
+            var t2 = isL ? entry+(risk*2) : entry-(risk*2);
+            var rr = (2).toFixed(1);
+            var stk = cap*0.02;
+            var u = risk>0?(stk/risk).toFixed(3):"n/a";
+            var profit = (stk*2).toFixed(2);
+            return {stop:stop,target:t2,rr:rr,units:u,profit:profit,risk:risk};
+          }
+          var swingSt = parseFloat(L.stop);
+          var dAgg  = calcDynamic(entryAgg,  isLong, swingSt, atrv);
+          var dStd  = calcDynamic(entryStd,  isLong, swingSt, atrv);
+          var dCons = calcDynamic(entryCons, isLong, swingSt, atrv);
+
+          levHtml += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">';
+
+          // Aggressive
+          levHtml += '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(77,171,247,0.2);border-radius:8px;padding:9px;text-align:center">'+
+            '<div style="font-size:9px;color:var(--dim);margin-bottom:3px">AGGRESSIVE</div>'+
+            '<div style="font-size:13px;font-weight:800;color:#4dabf7">'+entryAgg.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:#ff4d6d;margin-top:2px">Stop: '+dAgg.stop.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:#00d97e">Target: '+dAgg.target.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:var(--dim)">R/R 1:'+dAgg.rr+' &middot; '+dAgg.units+' units</div>'+
+            '<div style="font-size:9px;color:var(--dim)">Fills immediately</div></div>';
+
+          // Standard (recommended)
+          levHtml += '<div style="background:rgba(0,217,126,0.07);border:2px solid rgba(0,217,126,0.4);border-radius:8px;padding:9px;text-align:center">'+
+            '<div style="font-size:9px;color:var(--g);font-weight:800;margin-bottom:3px">&#9989; RECOMMENDED</div>'+
+            '<div style="font-size:13px;font-weight:800;color:#00d97e">'+entryStd.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:#ff4d6d;margin-top:2px">Stop: '+dStd.stop.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:#00d97e">Target: '+dStd.target.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:var(--dim)">R/R 1:'+dStd.rr+' &middot; '+dStd.units+' units</div>'+
+            '<div style="font-size:9px;color:var(--dim)">20 EMA &middot; Best R/R</div></div>';
+
+          // Conservative
+          levHtml += '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,169,77,0.2);border-radius:8px;padding:9px;text-align:center">'+
+            '<div style="font-size:9px;color:var(--a);margin-bottom:3px">CONSERVATIVE</div>'+
+            '<div style="font-size:13px;font-weight:800;color:var(--a)">'+entryCons.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:#ff4d6d;margin-top:2px">Stop: '+dCons.stop.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:#00d97e">Target: '+dCons.target.toFixed(m.dp)+'</div>'+
+            '<div style="font-size:9px;color:var(--dim)">R/R 1:'+dCons.rr+' &middot; '+dCons.units+' units</div>'+
+            '<div style="font-size:9px;color:var(--dim)">Below EMA &middot; May not fill</div></div>';
+
+          levHtml += '</div>';
+
+          // Update Trade Nation instructions to use recommended entry
+          levHtml += '<div style="font-size:11px;color:#b0ab9e;line-height:1.9">'+
+            '<b style="color:#4dabf7">On Trade Nation (using Recommended):</b> Toggle <b>Place as Order ON</b> &rarr; '+
+            'Price: <b style="color:#00d97e">'+entryStd.toFixed(m.dp)+'</b> &rarr; '+
+            'Stop: <b style="color:#ff4d6d">'+dStd.stop.toFixed(m.dp)+'</b> &rarr; '+
+            'Target: <b style="color:#00d97e">'+dStd.target.toFixed(m.dp)+'</b> &rarr; '+
+            '<b style="color:var(--a)">Cancel if unfilled by '+closeStr+' UK</b>'+
+            '</div>';
+        })();
+
         '<div style="font-size:11px;color:#b0ab9e;line-height:1.9">'+
         '<b style="color:#4dabf7">On Trade Nation:</b> Toggle <b>Place as Order ON</b> &rarr; '+
         'Price: <b style="color:#00d97e">'+entryStd.toFixed(m.dp)+'</b> &rarr; '+
