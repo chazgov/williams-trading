@@ -201,6 +201,8 @@ select.ni{width:auto}
     <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
     <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
     <button class="ntab" onclick="tab('news',this)">&#128680; NEWS & RISK</button>
+    <button class="ntab" onclick="tab('pdhl',this)">&#127248; DARVAS BOX</button>
+    <button class="ntab" onclick="tab('pdh',this)">&#128198; PREV DAY H/L</button>
     <button class="ntab" onclick="tab('journal',this)">&#128221; JOURNAL</button>
   </div>
 </div>
@@ -1424,6 +1426,601 @@ function exportJournal(){
   a.click();
 }
 
+// ═══ DARVAS BOX THEORY ═══════════════════════════════════════════
+var BOX_MARKETS = {
+  eurusd:{ name:"EUR/USD",    tn:"EUR/USD",         cat:"Forex",     dp:5 },
+  gbpusd:{ name:"GBP/USD",    tn:"GBP/USD",         cat:"Forex",     dp:5 },
+  usdjpy:{ name:"USD/JPY",    tn:"USD/JPY",         cat:"Forex",     dp:3 },
+  usdcad:{ name:"USD/CAD",    tn:"USD/CAD",         cat:"Forex",     dp:5 },
+  audusd:{ name:"AUD/USD",    tn:"AUD/USD",         cat:"Forex",     dp:5 },
+  gold:  { name:"Gold",       tn:"Gold (per 0.1)",  cat:"Commodity", dp:2 },
+  us500: { name:"US 500",     tn:"US 500 (Per 1.0)",cat:"Index",     dp:1 },
+  us100: { name:"US Tech 100",tn:"US Tech 100",     cat:"Index",     dp:1 }
+};
+
+var liveBoxData = {};  // 1H history for box detection
+var liveBoxErrors = {};
+
+function detectDarvasBox(hist, atr){
+  if(!hist||!hist.c||hist.c.length<8) return null;
+  var closes=hist.c, highs=hist.h, lows=hist.l;
+  var n=closes.length;
+
+  // Look back up to 20 candles to find a consolidation box
+  // Box = range where high and low stay within ATR tolerance for 3+ candles
+  var bestBox=null;
+  var atrTol=atr*0.3; // tolerance for box boundary fluctuation
+
+  for(var lookback=6; lookback<=Math.min(20,n-2); lookback++){
+    var slice_h=highs.slice(n-lookback-1, n-1); // exclude last candle (current)
+    var slice_l=lows.slice(n-lookback-1, n-1);
+    var boxHigh=Math.max.apply(null,slice_h);
+    var boxLow=Math.min.apply(null,slice_l);
+    var boxRange=boxHigh-boxLow;
+
+    // Box must be at least 1x ATR wide (not too tight)
+    if(boxRange < atr*0.8) continue;
+    // Box must not be too wide (not more than 4x ATR — that's not consolidation)
+    if(boxRange > atr*4) continue;
+
+    // Check consolidation quality — most candles should stay within box
+    var insideCount=0;
+    for(var i=0;i<slice_h.length;i++){
+      if(slice_h[i]<=boxHigh+atrTol && slice_l[i]>=boxLow-atrTol) insideCount++;
+    }
+    var quality=insideCount/slice_h.length;
+    if(quality<0.7) continue; // at least 70% of candles inside box
+
+    // Valid box found — check if better than previous
+    if(!bestBox || quality > bestBox.quality){
+      bestBox={
+        high:boxHigh, low:boxLow, range:boxRange,
+        candles:lookback, quality:quality,
+        qualityPct:Math.round(quality*100)
+      };
+    }
+  }
+
+  return bestBox;
+}
+
+function evalBox(key){
+  var hist=liveBoxData[key];
+  var d=liveData[key];
+  var m=BOX_MARKETS[key];
+  if(!hist||!d||!hist.c||hist.c.length<8) return {signal:"none",box:null};
+
+  var closes=hist.c, highs=hist.h, lows=hist.l;
+  var n=closes.length;
+  var atr=calcATR(highs,lows,closes,14);
+  if(!atr) return {signal:"none",box:null};
+
+  var box=detectDarvasBox(hist,atr);
+  if(!box) return {signal:"none",box:null,atr:atr};
+
+  var price=d.price;
+  var lastClose=closes[n-1];
+  var prevClose=closes[n-2];
+
+  // Breakout detection
+  var buyBreakout  = lastClose>box.high && prevClose<=box.high;
+  var sellBreakout = lastClose<box.low  && prevClose>=box.low;
+
+  // Price proximity to box levels (for watching)
+  var distFromHigh = (box.high-price)/atr;
+  var distFromLow  = (price-box.low)/atr;
+  var nearHigh     = distFromHigh>0 && distFromHigh<0.5;
+  var nearLow      = distFromLow>0  && distFromLow<0.5;
+
+  var signal="none";
+  if(buyBreakout)  signal="buy";
+  if(sellBreakout) signal="sell";
+
+  // Levels
+  var levels=null;
+  if(signal!=="none"){
+    var isBuy=signal==="buy";
+    var entry=price;
+    var stop=isBuy ? box.low-(atr*0.1) : box.high+(atr*0.1);
+    var riskDist=Math.abs(entry-stop);
+    var target1=isBuy ? entry+(riskDist*1.5) : entry-(riskDist*1.5);
+    var target2=isBuy ? entry+(riskDist*2.5) : entry-(riskDist*2.5);
+    var stake=cap*0.02;
+    var units=riskDist>0?(stake/riskDist).toFixed(3):"n/a";
+    levels={entry:entry,stop:stop,target1:target1,target2:target2,
+            riskDist:riskDist,stake:stake,units:units,
+            rr1:"1:1.5",rr2:"1:2.5",atr:atr};
+  }
+
+  return {
+    signal:signal,box:box,atr:atr,levels:levels,
+    buyBreakout:buyBreakout,sellBreakout:sellBreakout,
+    nearHigh:nearHigh,nearLow:nearLow,
+    price:price,lastClose:lastClose
+  };
+}
+
+function fetchBox1H(key,cb){
+  fetchCandles(key,"1h",function(err,data){
+    if(err){liveBoxErrors[key]=err;cb(key,err);return;}
+    if(!liveData[key]) liveData[key]={price:data.price,prev:data.prev,chg:data.change,chgPct:data.changePct,ts:new Date(),src:"Twelve Data"};
+    if(data.history&&data.history.h&&data.history.h.length>=8) liveBoxData[key]=data.history;
+    delete liveBoxErrors[key];
+    cb(key,null);
+  });
+}
+
+function renderBox(){
+  var keys=Object.keys(BOX_MARKETS);
+  var ready=0,watch=0,nosig=0;
+  keys.forEach(function(k){
+    var ev=evalBox(k);
+    if(ev.signal!=="none") ready++;
+    else if(ev.box&&(ev.nearHigh||ev.nearLow)) watch++;
+    else nosig++;
+  });
+
+  document.getElementById("pdhlSummary").innerHTML=
+    '<div class="sumc g"><div class="sumnum" style="color:var(--g)">'+ready+'</div><div class="sumlbl">&#9989; BREAKOUT</div></div>'+
+    '<div class="sumc a"><div class="sumnum" style="color:var(--a)">'+watch+'</div><div class="sumlbl">&#128993; NEAR LEVEL</div></div>'+
+    '<div class="sumc d"><div class="sumnum" style="color:var(--dim)">'+nosig+'</div><div class="sumlbl">&#9898; CONSOLIDATING</div></div>';
+
+  var loaded=keys.filter(function(k){return liveBoxData[k];}).length;
+  var el=document.getElementById("pdhlStatus");
+  if(loaded>=keys.length){el.innerHTML="&#9989; "+keys.length+" markets loaded &middot; Darvas boxes calculated";el.style.color="var(--g)";}
+  else{el.innerHTML='<span class="pulse"></span>Loading 1H data... ('+loaded+'/'+keys.length+')';el.style.color="";}
+
+  var html="";
+  keys.forEach(function(key){
+    var m=BOX_MARKETS[key];
+    var d=liveData[key];
+    var ev=evalBox(key);
+    var err=liveBoxErrors[key];
+    function f(n){return n?parseFloat(n).toFixed(m.dp):"--";}
+
+    if(!d&&!err){
+      html+='<div class="mcard loading"><div class="mcard-top"><div><div class="mcard-name">'+m.name+'</div><div class="mcard-sub">Loading...</div></div></div></div>';
+      return;
+    }
+    if(!d&&err){
+      html+='<div class="mcard nosig"><div class="mcard-top"><div><div class="mcard-name">'+m.name+'</div><div class="mcard-sub" style="color:var(--r)">&#9888; '+err+'</div></div></div></div>';
+      return;
+    }
+
+    var isBuy=ev.signal==="buy";
+    var isSell=ev.signal==="sell";
+    var cardCls=ev.signal!=="none"?"ready":(ev.box&&(ev.nearHigh||ev.nearLow))?"watch":"nosig";
+    var pill=ev.signal!=="none"?
+      "&#9989; BOX BREAKOUT &mdash; "+m.name+" "+(isBuy?"BUY":"SELL"):
+      (ev.box&&(ev.nearHigh||ev.nearLow))?"&#128993; NEAR BOX LEVEL &mdash; Watch for breakout":
+      "&#9898; CONSOLIDATING &mdash; Box forming, no breakout yet";
+
+    // Box visualiser
+    var boxHtml="";
+    if(ev.box){
+      var B=ev.box;
+      var totalRange=B.high-B.low;
+      var pricePct=totalRange>0?Math.min(100,Math.max(0,((d.price-B.low)/totalRange)*100)):50;
+      var boxCol=ev.signal==="buy"?"#00d97e":ev.signal==="sell"?"#ff4d6d":"#4dabf7";
+      boxHtml='<div style="margin:0 16px 14px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px">'+
+        '<span style="color:#ff4d6d">Box Low: '+f(B.low)+'</span>'+
+        '<span style="color:var(--dim)">'+B.candles+' candles &middot; '+B.qualityPct+'% inside</span>'+
+        '<span style="color:#00d97e">Box High: '+f(B.high)+'</span></div>'+
+        '<div style="background:rgba(77,171,247,0.1);border:1px solid rgba(77,171,247,0.3);border-radius:6px;height:12px;position:relative">'+
+        '<div style="position:absolute;top:-4px;width:20px;height:20px;background:'+boxCol+';border-radius:50%;left:calc('+pricePct+'% - 10px);border:2px solid #0c1118;transition:left .3s"></div>'+
+        '</div>'+
+        '<div style="text-align:center;margin-top:6px;font-size:12px;font-weight:700;color:'+boxCol+'">Price: '+f(d.price)+' &middot; Box range: '+f(B.range)+' &middot; ATR: '+f(B.atr)+'</div></div>';
+    } else {
+      boxHtml='<div style="margin:0 16px 10px;font-size:11px;color:var(--dim);padding:8px;background:rgba(0,0,0,0.15);border-radius:8px">No valid box detected yet. Need 3+ candles consolidating within 0.8-4x ATR range.</div>';
+    }
+
+    // Levels
+    var levHtml="";
+    if(ev.levels){
+      var L=ev.levels;
+      levHtml='<div class="levels">'+
+        '<div class="lev"><div class="lev-l">Entry (now)</div><div class="lev-v" style="color:var(--b)">'+f(L.entry)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Stop</div><div class="lev-v" style="color:var(--r)">'+f(L.stop)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Target 1 (1.5:1)</div><div class="lev-v" style="color:var(--g)">'+f(L.target1)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Target 2 (2.5:1)</div><div class="lev-v" style="color:var(--g);opacity:.7">'+f(L.target2)+'</div></div>'+
+        '</div>'+
+        '<div style="font-size:10px;color:var(--dim);padding:4px 16px 10px">Units: '+L.units+' &middot; Risk: &pound;'+L.stake.toFixed(2)+' &middot; Est. profit: &pound;'+(L.stake*1.5).toFixed(2)+'</div>';
+    }
+
+    // Action box
+    var actionHtml="";
+    if(ev.signal!=="none"&&ev.levels){
+      var L=ev.levels;
+      actionHtml='<div class="abox trade">'+
+        '<div class="abox-title">&#9989; Box Breakout &mdash; '+m.name+' '+(isBuy?"BUY":"SELL")+'</div>'+
+        "1. The 1H candle has closed "+(isBuy?"ABOVE the box high ("+f(ev.box.high)+")":"BELOW the box low ("+f(ev.box.low)+")")+" — breakout confirmed<br>"+
+        "2. Open Trade Nation &mdash; search <b>"+m.tn+"</b><br>"+
+        "3. Enter <b>"+(isBuy?"BUY":"SELL")+"</b> now at market: <b style='color:#4dabf7'>"+f(L.entry)+"</b><br>"+
+        "4. Set <b>Stop Loss</b>: <b style='color:#ff4d6d'>"+f(L.stop)+"</b> (just beyond the box "+(isBuy?"low":"high")+")<br>"+
+        "5. Set <b>Take Profit 1</b>: <b style='color:#00d97e'>"+f(L.target1)+"</b> (1.5:1 R/R)<br>"+
+        "6. Set <b>Take Profit 2</b>: <b style='color:#00d97e'>"+f(L.target2)+"</b> (2.5:1 R/R)<br>"+
+        "7. Trade size: <b>"+L.units+" units</b> (2% risk = £"+L.stake.toFixed(2)+")<br>"+
+        "8. If price re-enters the box after breakout — exit immediately, false breakout<br>"+
+        "<b style='color:var(--a)'>&#9888; Check forexfactory.com for news — avoid trading boxes near major events</b>"+
+        '</div>';
+    } else if(ev.box&&(ev.nearHigh||ev.nearLow)){
+      actionHtml='<div class="abox wait"><div class="abox-title">&#128993; Approaching Box Level</div>'+
+        "Price is within 0.5 ATR of the box "+(ev.nearHigh?"HIGH ("+f(ev.box.high)+") — watch for bullish breakout close":"LOW ("+f(ev.box.low)+") — watch for bearish breakout close")+
+        ". Do NOT enter yet. Wait for a 1H candle to CLOSE outside the box. Set an alert at "+
+        (ev.nearHigh?f(ev.box.high):f(ev.box.low))+".</div>";
+    } else if(ev.box){
+      actionHtml='<div class="abox skip"><div class="abox-title">&#9898; Box Forming</div>'+
+        "Price is consolidating between <b>"+f(ev.box.low)+"</b> and <b>"+f(ev.box.high)+"</b> ("+ev.box.candles+" candles). "+
+        "This is the box building phase. Wait for a decisive 1H candle close above or below these levels before entering. Box quality: "+ev.box.qualityPct+"%."+
+        '</div>';
+    } else {
+      actionHtml='<div class="abox skip"><div class="abox-title">&#9898; No Box Detected</div>Price is trending or no clear consolidation range visible on 1H. Stand aside — Darvas Box works best when a clear range forms first.</div>';
+    }
+
+    html+='<div class="mcard '+cardCls+'">';
+    html+='<div class="mcard-top"><div><div class="mcard-name">'+(ev.signal!=="none"?'<span class="dirtag '+(isBuy?"long":"short")+'">'+(isBuy?"BUY":"SELL")+'</span>':'')+m.name+'</div>'+
+      '<div class="mcard-sub">'+m.cat+' &middot; Darvas Box &middot; '+(d.ts?d.ts.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" UK":"--")+'</div></div>'+
+      '<div><div class="mcard-price">'+f(d.price)+'</div>'+
+      (d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"var(--g)":"var(--r)")+'">'+
+      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':'\'')+
+      '</div></div>';
+    html+='<div class="sigbar"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
+      '<span style="font-size:10px;color:var(--dim)">Twelve Data</span></div>';
+    html+=boxHtml;
+    html+=levHtml;
+    html+=actionHtml;
+    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 12px;font-style:italic">Darvas Box &middot; 1H candles &middot; Stop at box boundary &middot; Exit if price re-enters box</div>';
+    html+='</div>';
+  });
+  document.getElementById("pdhlCards").innerHTML=html;
+}
+
+function loadPDHL(){
+  var keys=Object.keys(BOX_MARKETS);
+  keys.forEach(function(k){ delete liveBoxData[k]; delete liveBoxErrors[k]; });
+  renderBox();
+  keys.forEach(function(k,i){
+    setTimeout(function(){ fetchBox1H(k,function(key,err){ if(err)liveBoxErrors[key]=err; renderBox(); }); },i*6000);
+  });
+}
+
+// ═══ PREVIOUS DAY HIGH/LOW STRATEGY ═════════════════════════════
+var PDH_MARKETS = {
+  eurusd:{ name:"EUR/USD",    tn:"EUR/USD",          cat:"Forex",     dp:5 },
+  gbpusd:{ name:"GBP/USD",    tn:"GBP/USD",          cat:"Forex",     dp:5 },
+  usdjpy:{ name:"USD/JPY",    tn:"USD/JPY",          cat:"Forex",     dp:3 },
+  usdcad:{ name:"USD/CAD",    tn:"USD/CAD",          cat:"Forex",     dp:5 },
+  audusd:{ name:"AUD/USD",    tn:"AUD/USD",          cat:"Forex",     dp:5 },
+  gold:  { name:"Gold",       tn:"Gold (per 0.1)",   cat:"Commodity", dp:2 },
+  us500: { name:"US 500",     tn:"US 500 (Per 1.0)", cat:"Index",     dp:1 },
+  us100: { name:"US Tech 100",tn:"US Tech 100",      cat:"Index",     dp:1 }
+};
+
+var livePDHData   = {}; // daily history
+var livePDH1H     = {}; // 1H history for pattern confirmation
+var livePDHErrors = {};
+
+function getPDHL(dailyHist){
+  // Previous day = second-to-last daily candle (last = today still forming)
+  if(!dailyHist||!dailyHist.h||dailyHist.h.length<2) return null;
+  var n=dailyHist.h.length;
+  return {
+    high:  dailyHist.h[n-2],
+    low:   dailyHist.l[n-2],
+    open:  dailyHist.c[n-3]||dailyHist.c[n-2],
+    close: dailyHist.c[n-2],
+    range: dailyHist.h[n-2]-dailyHist.l[n-2]
+  };
+}
+
+function detect1HCandlePattern(h1hist, level, isSupport){
+  if(!h1hist||!h1hist.c||h1hist.c.length<3) return {pattern:null,ok:false};
+  var c=h1hist.c, h=h1hist.h, l=h1hist.l;
+  var n=c.length;
+  var last=c[n-1], prev=c[n-2];
+  var hi=h[n-1], lo=l[n-1];
+  var range=hi-lo;
+  if(range===0) return {pattern:null,ok:false};
+
+  // Check proximity to level
+  var atr=calcATR(h,l,c,14)||range*5;
+  var distToLevel=Math.abs(last-level);
+  var atLevel=distToLevel<atr*0.5;
+
+  if(isSupport){
+    // Hammer: lower wick > 60% of range, close in upper 40%
+    var lowerWick=Math.min(last,prev)-lo;
+    if(lowerWick>range*0.6&&last>prev)
+      return {pattern:"Hammer",ok:atLevel,strength:"strong",
+        txt:"Long lower wick rejecting PDL — buyers stepping in at this level"};
+    // Bullish engulfing
+    if(last>prev&&last>c[n-3]&&lo<l[n-2])
+      return {pattern:"Bullish Engulfing",ok:atLevel,strength:"strong",
+        txt:"Green candle engulfs previous red — buyers overwhelmed sellers at PDL"};
+    // Inside bar breakout
+    if(last>h[n-2]&&lo>l[n-2])
+      return {pattern:"Inside Bar Breakout",ok:atLevel,strength:"moderate",
+        txt:"Price compressed then broke upward — momentum building at PDL"};
+  } else {
+    // Shooting star: upper wick > 60%, close in lower 40%
+    var upperWick=hi-Math.max(last,prev);
+    if(upperWick>range*0.6&&last<prev)
+      return {pattern:"Shooting Star",ok:atLevel,strength:"strong",
+        txt:"Long upper wick rejecting PDH — sellers defending this level aggressively"};
+    // Bearish engulfing
+    if(last<prev&&last<c[n-3]&&hi>h[n-2])
+      return {pattern:"Bearish Engulfing",ok:atLevel,strength:"strong",
+        txt:"Red candle engulfs previous green — sellers overwhelmed buyers at PDH"};
+    // Inside bar breakdown
+    if(last<l[n-2]&&hi<h[n-2])
+      return {pattern:"Inside Bar Breakdown",ok:atLevel,strength:"moderate",
+        txt:"Price compressed then broke downward — sellers gaining control at PDH"};
+  }
+  return {pattern:null,ok:false,txt:"No clear reversal pattern yet at this level"};
+}
+
+function evalPDH(key){
+  var daily=livePDHData[key];
+  var h1=livePDH1H[key];
+  var d=liveData[key];
+  var m=PDH_MARKETS[key];
+  if(!daily||!d) return {signal:"none",pdhl:null};
+
+  var pdhl=getPDHL(daily);
+  if(!pdhl) return {signal:"none",pdhl:null};
+
+  var price=d.price;
+  var atr=calcATR(daily.h,daily.l,daily.c,14)||pdhl.range*0.2;
+
+  // 1H last candle for breakout confirmation
+  var h1closes=h1?h1.c:null;
+  var h1highs=h1?h1.h:null;
+  var h1lows=h1?h1.l:null;
+  var lastH1Close=h1closes?h1closes[h1closes.length-1]:price;
+  var prevH1Close=h1closes?h1closes[h1closes.length-2]:price;
+
+  // BREAKOUT signals — 1H candle must CLOSE beyond level
+  var breakoutBuy  = lastH1Close>pdhl.high && prevH1Close<=pdhl.high;
+  var breakoutSell = lastH1Close<pdhl.low  && prevH1Close>=pdhl.low;
+
+  // REVERSAL signals — price near level + pattern
+  var nearPDH=Math.abs(price-pdhl.high)<atr*0.5;
+  var nearPDL=Math.abs(price-pdhl.low)<atr*0.5;
+
+  // Trend context from daily (is price above or below midpoint?)
+  var dayMid=(pdhl.high+pdhl.low)/2;
+  var uptrend=price>dayMid;
+  var downtrend=price<dayMid;
+
+  var revBuyPat=null,revSellPat=null;
+  if(nearPDL&&h1){
+    revBuyPat=detect1HCandlePattern(h1,pdhl.low,true);
+  }
+  if(nearPDH&&h1){
+    revSellPat=detect1HCandlePattern(h1,pdhl.high,false);
+  }
+  var reversalBuy  = nearPDL&&uptrend&&revBuyPat&&revBuyPat.ok&&revBuyPat.pattern;
+  var reversalSell = nearPDH&&downtrend&&revSellPat&&revSellPat.ok&&revSellPat.pattern;
+
+  // Signal priority: breakout > reversal
+  var signal="none";
+  var signalType="";
+  if(breakoutBuy)  { signal="buy";  signalType="breakout"; }
+  else if(breakoutSell){ signal="sell"; signalType="breakout"; }
+  else if(reversalBuy) { signal="buy";  signalType="reversal"; }
+  else if(reversalSell){ signal="sell"; signalType="reversal"; }
+
+  // Levels
+  var levels=null;
+  if(signal!=="none"){
+    var isB=signal==="buy";
+    var entry=price;
+    var stop,target1,target2;
+    if(signalType==="breakout"){
+      stop=isB?pdhl.high-(atr*0.3):pdhl.low+(atr*0.3);
+      target1=isB?pdhl.high+pdhl.range:pdhl.low-pdhl.range;
+      target2=isB?pdhl.high+(pdhl.range*1.5):pdhl.low-(pdhl.range*1.5);
+    } else {
+      stop=isB?pdhl.low-(atr*0.5):pdhl.high+(atr*0.5);
+      target1=isB?pdhl.high:pdhl.low;
+      target2=isB?pdhl.high+(pdhl.range*0.5):pdhl.low-(pdhl.range*0.5);
+    }
+    var riskDist=Math.abs(entry-stop);
+    var stake=cap*0.02;
+    var units=riskDist>0?(stake/riskDist).toFixed(3):"n/a";
+    var rr1=riskDist>0?(Math.abs(target1-entry)/riskDist).toFixed(1):"--";
+    var rr2=riskDist>0?(Math.abs(target2-entry)/riskDist).toFixed(1):"--";
+    levels={entry:entry,stop:stop,target1:target1,target2:target2,
+            riskDist:riskDist,stake:stake,units:units,rr1:rr1,rr2:rr2,atr:atr};
+  }
+
+  return {
+    signal:signal,signalType:signalType,pdhl:pdhl,atr:atr,levels:levels,
+    breakoutBuy:breakoutBuy,breakoutSell:breakoutSell,
+    reversalBuy:reversalBuy,reversalSell:reversalSell,
+    nearPDH:nearPDH,nearPDL:nearPDL,
+    revBuyPat:revBuyPat,revSellPat:revSellPat,
+    uptrend:uptrend,downtrend:downtrend,price:price
+  };
+}
+
+function fetchPDHDaily(key,cb){
+  // Fetch daily data for PDH/PDL levels
+  fetchCandles(key,"1day",function(err,data){
+    if(err){livePDHErrors[key]=err;cb(key,err);return;}
+    if(!liveData[key]) liveData[key]={price:data.price,prev:data.prev,chg:data.change,chgPct:data.changePct,ts:new Date(),src:"Twelve Data"};
+    if(data.history&&data.history.h&&data.history.h.length>=2) livePDHData[key]=data.history;
+    // Also fetch 1H for pattern confirmation
+    fetchCandles(key,"1h",function(err2,data2){
+      if(!err2&&data2.history&&data2.history.h) livePDH1H[key]=data2.history;
+      delete livePDHErrors[key];
+      cb(key,null);
+    });
+  });
+}
+
+function renderPDH(){
+  var keys=Object.keys(PDH_MARKETS);
+  var ready=0,watch=0,nosig=0;
+  keys.forEach(function(k){
+    var ev=evalPDH(k);
+    if(ev.signal!=="none") ready++;
+    else if(ev.pdhl&&(ev.nearPDH||ev.nearPDL)) watch++;
+    else nosig++;
+  });
+
+  document.getElementById("pdhSummary").innerHTML=
+    '<div class="sumc g"><div class="sumnum" style="color:var(--g)">'+ready+'</div><div class="sumlbl">&#9989; SIGNAL</div></div>'+
+    '<div class="sumc a"><div class="sumnum" style="color:var(--a)">'+watch+'</div><div class="sumlbl">&#128993; NEAR LEVEL</div></div>'+
+    '<div class="sumc d"><div class="sumnum" style="color:var(--dim)">'+nosig+'</div><div class="sumlbl">&#9898; AWAY FROM LEVEL</div></div>';
+
+  var loaded=keys.filter(function(k){return livePDHData[k];}).length;
+  var el=document.getElementById("pdhStatus");
+  if(loaded>=keys.length){el.innerHTML="&#9989; "+keys.length+" markets &middot; PDH/PDL calculated";el.style.color="var(--g)";}
+  else{el.innerHTML='<span class="pulse"></span>Loading... ('+loaded+'/'+keys.length+')';el.style.color="";}
+
+  var html="";
+  keys.forEach(function(key){
+    var m=PDH_MARKETS[key];
+    var d=liveData[key];
+    var ev=evalPDH(key);
+    var err=livePDHErrors[key];
+    function f(n){return n||n===0?parseFloat(n).toFixed(m.dp):"--";}
+
+    if(!d&&!err){
+      html+='<div class="mcard loading"><div class="mcard-top"><div><div class="mcard-name">'+m.name+'</div><div class="mcard-sub">Loading daily levels...</div></div></div></div>';
+      return;
+    }
+    if(!d&&err){
+      html+='<div class="mcard nosig"><div class="mcard-top"><div><div class="mcard-name">'+m.name+'</div><div class="mcard-sub" style="color:var(--r)">&#9888; '+err+'</div></div></div></div>';
+      return;
+    }
+
+    var isBuy=ev.signal==="buy";
+    var isBreakout=ev.signalType==="breakout";
+    var isReversal=ev.signalType==="reversal";
+    var cardCls=ev.signal!=="none"?"ready":(ev.pdhl&&(ev.nearPDH||ev.nearPDL))?"watch":"nosig";
+
+    var sigTypeLabel=isBreakout?"BREAKOUT":isReversal?"REVERSAL":"";
+    var pill=ev.signal!=="none"?
+      "&#9989; "+sigTypeLabel+" "+(isBuy?"BUY":"SELL")+" &mdash; "+m.name:
+      (ev.pdhl&&(ev.nearPDH||ev.nearPDL))?"&#128993; NEAR "+(ev.nearPDH?"PDH":"PDL")+" &mdash; Watch for signal":
+      "&#9898; AWAY FROM LEVELS &mdash; No setup";
+
+    // Level visualiser
+    var levelHtml="";
+    if(ev.pdhl){
+      var P=ev.pdhl;
+      var totalRange=P.high-P.low;
+      var pricePct=totalRange>0?Math.min(110,Math.max(-10,((d.price-P.low)/totalRange)*100)):50;
+      var priceCol=ev.signal==="buy"?"#00d97e":ev.signal==="sell"?"#ff4d6d":ev.nearPDH?"#ffa94d":ev.nearPDL?"#4dabf7":"#fff";
+      levelHtml=
+        '<div style="margin:0 16px 12px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">'+
+        '<span style="color:#ff4d6d">PDL: '+f(P.low)+'</span>'+
+        '<span style="color:var(--dim)">Range: '+f(P.range)+" &middot; ATR: "+f(ev.atr)+'</span>'+
+        '<span style="color:#00d97e">PDH: '+f(P.high)+'</span></div>'+
+        '<div style="background:rgba(255,255,255,0.05);border-radius:6px;height:14px;position:relative;border:1px solid var(--bdr)">'+
+        '<div style="position:absolute;left:0;top:0;width:100%;height:100%;background:linear-gradient(to right,rgba(255,77,109,0.15),rgba(0,217,126,0.15));border-radius:6px"></div>'+
+        '<div style="position:absolute;top:-3px;left:50%;width:1px;height:20px;background:rgba(255,255,255,0.15)"></div>'+
+        '<div style="position:absolute;top:-5px;width:24px;height:24px;background:'+priceCol+';border-radius:50%;left:calc('+Math.min(100,Math.max(0,pricePct))+'% - 12px);border:2px solid #0c1118;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;transition:left .3s">'+
+        (isBuy?"B":ev.signal==="sell"?"S":"•")+
+        '</div></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:5px">'+
+        '<span>&#9650; Breakout SELL below PDL</span><span style="color:'+priceCol+';font-weight:700">Price: '+f(d.price)+'</span><span>&#9650; Breakout BUY above PDH</span></div>'+
+        '</div>';
+    }
+
+    // Pattern info
+    var patHtml="";
+    if(ev.nearPDL&&ev.revBuyPat){
+      var p=ev.revBuyPat;
+      var pCol=p.pattern?"#00d97e":"#5a6478";
+      patHtml+='<div style="margin:0 16px 8px;padding:9px 12px;border-radius:8px;background:'+pCol+'11;border:1px solid '+pCol+'44;font-size:11px">'+
+        '&#9202; 1H at PDL: '+(p.pattern?'<b style="color:'+pCol+'">'+p.pattern+'</b> &mdash; '+p.txt:'No pattern yet &mdash; wait for hammer or engulfing candle to close at this level')+'</div>';
+    }
+    if(ev.nearPDH&&ev.revSellPat){
+      var p2=ev.revSellPat;
+      var pCol2=p2.pattern?"#ff4d6d":"#5a6478";
+      patHtml+='<div style="margin:0 16px 8px;padding:9px 12px;border-radius:8px;background:'+pCol2+'11;border:1px solid '+pCol2+'44;font-size:11px">'+
+        '&#9202; 1H at PDH: '+(p2.pattern?'<b style="color:'+pCol2+'">'+p2.pattern+'</b> &mdash; '+p2.txt:'No pattern yet &mdash; wait for shooting star or engulfing candle to close at this level')+'</div>';
+    }
+
+    // Levels
+    var levHtml="";
+    if(ev.levels){
+      var L=ev.levels;
+      levHtml='<div class="levels">'+
+        '<div class="lev"><div class="lev-l">Entry (now)</div><div class="lev-v" style="color:var(--b)">'+f(L.entry)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Stop</div><div class="lev-v" style="color:var(--r)">'+f(L.stop)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Target 1 (1:'+L.rr1+')</div><div class="lev-v" style="color:var(--g)">'+f(L.target1)+'</div></div>'+
+        '<div class="lev"><div class="lev-l">Target 2 (1:'+L.rr2+')</div><div class="lev-v" style="color:var(--g);opacity:.7">'+f(L.target2)+'</div></div></div>'+
+        '<div style="font-size:10px;color:var(--dim);padding:4px 16px 10px">Units: '+L.units+' &middot; Risk: &pound;'+L.stake.toFixed(2)+' &middot; Est. profit: &pound;'+(L.stake*parseFloat(L.rr1||2)).toFixed(2)+'</div>';
+    }
+
+    // Action box
+    var actionHtml="";
+    if(ev.signal!=="none"&&ev.levels){
+      var L=ev.levels;
+      var P=ev.pdhl;
+      var typeNote=isBreakout?
+        "1H candle has CLOSED "+(isBuy?"above PDH ("+f(P.high)+")":"below PDL ("+f(P.low)+")")+" — institutional breakout confirmed":
+        "Price touched "+(isBuy?"PDL ("+f(P.low)+")":"PDH ("+f(P.high)+")")+" and a reversal pattern confirmed";
+      actionHtml='<div class="abox trade">'+
+        '<div class="abox-title">&#9989; '+(isBreakout?"Breakout":"Reversal")+' '+( isBuy?"BUY":"SELL")+' &mdash; '+m.name+'</div>'+
+        "1. "+typeNote+"<br>"+
+        "2. Open Trade Nation &mdash; search <b>"+m.tn+"</b><br>"+
+        "3. Enter <b>"+(isBuy?"BUY":"SELL")+"</b> at market: <b style='color:#4dabf7'>"+f(L.entry)+"</b><br>"+
+        "4. Stop Loss: <b style='color:#ff4d6d'>"+f(L.stop)+"</b>"+(isBreakout?" (just inside the broken level)":"(beyond the level + ATR buffer)")+"<br>"+
+        "5. Target 1: <b style='color:#00d97e'>"+f(L.target1)+"</b> (1:"+L.rr1+" R/R)<br>"+
+        "6. Target 2: <b style='color:#00d97e'>"+f(L.target2)+"</b> (1:"+L.rr2+" R/R)<br>"+
+        "7. Size: <b>"+L.units+" units</b> (2% risk = £"+L.stake.toFixed(2)+")<br>"+
+        (isBreakout?"8. If price immediately reverses back through the level — exit. False breakout.":
+         "8. If price closes back through the level — exit. Reversal failed.")+
+        "<br><b style='color:var(--a)'>&#9888; Check news calendar before entering</b>"+
+        '</div>';
+    } else if(ev.pdhl&&(ev.nearPDH||ev.nearPDL)){
+      actionHtml='<div class="abox wait"><div class="abox-title">&#128993; Approaching Key Level</div>'+
+        "Price is near the "+(ev.nearPDH?"PDH ("+f(ev.pdhl.high)+")":"PDL ("+f(ev.pdhl.low)+")")+
+        ". Watch for either: (1) A 1H candle CLOSE beyond this level for a breakout entry, or "+
+        "(2) A reversal candle pattern (hammer, engulfing) at this level for a reversal entry. "+
+        "Do NOT enter until one of these confirms.</div>";
+    } else {
+      actionHtml='<div class="abox skip"><div class="abox-title">&#9898; Away From Levels</div>'+
+        "PDH: "+f(ev.pdhl?ev.pdhl.high:null)+" &middot; PDL: "+f(ev.pdhl?ev.pdhl.low:null)+
+        ". Price is not near either level. Stand aside and wait for price to approach PDH or PDL before watching for signals.</div>";
+    }
+
+    html+='<div class="mcard '+cardCls+'">';
+    html+='<div class="mcard-top"><div>'+
+      '<div class="mcard-name">'+(ev.signal!=="none"?'<span class="dirtag '+(isBuy?'long':'short')+'">'+( isBuy?'BUY':'SELL')+'</span>':'')+m.name+'</div>'+
+      '<div class="mcard-sub">'+m.cat+(isBreakout?" &middot; Breakout":isReversal?" &middot; Reversal":"")+" &middot; PDH: "+f(ev.pdhl?ev.pdhl.high:null)+" &middot; PDL: "+f(ev.pdhl?ev.pdhl.low:null)+'</div></div>'+
+      '<div><div class="mcard-price">'+f(d.price)+'</div>'+
+      (d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"var(--g)":"var(--r)")+'">'+
+      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':'\'')+
+      '</div></div>';
+    html+='<div class="sigbar"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
+      '<span style="font-size:10px;color:var(--dim)">Daily levels &middot; '+m.tn+'</span></div>';
+    html+=levelHtml;
+    html+=patHtml;
+    html+=levHtml;
+    html+=actionHtml;
+    html+='<div style="font-size:10px;color:var(--dim);padding:0 16px 12px;font-style:italic">PDH/PDL &middot; Daily levels &middot; 1H confirmation &middot; Both breakout and reversal signals</div>';
+    html+='</div>';
+  });
+  document.getElementById("pdhCards").innerHTML=html;
+}
+
+function loadPDH(){
+  var keys=Object.keys(PDH_MARKETS);
+  keys.forEach(function(k){ delete livePDHData[k]; delete livePDH1H[k]; delete livePDHErrors[k]; });
+  renderPDH();
+  keys.forEach(function(k,i){
+    setTimeout(function(){ fetchPDHDaily(k,function(key,err){ if(err)livePDHErrors[key]=err; renderPDH(); }); },i*7000);
+  });
+}
+
 // ═══ INIT ═════════════════════════════════════════════════════════
 upCap();
 renderChecklist();
@@ -1432,7 +2029,9 @@ renderJournal();
 renderJStats();
 loadS1();
 setTimeout(function(){ loadS2(); }, 1000);
-setInterval(function(){ loadS1(); loadS2(); }, 900000);
+setTimeout(function(){ loadPDHL(); }, 2000);
+setTimeout(function(){ loadPDH(); }, 3000);
+setInterval(function(){ loadS1(); loadS2(); loadPDHL(); loadPDH(); }, 900000);
 </script>
 
 <!-- JOURNAL PANEL -->
@@ -1529,6 +2128,103 @@ setInterval(function(){ loadS1(); loadS2(); }, 900000);
     <button class="cbtn" onclick="exportJournal()" style="margin-top:8px;background:rgba(77,171,247,0.1);border-color:rgba(77,171,247,0.4);color:var(--b)">&#128229; Export CSV</button>
     <button class="cbtn" onclick="if(confirm('Delete ALL trades? This cannot be undone.')){localStorage.removeItem('trendJournal');trades=[];renderJournal();renderJStats();}" style="margin-top:8px;background:rgba(255,77,109,0.08);border-color:rgba(255,77,109,0.3);color:var(--r)">&#128465; Clear All</button>
   </div>
+</div>
+
+<!-- DARVAS BOX THEORY PANEL -->
+<div id="p-pdhl" class="panel">
+  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#127248; Darvas Box Strategy &mdash; 1H Breakout</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Nicolas Darvas method adapted for forex &amp; indices &mdash; consolidation, breakout, continuation &mdash; 2-5 signals per week</div>
+
+  <div class="bn g" style="margin-bottom:14px">
+    <b>&#128161; How It Works:</b><br><br>
+    Price consolidates between a <b>box high</b> and <b>box low</b> for at least 3-5 candles.<br>
+    When price <b>closes above the box high</b> on the 1H chart &rarr; BUY breakout signal.<br>
+    When price <b>closes below the box low</b> on the 1H chart &rarr; SELL breakout signal.<br>
+    Stop: just below the box low (for buys) or above the box high (for sells).<br>
+    Target: box high + box range size (1:1.5 to 1:2 reward/risk minimum).<br><br>
+    <b style="color:var(--a)">Key rule: Only trade boxes where ATR confirms the range is wide enough. Tight boxes = false breakouts. Box must be at least 1x ATR wide to be valid.</b>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:6px">&#9650; BOX BREAKOUT BUY</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">
+        1H candle <b style="color:#fff">closes above box high</b><br>
+        Box held for 3+ candles<br>
+        Box width &ge; 1x ATR<br>
+        Stop: below box low<br>
+        Target: box high + range
+      </div>
+    </div>
+    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:13px">
+      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:6px">&#9660; BOX BREAKOUT SELL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.8">
+        1H candle <b style="color:#fff">closes below box low</b><br>
+        Box held for 3+ candles<br>
+        Box width &ge; 1x ATR<br>
+        Stop: above box high<br>
+        Target: box low - range
+      </div>
+    </div>
+  </div>
+
+  <div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#b0ab9e;line-height:1.9">
+    <b style="color:#4dabf7">When to check:</b> After each 1H candle closes. Best signals appear during <b style="color:#fff">London (08:00-16:00 UK)</b> and <b style="color:#fff">NY (13:30-20:00 UK)</b> sessions when volume is highest. Avoid 00:00-07:00 UK — thin markets, false breakouts common.
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div id="pdhlStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
+      <span class="pulse"></span>Loading 1H candle data...
+    </div>
+    <button onclick="loadPDHL()" class="rbtn">&#8635; Refresh Boxes</button>
+  </div>
+
+  <div class="sumstrip" id="pdhlSummary"></div>
+  <div id="pdhlCards"></div>
+
+  <div class="disc">Darvas Box Theory adapted for forex and indices. Works best in trending markets. False breakouts are the main risk during news events. Always use stop loss. Not financial advice.</div>
+</div>
+
+
+<!-- PREVIOUS DAY HIGH/LOW PANEL -->
+<div id="p-pdh" class="panel">
+  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#128198; Previous Day High/Low Strategy</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Institutional price memory — yesterday's high and low are the most watched levels by banks and funds</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.3);border-radius:11px;padding:12px">
+      <div style="font-size:11px;font-weight:800;color:#00d97e;margin-bottom:5px">&#9650; BREAKOUT BUY</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.7">1H candle closes <b style="color:#fff">above PDH</b><br>Strong bullish momentum<br>Stop: below PDH<br>Target: PDH + day range</div>
+    </div>
+    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.3);border-radius:11px;padding:12px">
+      <div style="font-size:11px;font-weight:800;color:#ff4d6d;margin-bottom:5px">&#9660; BREAKOUT SELL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.7">1H candle closes <b style="color:#fff">below PDL</b><br>Strong bearish momentum<br>Stop: above PDL<br>Target: PDL - day range</div>
+    </div>
+    <div style="background:rgba(77,171,247,0.08);border:1px solid rgba(77,171,247,0.3);border-radius:11px;padding:12px">
+      <div style="font-size:11px;font-weight:800;color:#4dabf7;margin-bottom:5px">&#8635; REVERSAL BUY at PDL</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.7">Price touches PDL <b style="color:#fff">in uptrend</b><br>Hammer/engulfing forms<br>Stop: below PDL (1 ATR)<br>Target: PDH</div>
+    </div>
+    <div style="background:rgba(255,169,77,0.08);border:1px solid rgba(255,169,77,0.3);border-radius:11px;padding:12px">
+      <div style="font-size:11px;font-weight:800;color:#ffa94d;margin-bottom:5px">&#8635; REVERSAL SELL at PDH</div>
+      <div style="font-size:11px;color:#b0ab9e;line-height:1.7">Price touches PDH <b style="color:#fff">in downtrend</b><br>Shooting star/engulfing<br>Stop: above PDH (1 ATR)<br>Target: PDL</div>
+    </div>
+  </div>
+
+  <div class="bn b" style="margin-bottom:14px">
+    <b>&#128161; The Logic:</b> Yesterday's high and low are where the most stop-loss orders and pending orders cluster. Banks and algorithms use these levels deliberately — price is magnetically drawn to them. A breakout above PDH means enough buyers overwhelmed all the sellers sitting there. A bounce at PDL means buyers defended the level. Both are high-probability setups when confirmed by a 1H candle close.<br><br>
+    <b style="color:var(--a)">&#9888; Best during London and NY sessions. Avoid the first 30 minutes after a major news release.</b>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div id="pdhStatus" style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">
+      <span class="pulse"></span>Loading daily levels...
+    </div>
+    <button onclick="loadPDH()" class="rbtn">&#8635; Refresh Levels</button>
+  </div>
+
+  <div class="sumstrip" id="pdhSummary"></div>
+  <div id="pdhCards"></div>
+  <div class="disc">Previous Day High/Low uses institutional price memory levels. Requires 1H candle close confirmation. Always use stop loss. Not financial advice.</div>
 </div>
 </body>
 </html>
