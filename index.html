@@ -1488,7 +1488,13 @@ function evalBox(key){
   var hist=liveBoxData[key];
   var d=liveData[key];
   var m=BOX_MARKETS[key];
-  if(!hist||!d||!hist.c||hist.c.length<8) return {signal:"none",box:null};
+  if(!hist||!hist.c||hist.c.length<5) return {signal:"none",box:null};
+  // Use price from candle history if liveData not yet available
+  if(!d&&hist.c.length>0){
+    d={price:hist.c[hist.c.length-1],prev:hist.c[hist.c.length-2]||0,chg:0,chgPct:0,ts:new Date(),src:"1H"};
+    liveData[key]=d;
+  }
+  if(!d) return {signal:"none",box:null};
 
   var closes=hist.c, highs=hist.h, lows=hist.l;
   var n=closes.length;
@@ -1671,7 +1677,7 @@ function renderBox(){
       '<div class="mcard-sub">'+m.cat+' &middot; Darvas Box &middot; '+(d.ts?d.ts.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" UK":"--")+'</div></div>'+
       '<div><div class="mcard-price">'+f(d.price)+'</div>'+
       (d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"var(--g)":"var(--r)")+'">'+
-      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':'\'')+
+      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':'')+
       '</div></div>';
     html+='<div class="sigbar"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
       '<span style="font-size:10px;color:var(--dim)">Twelve Data</span></div>';
@@ -1686,11 +1692,16 @@ function renderBox(){
 
 function loadPDHL(){
   var keys=Object.keys(BOX_MARKETS);
-  keys.forEach(function(k){ delete liveBoxErrors[k]; }); // keep old data visible while refreshing
+  keys.forEach(function(k){ delete liveBoxErrors[k]; });
+  renderBox();
   keys.forEach(function(k,i){
-    setTimeout(function(){ fetchBox1H(k,function(key,err){ if(err)liveBoxErrors[key]=err; renderBox(); }); },i*3500);
+    setTimeout(function(){
+      fetchBox1H(k,function(key,err){
+        if(err){ liveBoxErrors[key]=err; }
+        renderBox();
+      });
+    }, i*4000);
   });
-  renderBox(); // show whatever we have immediately
 }
 
 // ═══ PREVIOUS DAY HIGH/LOW STRATEGY ═════════════════════════════
@@ -1773,7 +1784,12 @@ function evalPDH(key){
   var h1=livePDH1H[key];
   var d=liveData[key];
   var m=PDH_MARKETS[key];
-  if(!daily||!d) return {signal:"none",pdhl:null};
+  if(!daily) return {signal:"none",pdhl:null};
+  // Use price from daily history if liveData not yet loaded
+  if(!d&&daily&&daily.c&&daily.c.length>0){
+    d={price:daily.c[daily.c.length-1],prev:daily.c[daily.c.length-2]||0,chg:0,chgPct:0,ts:new Date(),src:"Daily"};
+  }
+  if(!d) return {signal:"none",pdhl:null};
 
   var pdhl=getPDHL(daily);
   if(!pdhl) return {signal:"none",pdhl:null};
@@ -2022,7 +2038,7 @@ function renderPDH(){
       '<div class="mcard-sub">'+m.cat+(isBreakout?" &middot; Breakout":isReversal?" &middot; Reversal":"")+" &middot; PDH: "+f(ev.pdhl?ev.pdhl.high:null)+" &middot; PDL: "+f(ev.pdhl?ev.pdhl.low:null)+'</div></div>'+
       '<div><div class="mcard-price">'+f(d.price)+'</div>'+
       (d.chgPct?'<div class="mcard-chg" style="color:'+(d.chg>=0?"var(--g)":"var(--r)")+'">'+
-      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':'\'')+
+      (d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+' ('+d.chgPct.toFixed(2)+'%)</div>':'')+
       '</div></div>';
     html+='<div class="sigbar"><span class="sigpill '+cardCls+'">'+pill+'</span>'+
       '<span style="font-size:10px;color:var(--dim)">Daily levels &middot; '+m.tn+'</span></div>';
@@ -2038,11 +2054,16 @@ function renderPDH(){
 
 function loadPDH(){
   var keys=Object.keys(PDH_MARKETS);
-  keys.forEach(function(k){ delete livePDHErrors[k]; }); // keep old data visible while refreshing
+  keys.forEach(function(k){ delete livePDHErrors[k]; });
+  renderPDH();
   keys.forEach(function(k,i){
-    setTimeout(function(){ fetchPDHDaily(k,function(key,err){ if(err)livePDHErrors[key]=err; renderPDH(); }); },i*3500);
+    setTimeout(function(){
+      fetchPDHDaily(k,function(key,err){
+        if(err){ livePDHErrors[key]=err; }
+        renderPDH();
+      });
+    }, i*4000);
   });
-  renderPDH(); // show whatever we have immediately
 }
 
 // ═══ INIT ═════════════════════════════════════════════════════════
