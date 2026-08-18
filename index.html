@@ -1545,7 +1545,7 @@ function fetchBox1H(key,cb){
     if(err){liveBoxErrors[key]=err;cb(key,err);return;}
     // Always update price
     liveData[key]={price:data.price,prev:data.prev,chg:data.change||0,chgPct:data.changePct||0,ts:new Date(),src:"Twelve Data"};
-    if(data.history&&data.history.h&&data.history.h.length>=8){
+    if(data.history&&data.history.h&&data.history.h.length>=5){
       liveBoxData[key]=data.history;
       // Also store as 1H history for other tabs
       liveHistory1H[key]=data.history;
@@ -1583,7 +1583,7 @@ function renderBox(){
     var err=liveBoxErrors[key];
     function f(n){return n?parseFloat(n).toFixed(m.dp):"--";}
 
-    var boxLoaded=liveBoxData[key]&&liveBoxData[key].c&&liveBoxData[key].c.length>=8;
+    var boxLoaded=liveBoxData[key]&&liveBoxData[key].c&&liveBoxData[key].c.length>=5;
     if(!boxLoaded&&!err){
       html+='<div class="mcard loading"><div class="mcard-top"><div><div class="mcard-name">'+m.name+'</div><div class="mcard-sub" style="color:var(--dim)">Loading 1H candle data...</div></div>'+
       (d?'<div><div class="mcard-price">'+parseFloat(d.price).toFixed(m.dp)+'</div></div>':'')+'</div></div>';
@@ -1686,11 +1686,11 @@ function renderBox(){
 
 function loadPDHL(){
   var keys=Object.keys(BOX_MARKETS);
-  keys.forEach(function(k){ delete liveBoxData[k]; delete liveBoxErrors[k]; });
-  renderBox();
+  keys.forEach(function(k){ delete liveBoxErrors[k]; }); // keep old data visible while refreshing
   keys.forEach(function(k,i){
-    setTimeout(function(){ fetchBox1H(k,function(key,err){ if(err)liveBoxErrors[key]=err; renderBox(); }); },i*6000);
+    setTimeout(function(){ fetchBox1H(k,function(key,err){ if(err)liveBoxErrors[key]=err; renderBox(); }); },i*3500);
   });
+  renderBox(); // show whatever we have immediately
 }
 
 // ═══ PREVIOUS DAY HIGH/LOW STRATEGY ═════════════════════════════
@@ -1859,7 +1859,7 @@ function fetchPDHDaily(key,cb){
     if(err){livePDHErrors[key]=err;cb(key,err);return;}
     // Always update price and daily history
     liveData[key]={price:data.price,prev:data.prev,chg:data.change||0,chgPct:data.changePct||0,ts:new Date(),src:"Twelve Data"};
-    if(data.history&&data.history.h&&data.history.h.length>=2){
+    if(data.history&&data.history.h&&data.history.h.length>=1){
       livePDHData[key]=data.history;
     }
     // Step 2: fetch 1H candles for pattern confirmation at the PDH/PDL levels
@@ -2038,11 +2038,11 @@ function renderPDH(){
 
 function loadPDH(){
   var keys=Object.keys(PDH_MARKETS);
-  keys.forEach(function(k){ delete livePDHData[k]; delete livePDH1H[k]; delete livePDHErrors[k]; });
-  renderPDH();
+  keys.forEach(function(k){ delete livePDHErrors[k]; }); // keep old data visible while refreshing
   keys.forEach(function(k,i){
-    setTimeout(function(){ fetchPDHDaily(k,function(key,err){ if(err)livePDHErrors[key]=err; renderPDH(); }); },i*7000);
+    setTimeout(function(){ fetchPDHDaily(k,function(key,err){ if(err)livePDHErrors[key]=err; renderPDH(); }); },i*3500);
   });
+  renderPDH(); // show whatever we have immediately
 }
 
 // ═══ INIT ═════════════════════════════════════════════════════════
@@ -2052,10 +2052,10 @@ calcPos();
 renderJournal();
 renderJStats();
 loadS1();
-setTimeout(function(){ loadS2(); }, 2000);
-setTimeout(function(){ loadPDHL(); }, 4000);
-setTimeout(function(){ loadPDH(); }, 6000);
-setInterval(function(){ loadS1(); setTimeout(function(){loadS2();},2000); setTimeout(function(){loadPDHL();},4000); setTimeout(function(){loadPDH();},6000); }, 900000);
+setTimeout(function(){ loadS2(); }, 1000);
+setTimeout(function(){ loadPDHL(); }, 2000);
+setTimeout(function(){ loadPDH(); }, 4000);
+setInterval(function(){ loadS1(); setTimeout(function(){loadS2();},1000); setTimeout(function(){loadPDHL();},2000); setTimeout(function(){loadPDH();},4000); }, 900000);
 </script>
 
 <!-- JOURNAL PANEL -->
