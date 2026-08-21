@@ -124,6 +124,10 @@ select.ni{width:auto}
       <label>Capital &pound;</label>
       <input type="number" id="capI" value="500" min="100" oninput="upCap()">
     </div>
+    <div style="background:rgba(77,171,247,0.06);border:1px solid rgba(77,171,247,0.2);border-radius:10px;padding:6px 12px;text-align:center">
+      <div id="creditCount" style="font-size:14px;font-weight:800;color:#4dabf7">0</div>
+      <div style="font-size:9px;color:var(--dim)">Credits used today</div>
+    </div>
   </div>
 </div>
 
@@ -432,6 +436,14 @@ function tab(id,btn){
   document.querySelectorAll(".ntab").forEach(function(b){b.classList.remove("on");});
   document.getElementById("p-"+id).classList.add("on");
   btn.classList.add("on");
+  // Lazy load: fetch data first time a tab is visited
+  if(tabLoaded&&!tabLoaded[id]){
+    tabLoaded[id]=true;
+    if(id==="s2") loadS2();
+    else if(id==="band") loadBand();
+    else if(id==="cci") loadCCI();
+    else if(id==="expert") loadExpert();
+  }
 }
 
 // Maths
@@ -502,7 +514,20 @@ function calcCCI(h,l,c,p){
 }
 
 // Fetch
+var dailyCredits=parseInt(localStorage.getItem("trendCredits_"+new Date().toDateString())||"0");
+function updateCreditDisplay(){
+  var el=document.getElementById("creditCount");
+  if(el){el.textContent=dailyCredits;el.style.color=dailyCredits>700?"var(--r)":dailyCredits>500?"var(--a)":"#4dabf7";}
+}
+function trackCredit(){
+  dailyCredits++;
+  localStorage.setItem("trendCredits_"+new Date().toDateString(),dailyCredits);
+  updateCreditDisplay();
+}
+updateCreditDisplay();
+
 function fetchC(key,interval,cb){
+  trackCredit();
   var xhr=new XMLHttpRequest();
   xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&interval="+interval,true);
   xhr.timeout=15000;
@@ -946,16 +971,17 @@ function exportJournal(){
 
 // ── INIT ──────────────────────────────────────────────────────────
 upCap();renderChk();calcPos();renderJournal();renderJStats();
+// Only load 4H Pullback on startup (13 credits)
+// Other tabs load on first click — saves credits
 loadS1();
-setTimeout(function(){loadS2();},1000);
-setTimeout(function(){loadBand();},2000);
-setTimeout(function(){loadCCI();},3000);
-setInterval(function(){
-  loadS1();
-  setTimeout(function(){loadS2();},1000);
-  setTimeout(function(){loadBand();},2000);
-  setTimeout(function(){loadCCI();},3000);
-},900000);
+var tabLoaded={s1:true,s2:false,band:false,cci:false,expert:false};
+// Each tab refreshes independently every 30 minutes
+// Only the tab that has been loaded fires — saves API credits
+setInterval(function(){ if(Object.keys(liveH4).length>0) loadS1(); }, 1800000);
+setInterval(function(){ if(Object.keys(liveH1).length>0) loadS2(); }, 1800000);
+setInterval(function(){ if(Object.keys(liveBand).length>0) loadBand(); }, 1800000);
+setInterval(function(){ if(Object.keys(liveCCI).length>0) loadCCI(); }, 1800000);
+setInterval(function(){ if(Object.keys(liveExp).length>0) loadExpert(); }, 1800000);
 
 // ── ADX / DI Calculation ──────────────────────────────────────────
 function calcADX(hi,lo,cl,p){
