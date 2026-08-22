@@ -137,6 +137,7 @@ select.ni{width:auto}
     <button class="ntab" onclick="tab('s2',this)">&#9889; 1H MOMENTUM</button>
     <button class="ntab" onclick="tab('band',this)">&#127754; 200 EMA BAND</button>
     <button class="ntab" onclick="tab('cci',this)">&#128301; EMA+CCI+MACD</button>
+    <button class="ntab" onclick="tab('fnews',this)">&#128240; MARKET NEWS</button>
     <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
     <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
     <button class="ntab" onclick="tab('news',this)">&#128680; NEWS &amp; RISK</button>
@@ -157,7 +158,7 @@ select.ni{width:auto}
 
 <!-- S2: 1H MOMENTUM -->
 <div id="p-s2" class="panel">
-  <div class="bn b"><b>&#9889; 1H Momentum</b> — Same 9/20 EMA logic on 1H candles. Check every hour at :05 past. Signal valid for that 1H candle only — never chase.</div>
+  <div class="bn b"><b>&#9889; 1H EMA Momentum + MACD &amp; ADX Confluence</b> — 9/20 EMA logic on 1H candles. MACD histogram and ADX/DI shown on every card.<br>Best signals: EMA aligned + MACD confirms + ADX &ge;20 + DI in trend direction = highest probability entry.<br>Check every hour at :05 past. Signal valid for that 1H candle only.</div>
   <div class="statusbar"><div id="s2Status"><span class="pulse"></span>Loading...</div><button class="rbtn" onclick="loadS2()">&#8635; Refresh</button></div>
   <div class="sumstrip" id="s2Sum"></div>
   <div id="s2Cards"></div>
@@ -525,6 +526,17 @@ function trackCredit(){
   updateCreditDisplay();
 }
 updateCreditDisplay();
+function calcRSI(closes,period){
+  period=period||14;
+  if(!closes||closes.length<period+1)return null;
+  var g=0,l=0;
+  for(var i=closes.length-period;i<closes.length;i++){
+    var d=closes[i]-closes[i-1];
+    if(d>0)g+=d;else l+=Math.abs(d);
+  }
+  if(l===0)return 100;
+  return 100-(100/(1+(g/period)/(l/period)));
+}
 
 function fetchC(key,interval,cb){
   trackCredit();
@@ -597,6 +609,32 @@ function mkCard(key,hist,d,ev,checks,subtext,tabId){
     actHtml='<div class="abox skip"><div class="abox-title">&#9898; No Signal</div>Stand aside. Conditions not met.</div>';
   }
 
+  var cf='';
+  if(ev.macd||ev.adxD){
+    var mc=ev.macdOk?'var(--g)':'var(--a)';
+    var ac=ev.adxOk?'var(--g)':'var(--a)';
+    cf='<div style="margin:0 16px 10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;grid-auto-rows:auto">';
+    if(ev.macd)cf+='<div style="background:rgba(0,0,0,0.2);border:1px solid '+mc+'44;border-radius:8px;padding:8px 10px">'
+      +'<div style="font-size:9px;color:var(--dim);margin-bottom:2px">MACD HISTOGRAM</div>'
+      +'<div style="font-size:12px;font-weight:800;color:'+mc+'">'+(ev.macd.histogram>0?'&#9650; ':'&#9660; ')+parseFloat(ev.macd.histogram).toFixed(5)+'</div>'
+      +'<div style="font-size:9px;color:var(--dim)">'+(ev.macdOk?'&#9989; Confirms trend':'&#9888; Opposing momentum')+'</div></div>';
+    if(ev.adxD)cf+='<div style="background:rgba(0,0,0,0.2);border:1px solid '+ac+'44;border-radius:8px;padding:8px 10px">'
+      +'<div style="font-size:9px;color:var(--dim);margin-bottom:2px">ADX / DI STRENGTH</div>'
+      +'<div style="font-size:12px;font-weight:800;color:'+ac+'">ADX: '+parseFloat(ev.adxD.adx).toFixed(1)+(ev.adxD.rising?' &#9650;':'')+'</div>'
+      +'<div style="font-size:9px;color:var(--dim)">'+(ev.adxOk?'&#9989; Trending (>=20)':'&#9888; Weak (<20)')+(ev.diOk?' &middot; <span style="color:var(--g)">DI &#9989;</span>':' &middot; <span style="color:var(--a)">DI &#9888;</span>')+'</div></div>';
+    if(ev.rsi!==null&&ev.rsi!==undefined){
+      var rc=ev.rsiIdeal?'var(--g)':ev.rsiOk?'var(--a)':'var(--r)';
+      var rsiLabel=ev.rsi<30?'Oversold ✅':ev.rsi<45?'Good zone ✅':ev.rsi<55?'Neutral':ev.rsi<70?'Extended ⚠️':'Overbought ⚠️';
+      cf+='<div style="background:rgba(0,0,0,0.2);border:1px solid '+rc+'44;border-radius:8px;padding:8px 10px;grid-column:1/-1">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +'<div><div style="font-size:9px;color:var(--dim);margin-bottom:2px">RSI(14) — Overbought/Oversold Context</div>'
+        +'<div style="font-size:12px;font-weight:800;color:'+rc+'">RSI: '+parseFloat(ev.rsi).toFixed(1)+'  '+rsiLabel+'</div></div>'
+        +'<div style="width:160px;height:8px;background:rgba(0,0,0,0.3);border-radius:4px;overflow:hidden">'
+        +'<div style="height:100%;width:'+Math.min(100,ev.rsi)+'%;background:linear-gradient(to right,#00d97e,#ffa94d,#ff4d6d);border-radius:4px"></div></div></div>'
+        +'<div style="font-size:9px;color:var(--dim);margin-top:3px">'+(ev.rsiOk?'&#9989; RSI in correct zone for '+(ev.rsiIdeal?'ideal':'acceptable')+' entry':'&#9888; RSI not ideal — price may be extended already')+'</div></div>';
+    }
+    cf+='</div>';
+  }
   return '<div class="mcard '+cls+'">'
     +'<div class="mcard-top"><div>'
     +'<div class="mcard-name">'+(ev.signal!=="none"?'<span class="dirtag '+(isL?"long":"short")+'">'+(isL?"LONG":"SHORT")+'</span>':'')+m.name+'</div>'
@@ -605,7 +643,7 @@ function mkCard(key,hist,d,ev,checks,subtext,tabId){
     +'<div class="mcard-chg" style="color:'+(d.chg>=0?"var(--g)":"var(--r)")+'">'+(d.chg>=0?"&#9650;":"&#9660;")+' '+Math.abs(d.chg).toFixed(m.dp)+'</div></div></div>'
     +'<div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span>'
     +'<span style="font-size:10px;color:var(--dim)">Updated '+d.ts.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+'</span></div>'
-    +chkHtml+levHtml+actHtml+'</div>';
+    +chkHtml+levHtml+cf+actHtml+'</div>';
 }
 
 function mkLevels(price,hist,isL){
@@ -647,7 +685,10 @@ function evalS1(key){
   var score=checks.filter(function(c){return c.ok;}).length;
   var signal=score>=3?(isBull?"long":"short"):"none";
   var levels=signal!=="none"?mkLevels(price,h,signal==="long"):null;
-  return{signal:signal,score:score,checks:checks,levels:levels,e9:e9,e20:e20};
+  var macd=calcMACD(c);var macdOk=macd?(isBull?macd.histogram>0:macd.histogram<0):false;
+  var adxD=calcADX(hi,lo,c,14);var adxOk=adxD?adxD.adx>=20:false;var diOk=adxD?(isBull?adxD.diP>adxD.diN:adxD.diN>adxD.diP):false;
+  var rsi=calcRSI(c,14);var rsiOk=rsi!==null?(isBull?rsi<50:rsi>50):false;var rsiIdeal=rsi!==null?(isBull?rsi<45:rsi>55):false;
+  return{signal:signal,score:score,checks:checks,levels:levels,e9:e9,e20:e20,macd:macd,macdOk:macdOk,adxD:adxD,adxOk:adxOk,diOk:diOk,rsi:rsi,rsiOk:rsiOk,rsiIdeal:rsiIdeal};
 }
 
 // ── S2: 1H Momentum Eval ─────────────────────────────────────────
@@ -683,7 +724,10 @@ function evalS2(key){
   var score=checks.filter(function(c){return c.ok;}).length;
   var signal=score>=3?(isBull?"long":"short"):"none";
   var levels=signal!=="none"?mkLevels(price,h,signal==="long"):null;
-  return{signal:signal,score:score,checks:checks,levels:levels,e9:e9,e20:e20};
+  var macd=calcMACD(c);var macdOk=macd?(isBull?macd.histogram>0:macd.histogram<0):false;
+  var adxD=calcADX(hi,lo,c,14);var adxOk=adxD?adxD.adx>=20:false;var diOk=adxD?(isBull?adxD.diP>adxD.diN:adxD.diN>adxD.diP):false;
+  var rsi=calcRSI(c,14);var rsiOk=rsi!==null?(isBull?rsi<50:rsi>50):false;var rsiIdeal=rsi!==null?(isBull?rsi<45:rsi>55):false;
+  return{signal:signal,score:score,checks:checks,levels:levels,e9:e9,e20:e20,macd:macd,macdOk:macdOk,adxD:adxD,adxOk:adxOk,diOk:diOk,rsi:rsi,rsiOk:rsiOk,rsiIdeal:rsiIdeal};
 }
 
 // ── 200 EMA Band Eval ─────────────────────────────────────────────
@@ -967,6 +1011,185 @@ function exportJournal(){
   var a=document.createElement("a");
   a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(rows.join("\n"));
   a.download="trades_"+new Date().toISOString().split("T")[0]+".csv";a.click();
+}
+
+// ── MARKET NEWS ───────────────────────────────────────────────────
+var FINNHUB_KEY = "d0aqc01r01qpum6rkde0d0aqc01r01qpum6rkdeg"; // free public key
+var newsCache = {};
+
+var NEWS_CATEGORIES = {
+  "EURUSD": ["forex","EUR","USD","euro","dollar","ECB","Fed","Federal Reserve","interest rate"],
+  "GBPUSD": ["forex","GBP","pound","sterling","BoE","Bank of England","UK economy"],
+  "USDJPY": ["forex","JPY","yen","Bank of Japan","BOJ","USD","dollar"],
+  "USDCAD": ["forex","CAD","Canadian","oil","crude","Bank of Canada"],
+  "AUDUSD": ["forex","AUD","Australian","RBA","Reserve Bank Australia"],
+  "XAUUSD": ["gold","XAU","precious metals","inflation","safe haven","Fed"],
+  "SPX":    ["S&P 500","SPX","stocks","equity","Wall Street","Fed","earnings"],
+  "NDX":    ["Nasdaq","tech stocks","NDX","technology","Fed","earnings"]
+};
+
+function getSentiment(text){
+  var t = (text||"").toLowerCase();
+  var bull = ["rise","rises","gains","higher","bullish","strong","beat","surge","rally","positive","growth","up","increases","expanded"];
+  var bear = ["fall","falls","drops","lower","bearish","weak","miss","slump","decline","negative","recession","down","decreases","contracted"];
+  var bs = bull.filter(function(w){return t.indexOf(w)>=0;}).length;
+  var ss = bear.filter(function(w){return t.indexOf(w)>=0;}).length;
+  if(bs>ss+1) return {label:"Bullish",color:"var(--g)",icon:"&#9650;"};
+  if(ss>bs+1) return {label:"Bearish",color:"var(--r)",icon:"&#9660;"};
+  return {label:"Neutral",color:"var(--dim)",icon:"&#9644;"};
+}
+
+function timeAgo(ts){
+  var diff = Math.floor((Date.now() - ts*1000)/60000);
+  if(diff<60) return diff+"m ago";
+  if(diff<1440) return Math.floor(diff/60)+"h ago";
+  return Math.floor(diff/1440)+"d ago";
+}
+
+function loadNews(){
+  var mkt = document.getElementById("newsMarket").value;
+  var st  = document.getElementById("newsStatus");
+  var el  = document.getElementById("newsCards");
+  st.textContent = "Loading...";
+  st.style.color = "var(--dim)";
+
+  // Use Netlify function as proxy to avoid CORS
+  var url = "/api/get-news?symbol="+encodeURIComponent(mkt);
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.timeout = 12000;
+  xhr.onreadystatechange = function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        try{
+          var data = JSON.parse(xhr.responseText);
+          if(data.error){
+            // Fallback: show curated market news links
+            showNewsLinks(mkt, el);
+            st.textContent = "Live feed unavailable — showing curated sources";
+            st.style.color = "var(--a)";
+            return;
+          }
+          renderNews(data.news||[], mkt, el);
+          st.textContent = "Updated "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" UK";
+          st.style.color = "var(--g)";
+        } catch(e){
+          showNewsLinks(mkt, el);
+          st.textContent = "Showing curated sources";
+          st.style.color = "var(--a)";
+        }
+      } else {
+        showNewsLinks(mkt, el);
+        st.textContent = "Showing curated sources";
+        st.style.color = "var(--a)";
+      }
+    }
+  };
+  xhr.ontimeout = function(){ showNewsLinks(mkt, el); st.textContent="Timeout"; };
+  xhr.onerror   = function(){ showNewsLinks(mkt, el); st.textContent="Error"; };
+  xhr.send();
+}
+
+function renderNews(articles, mkt, el){
+  if(!articles.length){ showNewsLinks(mkt, el); return; }
+  var keywords = NEWS_CATEGORIES[mkt]||[];
+  // Filter relevant articles
+  var relevant = articles.filter(function(a){
+    var text = ((a.headline||"")+" "+(a.summary||"")).toLowerCase();
+    return keywords.some(function(k){ return text.indexOf(k.toLowerCase())>=0; });
+  }).slice(0,8);
+
+  if(!relevant.length){ relevant = articles.slice(0,6); }
+
+  var html = "";
+  relevant.forEach(function(a){
+    var sent = getSentiment((a.headline||"")+" "+(a.summary||""));
+    var ago  = a.datetime ? timeAgo(a.datetime) : "";
+    html += '<div style="background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">';
+    html += '<div style="font-size:11px;font-weight:700;color:#fff;line-height:1.5;flex:1">'+( a.headline||"No headline")+'</div>';
+    html += '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:'+sent.color+'22;color:'+sent.color+';border:1px solid '+sent.color+'44;flex-shrink:0">'+sent.icon+' '+sent.label+'</span>';
+    html += '</div>';
+    if(a.summary) html += '<div style="font-size:10px;color:#b0ab9e;line-height:1.7;margin-bottom:8px">'+a.summary.substring(0,180)+(a.summary.length>180?"...":"")+'</div>';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between">';
+    html += '<span style="font-size:10px;color:var(--dim)">'+(a.source||"")+(ago?" &middot; "+ago:"")+'</span>';
+    if(a.url) html += '<a href="'+a.url+'" target="_blank" style="font-size:10px;color:#4dabf7;text-decoration:none;font-weight:700">Read full &#8594;</a>';
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+function showNewsLinks(mkt, el){
+  // Fallback: curated news source links per market
+  var sources = {
+    "EURUSD": [
+      {name:"Reuters EUR/USD", url:"https://www.reuters.com/markets/currencies/"},
+      {name:"FX Street EUR/USD News", url:"https://www.fxstreet.com/currencies/eurusd"},
+      {name:"ForexFactory EUR News", url:"https://www.forexfactory.com/news"}
+    ],
+    "GBPUSD": [
+      {name:"Reuters GBP/USD", url:"https://www.reuters.com/markets/currencies/"},
+      {name:"FX Street GBP/USD News", url:"https://www.fxstreet.com/currencies/gbpusd"},
+      {name:"Bank of England News", url:"https://www.bankofengland.co.uk/news"}
+    ],
+    "USDJPY": [
+      {name:"Reuters USD/JPY", url:"https://www.reuters.com/markets/currencies/"},
+      {name:"FX Street USD/JPY News", url:"https://www.fxstreet.com/currencies/usdjpy"},
+      {name:"Bank of Japan News", url:"https://www.boj.or.jp/en/mopo/index.htm"}
+    ],
+    "USDCAD": [
+      {name:"Reuters Commodities", url:"https://www.reuters.com/markets/commodities/"},
+      {name:"FX Street USD/CAD", url:"https://www.fxstreet.com/currencies/usdcad"},
+      {name:"Bank of Canada", url:"https://www.bankofcanada.ca/press/"}
+    ],
+    "AUDUSD": [
+      {name:"Reuters AUD/USD", url:"https://www.reuters.com/markets/currencies/"},
+      {name:"FX Street AUD/USD", url:"https://www.fxstreet.com/currencies/audusd"},
+      {name:"Reserve Bank of Australia", url:"https://www.rba.gov.au/media-releases/"}
+    ],
+    "XAUUSD": [
+      {name:"Reuters Gold News", url:"https://www.reuters.com/markets/commodities/"},
+      {name:"Kitco Gold News", url:"https://www.kitco.com/news/gold/"},
+      {name:"FX Street Gold News", url:"https://www.fxstreet.com/commodities/metals/gold"}
+    ],
+    "SPX": [
+      {name:"Reuters Markets", url:"https://www.reuters.com/markets/"},
+      {name:"MarketWatch S&P 500", url:"https://www.marketwatch.com/investing/index/spx"},
+      {name:"CNBC Markets", url:"https://www.cnbc.com/markets/"}
+    ],
+    "NDX": [
+      {name:"Reuters Tech News", url:"https://www.reuters.com/technology/"},
+      {name:"MarketWatch Nasdaq", url:"https://www.marketwatch.com/investing/index/ndx"},
+      {name:"CNBC Tech", url:"https://www.cnbc.com/technology/"}
+    ]
+  };
+
+  var links = sources[mkt] || sources["EURUSD"];
+  var marketNames = {EURUSD:"EUR/USD",GBPUSD:"GBP/USD",USDJPY:"USD/JPY",USDCAD:"USD/CAD",AUDUSD:"AUD/USD",XAUUSD:"Gold",SPX:"S&P 500",NDX:"Nasdaq 100"};
+
+  var html = '<div style="background:rgba(77,171,247,0.07);border:1px solid rgba(77,171,247,0.2);border-radius:11px;padding:14px;margin-bottom:12px">';
+  html += '<div style="font-size:12px;font-weight:700;color:#4dabf7;margin-bottom:10px">&#128240; Best News Sources for '+(marketNames[mkt]||mkt)+'</div>';
+  links.forEach(function(l){
+    html += '<a href="'+l.url+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;margin-bottom:8px;text-decoration:none">';
+    html += '<span style="font-size:18px">&#128279;</span>';
+    html += '<span style="font-size:12px;font-weight:600;color:#fff">'+l.name+'</span>';
+    html += '<span style="margin-left:auto;font-size:10px;color:#4dabf7">Open &#8594;</span>';
+    html += '</a>';
+  });
+  html += '</div>';
+
+  // Always show ForexFactory
+  html += '<div style="background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.2);border-radius:11px;padding:14px">';
+  html += '<div style="font-size:12px;font-weight:700;color:#ff4d6d;margin-bottom:8px">&#128197; Economic Calendar — Check Every Morning</div>';
+  html += '<a href="https://www.forexfactory.com/calendar" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:8px;text-decoration:none">';
+  html += '<span style="font-size:18px">&#128197;</span>';
+  html += '<div><div style="font-size:12px;font-weight:600;color:#fff">ForexFactory Economic Calendar</div>';
+  html += '<div style="font-size:10px;color:var(--dim)">Red events = avoid trading. Check every morning before opening charts.</div></div>';
+  html += '<span style="margin-left:auto;font-size:10px;color:#4dabf7">Open &#8594;</span>';
+  html += '</a></div>';
+
+  el.innerHTML = html;
 }
 
 // ── INIT ──────────────────────────────────────────────────────────
@@ -1274,5 +1497,43 @@ setTimeout(function(){loadExpert();},4000);
 setInterval(function(){loadExpert();},900000);
 
 </script>
+
+<!-- MARKET NEWS PANEL -->
+<div id="p-fnews" class="panel">
+  <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">&#128240; Market News &amp; Events</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:14px">Live news for your markets via FinnHub &mdash; zero API credits &mdash; updates on demand</div>
+
+  <div class="bn b" style="margin-bottom:14px">
+    Select a market below to load the latest news headlines. Sentiment is estimated from keywords &mdash; always read the full article before trading on news. News loads via FinnHub free API &mdash; no Twelve Data credits used.
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+    <select id="newsMarket" class="ni" style="width:auto" onchange="loadNews()">
+      <option value="EURUSD">EUR/USD</option>
+      <option value="GBPUSD">GBP/USD</option>
+      <option value="USDJPY">USD/JPY</option>
+      <option value="USDCAD">USD/CAD</option>
+      <option value="AUDUSD">AUD/USD</option>
+      <option value="XAUUSD">Gold (XAU/USD)</option>
+      <option value="SPX">S&amp;P 500</option>
+      <option value="NDX">Nasdaq 100</option>
+    </select>
+    <button class="rbtn" onclick="loadNews()">&#8635; Load News</button>
+    <span id="newsStatus" style="font-size:11px;color:var(--dim)"></span>
+  </div>
+
+  <div id="newsCards" style="font-size:12px;color:var(--dim)">Select a market and press Load News.</div>
+
+  <div style="margin-top:16px;background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:14px">
+    <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:10px">&#128197; Key Economic Events This Week</div>
+    <div style="font-size:11px;color:#b0ab9e;line-height:2">
+      Always check <a href="https://www.forexfactory.com/calendar" target="_blank" style="color:#4dabf7">forexfactory.com/calendar</a> every morning before trading.<br>
+      <b style="color:var(--r)">Skip all trades on:</b> NFP (1st Fri), FOMC (8x/year), CPI, BoE, ECB, GDP release days.<br>
+      <b style="color:var(--a)">Reduce size on:</b> PMI, ISM, Retail Sales, PPI, Consumer Confidence days.
+    </div>
+  </div>
+
+  <div class="disc">News sourced from FinnHub free API. Sentiment is algorithmic — not financial advice. Always verify before trading.</div>
+</div>
 </body>
 </html>
