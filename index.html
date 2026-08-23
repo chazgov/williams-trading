@@ -136,7 +136,6 @@ select.ni{width:auto}
     <button class="ntab on" onclick="tab('s1',this)">&#128200; 4H PULLBACK</button>
     <button class="ntab" onclick="tab('s2',this)">&#9889; 1H MOMENTUM</button>
     <button class="ntab" onclick="tab('band',this)">&#127754; 200 EMA BAND</button>
-    <button class="ntab" onclick="tab('cci',this)">&#128301; EMA+CCI+MACD</button>
     <button class="ntab" onclick="tab('fnews',this)">&#128240; MARKET NEWS</button>
     <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
     <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
@@ -148,7 +147,8 @@ select.ni{width:auto}
 
 <!-- S1: 4H PULLBACK -->
 <div id="p-s1" class="panel on">
-  <div class="bn g"><b>&#128200; 4H SMA Pullback</b> — 9 EMA above 20 EMA, price pulls back to 20 EMA, 9 EMA hooks back, confirmation candle closes → enter next candle.<br>
+  <div class="bn g"><b>&#128200; 4H EMA Pullback + MACD &amp; ADX &amp; RSI Confluence</b> — 9 EMA above 20 EMA, price pulls back to 20 EMA, 9 EMA hooks back, confirmation candle closes → enter next candle.<br>
+  MACD histogram, ADX/DI and RSI(14) shown on every card. <b>Best entry:</b> EMA signal + MACD confirms + ADX ≥20 + RSI in correct zone.<br>
   <b>Check at:</b> 08:05, 12:05, 16:05, 20:05 UK. Signal valid until next 4H close.</div>
   <div class="statusbar"><div id="s1Status"><span class="pulse"></span>Loading...</div><button class="rbtn" onclick="loadS1()">&#8635; Refresh</button></div>
   <div class="sumstrip" id="s1Sum"></div>
@@ -182,27 +182,6 @@ select.ni{width:auto}
   <div class="sumstrip" id="bandSum"></div>
   <div id="bandCards"></div>
   <div class="disc">200 EMA Band uses highs and lows to define trend zones. Not financial advice.</div>
-</div>
-
-<!-- EMA+CCI+MACD -->
-<div id="p-cci" class="panel">
-  <div class="bn b"><b>&#128301; EMA + CCI + MACD — 3 Step System</b><br>
-  <b>Step 1:</b> EMA stack — 9 &gt; 21 &gt; 50 (bull) or 9 &lt; 21 &lt; 50 (bear)<br>
-  <b>Step 2:</b> CCI dips below -100 then turns up (buy) / rises above +100 then turns down (sell)<br>
-  <b>Step 3:</b> MACD histogram above 0 (buy) / below 0 (sell)<br>All 3 must confirm before entering.</div>
-  <div class="statusbar">
-    <div id="cciStatus"><span class="pulse"></span>Loading...</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <select id="cciTF" onchange="loadCCI()" class="ni" style="width:auto;font-size:11px;padding:6px 10px">
-        <option value="4h">4H Chart</option>
-        <option value="1h">1H Chart</option>
-      </select>
-      <button class="rbtn" onclick="loadCCI()">&#8635; Refresh</button>
-    </div>
-  </div>
-  <div class="sumstrip" id="cciSum"></div>
-  <div id="cciCards"></div>
-  <div class="disc">EMA+CCI+MACD 3-step system. All 3 conditions required. Not financial advice.</div>
 </div>
 
 <!-- CHECKLIST -->
@@ -442,7 +421,6 @@ function tab(id,btn){
     tabLoaded[id]=true;
     if(id==="s2") loadS2();
     else if(id==="band") loadBand();
-    else if(id==="cci") loadCCI();
     else if(id==="expert") loadExpert();
   }
 }
@@ -505,17 +483,6 @@ function calcMACD(c){
   var last=ml[ml.length-1],hist=last-sig;
   return{macd:last,signal:sig,histogram:hist,bullish:last>0&&last>sig,bearish:last<0&&last<sig};
 }
-function calcCCI(h,l,c,p){
-  p=p||20;if(!c||c.length<p)return null;
-  var n=c.length,tp=[];
-  for(var i=0;i<n;i++)tp.push((h[i]+l[i]+c[i])/3);
-  var rtp=tp.slice(-p),mean=rtp.reduce(function(a,b){return a+b;},0)/p;
-  var md=rtp.reduce(function(a,v){return a+Math.abs(v-mean);},0)/p;
-  return md===0?0:(tp[n-1]-mean)/(0.015*md);
-}
-
-// Fetch
-var dailyCredits=parseInt(localStorage.getItem("trendCredits_"+new Date().toDateString())||"0");
 function updateCreditDisplay(){
   var el=document.getElementById("creditCount");
   if(el){el.textContent=dailyCredits;el.style.color=dailyCredits>700?"var(--r)":dailyCredits>500?"var(--a)":"#4dabf7";}
@@ -776,41 +743,6 @@ function evalBand(key){
 }
 
 // ── EMA+CCI+MACD Eval ─────────────────────────────────────────────
-function evalCCI(key){
-  var h=liveCCI[key],d=liveData[key];
-  if(!h||!d||h.c.length<35)return{signal:"none",score:0};
-  var c=h.c,hi=h.h,lo=h.l,n=c.length,price=d.price;
-  var e9=calcEMA(c,9),e21=calcEMA(c,21),e50=calcEMA(c,50);
-  if(!e9||!e21||!e50)return{signal:"none",score:0};
-  var bull=e9>e21&&e21>e50&&price>e9;
-  var bear=e9<e21&&e21<e50&&price<e9;
-  // CCI series (last 3 values)
-  function cci(arr_h,arr_l,arr_c){return calcCCI(arr_h,arr_l,arr_c,20);}
-  var cci0=cci(hi,lo,c);
-  var cci1=cci(hi.slice(0,-1),lo.slice(0,-1),c.slice(0,-1));
-  var cci2=cci(hi.slice(0,-2),lo.slice(0,-2),c.slice(0,-2));
-  var cciOvS=(cci2<-100||cci1<-100)&&cci0>cci1;  // dipped below -100, turning up
-  var cciOvB=(cci2>100||cci1>100)&&cci0<cci1;    // rose above +100, turning down
-  var cciOk=bull?cciOvS:bear?cciOvB:false;
-  var macd=calcMACD(c);
-  var macdOk=macd?(bull?macd.histogram>0:bear?macd.histogram<0:false):false;
-  var checks=[
-    {name:"Step 1: EMA Stack",ok:bull||bear,
-     txt:bull?"9>21>50 EMA bullish stack ✅":bear?"9<21<50 EMA bearish stack ✅":
-         "EMAs not stacked (9:"+parseFloat(e9).toFixed(MKTS[key].dp)+" 21:"+parseFloat(e21).toFixed(MKTS[key].dp)+" 50:"+parseFloat(e50).toFixed(MKTS[key].dp)+")"},
-    {name:"Step 2: CCI Entry",ok:cciOk,
-     txt:cci0?("CCI: "+parseFloat(cci0).toFixed(0)+(cciOk?" — dipped "+(bull?"below -100":"above +100")+" and turning "+( bull?"up ✅":"down ✅"):" — waiting for "+(bull?"dip below -100":"rise above +100"))):
-         "Calculating CCI..."},
-    {name:"Step 3: MACD Filter",ok:macdOk,
-     txt:macd?(macdOk?"MACD histogram "+(macd.histogram>0?"> 0":"> 0")+" confirms momentum ✅":"MACD histogram opposing trend ⚠️"):"Need 35+ candles for MACD"}
-  ];
-  var score=checks.filter(function(c){return c.ok;}).length;
-  var signal=score>=2?(bull?"long":bear?"short":"none"):"none";
-  var levels=signal!=="none"?mkLevels(price,h,signal==="long"):null;
-  return{signal:signal,score:score,checks:checks,levels:levels,e9:e9,e21:e21,e50:e50,cci:cci0,macd:macd};
-}
-
-// ── Generic Render ────────────────────────────────────────────────
 function renderTab(tabId,keys,histStore,evalFn,interval,subtext){
   var stEl=document.getElementById(tabId+"Status");
   var sumEl=document.getElementById(tabId+"Sum");
@@ -873,27 +805,9 @@ function renderBand(){
   var tf=document.getElementById("bandTF");
   renderTab("band",KEYS8,liveBand,evalBand,tf?tf.value:"4h","200 EMA Band");
 }
-function renderCCI(){
-  var tf=document.getElementById("cciTF");
-  renderTab("cci",KEYS8,liveCCI,evalCCI,tf?tf.value:"4h","EMA+CCI+MACD");
-}
-
 function loadS1(){loadTab(KEYS13,liveH4,"4h",renderS1);}
 function loadS2(){loadTab(KEYS13,liveH1,"1h",renderS2);}
 function loadBand(){var tf=document.getElementById("bandTF");loadTab(KEYS8,liveBand,tf?tf.value:"4h",renderBand);}
-function loadCCI(){var tf=document.getElementById("cciTF");loadTab(KEYS8,liveCCI,tf?tf.value:"4h",renderCCI);}
-
-// ── Checklist ──────────────────────────────────────────────────────
-var CHKLIST=[
-  {id:"trend",title:"Trend Confirmed",desc:"9 EMA above 20 EMA (buy) or below (sell). Both EMAs clearly directional, not flat."},
-  {id:"pullback",title:"Pullback to 20 EMA",desc:"Price has pulled back toward the 20 EMA. Not extended far away from it."},
-  {id:"confirm",title:"Confirmation Candle Closed",desc:"A bullish (buy) or bearish (sell) candle has FULLY CLOSED. Enter on NEXT candle open."},
-  {id:"news",title:"No Major News Imminent",desc:"Checked forexfactory.com. No high-impact news in next 4 hours."},
-  {id:"stop",title:"Logical Stop Loss Set",desc:"Stop placed beyond recent swing high or low. Not unrealistically tight."},
-  {id:"rr",title:"Minimum 2:1 Reward:Risk",desc:"Target is at least 2x the stop distance from entry."},
-  {id:"size",title:"Position Sized at 1-2%",desc:"Used Position Calc tab. Risk on this trade is max 1-2% of account."}
-];
-var chkd={};
 function renderChk(){
   var html="";
   CHKLIST.forEach(function(c,i){
@@ -1009,7 +923,8 @@ function exportJournal(){
   var rows=["Date,Market,Strategy,Direction,Entry,Stop,Target,RR,Units,Risk,Result,PL,Notes"];
   trades.forEach(function(t){rows.push([t.date,t.mkt,t.strat,t.dir,t.entry,t.stop,t.tp,t.rr,t.units,t.risk,t.result,t.pl||"",( t.notes||"").replace(/,/g," ")].join(","));});
   var a=document.createElement("a");
-  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(rows.join("\n"));
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(rows.join("
+"));
   a.download="trades_"+new Date().toISOString().split("T")[0]+".csv";a.click();
 }
 
@@ -1197,13 +1112,12 @@ upCap();renderChk();calcPos();renderJournal();renderJStats();
 // Only load 4H Pullback on startup (13 credits)
 // Other tabs load on first click — saves credits
 loadS1();
-var tabLoaded={s1:true,s2:false,band:false,cci:false,expert:false};
+var tabLoaded={s1:true,s2:false,band:false,expert:false};
 // Each tab refreshes independently every 30 minutes
 // Only the tab that has been loaded fires — saves API credits
 setInterval(function(){ if(Object.keys(liveH4).length>0) loadS1(); }, 1800000);
 setInterval(function(){ if(Object.keys(liveH1).length>0) loadS2(); }, 1800000);
 setInterval(function(){ if(Object.keys(liveBand).length>0) loadBand(); }, 1800000);
-setInterval(function(){ if(Object.keys(liveCCI).length>0) loadCCI(); }, 1800000);
 setInterval(function(){ if(Object.keys(liveExp).length>0) loadExpert(); }, 1800000);
 
 // ── ADX / DI Calculation ──────────────────────────────────────────
