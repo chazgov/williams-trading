@@ -136,6 +136,7 @@ select.ni{width:auto}
     <button class="ntab on" onclick="tab('s1',this)">&#128200; 4H PULLBACK</button>
     <button class="ntab" onclick="tab('s2',this)">&#9889; 1H MOMENTUM</button>
     <button class="ntab" onclick="tab('band',this)">&#127754; 200 EMA BAND</button>
+    
     <button class="ntab" onclick="tab('fnews',this)">&#128240; MARKET NEWS</button>
     <button class="ntab" onclick="tab('chk',this)">&#9745; CHECKLIST</button>
     <button class="ntab" onclick="tab('calc',this)">&#128274; POSITION CALC</button>
@@ -184,7 +185,6 @@ select.ni{width:auto}
   <div class="disc">200 EMA Band uses highs and lows to define trend zones. Not financial advice.</div>
 </div>
 
-<!-- CHECKLIST -->
 <div id="p-chk" class="panel">
   <div class="bn g"><b>&#9745; Pre-Trade Checklist</b> — Run through every check before placing any trade.</div>
   <div class="calccard"><h3>Trade Checklist</h3><div id="chkList"></div>
@@ -276,7 +276,7 @@ select.ni{width:auto}
     <div class="frow"><label>Strategy</label>
       <select class="ni" id="jStrat">
         <option>4H Pullback</option><option>1H Momentum</option>
-        <option>200 EMA Band</option><option>EMA+CCI+MACD</option>
+        <option>200 EMA Band</option>
       </select>
     </div>
     <div class="frow"><label>Direction</label>
@@ -741,8 +741,6 @@ function evalBand(key){
   }
   return{signal:signal,score:score,checks:checks,levels:levels,e200h:e200h,e200l:e200l,e9:e9,e20:e20,above:above,below:below,inside:inside};
 }
-
-// ── EMA+CCI+MACD Eval ─────────────────────────────────────────────
 function renderTab(tabId,keys,histStore,evalFn,interval,subtext){
   var stEl=document.getElementById(tabId+"Status");
   var sumEl=document.getElementById(tabId+"Sum");
@@ -923,26 +921,10 @@ function exportJournal(){
   var rows=["Date,Market,Strategy,Direction,Entry,Stop,Target,RR,Units,Risk,Result,PL,Notes"];
   trades.forEach(function(t){rows.push([t.date,t.mkt,t.strat,t.dir,t.entry,t.stop,t.tp,t.rr,t.units,t.risk,t.result,t.pl||"",( t.notes||"").replace(/,/g," ")].join(","));});
   var a=document.createElement("a");
-  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(rows.join("
-"));
-  a.download="trades_"+new Date().toISOString().split("T")[0]+".csv";a.click();
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(rows.join(String.fromCharCode(10)));
+  a.download="trades_"+new Date().toISOString().split("T")[0]+".csv";
+  a.click();
 }
-
-// ── MARKET NEWS ───────────────────────────────────────────────────
-var FINNHUB_KEY = "d0aqc01r01qpum6rkde0d0aqc01r01qpum6rkdeg"; // free public key
-var newsCache = {};
-
-var NEWS_CATEGORIES = {
-  "EURUSD": ["forex","EUR","USD","euro","dollar","ECB","Fed","Federal Reserve","interest rate"],
-  "GBPUSD": ["forex","GBP","pound","sterling","BoE","Bank of England","UK economy"],
-  "USDJPY": ["forex","JPY","yen","Bank of Japan","BOJ","USD","dollar"],
-  "USDCAD": ["forex","CAD","Canadian","oil","crude","Bank of Canada"],
-  "AUDUSD": ["forex","AUD","Australian","RBA","Reserve Bank Australia"],
-  "XAUUSD": ["gold","XAU","precious metals","inflation","safe haven","Fed"],
-  "SPX":    ["S&P 500","SPX","stocks","equity","Wall Street","Fed","earnings"],
-  "NDX":    ["Nasdaq","tech stocks","NDX","technology","Fed","earnings"]
-};
-
 function getSentiment(text){
   var t = (text||"").toLowerCase();
   var bull = ["rise","rises","gains","higher","bullish","strong","beat","surge","rally","positive","growth","up","increases","expanded"];
