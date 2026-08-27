@@ -505,21 +505,42 @@ function calcRSI(closes,period){
   return 100-(100/(1+(g/period)/(l/period)));
 }
 
+var TDK="43e0b306690347ab9640f991f5c87e3d";
+var SYMS={eurusd:"EUR/USD",gbpusd:"GBP/USD",usdjpy:"USD/JPY",usdcad:"USD/CAD",audusd:"AUD/USD",usdchf:"USD/CHF",nzdusd:"NZD/USD",us100:"NDX",us500:"SPX",uk100:"FTSE",ger40:"DAX",gold:"XAU/USD",silver:"XAG/USD"};
+
 function fetchC(key,interval,cb){
   trackCredit();
+  var sym=SYMS[key];
+  if(!sym){cb("Unknown symbol: "+key,null);return;}
+  var outsize=interval==="1day"?30:60;
+  var url="https://api.twelvedata.com/time_series?symbol="+encodeURIComponent(sym)+"&interval="+interval+"&outputsize="+outsize+"&apikey="+TDK;
   var xhr=new XMLHttpRequest();
-  xhr.open("GET","/api/get-price?key="+encodeURIComponent(key)+"&interval="+interval,true);
+  xhr.open("GET",url,true);
   xhr.timeout=15000;
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
       if(xhr.status===200){
-        try{var d=JSON.parse(xhr.responseText);if(d.error){cb(d.error,null);return;}cb(null,d);}
-        catch(e){cb("Parse error",null);}
+        try{
+          var d=JSON.parse(xhr.responseText);
+          if(d.code||d.status==="error"){cb("API: "+(d.message||d.code),null);return;}
+          if(!d.values||d.values.length<2){cb("No data ("+( d.values?d.values.length:0)+" candles)",null);return;}
+          var latest=d.values[0],prev=d.values[1];
+          var price=parseFloat(latest.close),prevClose=parseFloat(prev.close);
+          var rev=d.values.slice().reverse();
+          var history={
+            h:rev.map(function(v){return parseFloat(v.high);}),
+            l:rev.map(function(v){return parseFloat(v.low);}),
+            c:rev.map(function(v){return parseFloat(v.close);}),
+            v:rev.map(function(v){return parseFloat(v.volume||0);}),
+            t:rev.map(function(v){return v.datetime;})
+          };
+          cb(null,{price:price,prev:prevClose,change:price-prevClose,changePct:(price-prevClose)/prevClose*100,history:history,interval:interval,candles:d.values.length});
+        }catch(e){cb("Parse error: "+e.message,null);}
       }else{cb("HTTP "+xhr.status,null);}
     }
   };
   xhr.ontimeout=function(){cb("Timeout",null);};
-  xhr.onerror=function(){cb("Network error",null);};
+  xhr.onerror=function(){cb("Network error — check CORS",null);};
   xhr.send();
 }
 
