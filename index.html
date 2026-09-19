@@ -174,7 +174,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="p-smc" class="panel on">
   <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">🧠 Smart Money Multi-TF Strategy</div>
-  <div style="font-size:12px;color:var(--dim);margin-bottom:12px">Daily TF = directional bias · 1H TF = entry · Enter pullback below FMV · Target daily swing high/low</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:12px">4H TF = directional bias + entry · Detects 3 phases · Enter pullback below FMV · Target swing high/low</div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px">
     <div style="background:rgba(77,171,247,0.08);border:1px solid rgba(77,171,247,0.25);border-radius:10px;padding:11px;text-align:center">
@@ -201,7 +201,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="stbar">
-    <div id="smcSt"><span class="pulse"></span>Loading Daily + 1H data...</div>
+    <div id="smcSt"><span class="pulse"></span>Loading 4H data...</div>
     <button class="rbtn" onclick="loadSMC()">↻ Refresh</button>
   </div>
   <div class="sumstrip" id="smcSum"></div>
@@ -211,7 +211,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="p-fvg" class="panel">
   <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">🎯 Fair Value Gap — Balance &amp; Imbalance</div>
-  <div style="font-size:12px;color:var(--dim);margin-bottom:12px">Daily balance zone → expansion breakout → 1H FVG retracement entry · 7-condition confirmation</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:12px">4H balance/imbalance zones · FVG detection · Entry on retracement · 7-condition confirmation</div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px">
     <div style="background:rgba(77,171,247,0.08);border:1px solid rgba(77,171,247,0.25);border-radius:10px;padding:11px">
@@ -235,7 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="stbar">
-    <div id="fvgSt"><span class="pulse"></span>Loading Daily + 1H...</div>
+    <div id="fvgSt"><span class="pulse"></span>Loading 4H data...</div>
     <button class="rbtn" onclick="loadFVG()">↻ Refresh</button>
   </div>
   <div class="sumstrip" id="fvgSum"></div>
@@ -431,7 +431,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="p-fvg" class="panel">
   <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px">🎯 Fair Value Gap — Balance &amp; Imbalance</div>
-  <div style="font-size:12px;color:var(--dim);margin-bottom:12px">Daily balance zone → expansion breakout → 1H FVG retracement entry · 7-condition confirmation</div>
+  <div style="font-size:12px;color:var(--dim);margin-bottom:12px">4H balance/imbalance zones · FVG detection · Entry on retracement · 7-condition confirmation</div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px">
     <div style="background:rgba(77,171,247,0.08);border:1px solid rgba(77,171,247,0.25);border-radius:10px;padding:11px">
@@ -455,7 +455,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="stbar">
-    <div id="fvgSt"><span class="pulse"></span>Loading Daily + 1H...</div>
+    <div id="fvgSt"><span class="pulse"></span>Loading 4H data...</div>
     <button class="rbtn" onclick="loadFVG()">↻ Refresh</button>
   </div>
   <div class="sumstrip" id="fvgSum"></div>
@@ -463,6 +463,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="disc">FVG Balance/Imbalance strategy. Daily + 1H timeframes. Not financial advice.</div>
 </div>
 <script>
+
+
 
 
 // PROBABILITY
@@ -1263,6 +1265,25 @@ function exportCSV(){
 renderJournal();renderJStats();
 
 // ── 30 MIN AUTO REFRESH ───────────────────────────────────────────
+function loadFVG(){
+  var keys=Object.keys(M8);
+  keys.forEach(function(k){delete fvgErr[k];});
+  renderFVG();
+  keys.forEach(function(k,i){
+    setTimeout(function(){
+      fetchC(k,'4h',function(err,data){
+        if(err){fvgErr[k]=err;renderFVG();return;}
+        liveData[k]={price:data.price,prev:data.prev,chg:data.change||0,chgPct:data.changePct||0,ts:new Date(),src:'12D'};
+        if(data.history&&data.history.c&&data.history.c.length>=5){
+          fvgDaily[k]=data.history;
+          fvgH1[k]=data.history;
+        }
+        renderFVG();
+      });
+    },i*5500);
+  });
+}
+
 setInterval(function(){if(Object.keys(liveH4).length>0)loadS1();},1800000);
 setInterval(function(){if(Object.keys(liveBand).length>0)loadBand();},1800000);
 
@@ -1582,409 +1603,28 @@ function renderSMC(){
 
 // SMC needs both daily and 1H data per market
 function loadSMC(){
-  var keys = Object.keys(M8);
+  var keys=Object.keys(M8);
   keys.forEach(function(k){delete smcErr[k];});
   renderSMC();
-  // Fetch daily first, then 1H staggered
   keys.forEach(function(k,i){
     setTimeout(function(){
-      fetchC(k,'1day',function(err,data){
+      fetchC(k,'4h',function(err,data){
         if(err){smcErr[k]=err;renderSMC();return;}
         liveData[k]={price:data.price,prev:data.prev,chg:data.change||0,chgPct:data.changePct||0,ts:new Date(),src:'12D'};
-        if(data.history&&data.history.c&&data.history.c.length>=5) smcDaily[k]=data.history;
-        // Then fetch 1H
-        setTimeout(function(){
-          fetchC(k,'1h',function(err2,data2){
-            if(!err2&&data2&&data2.history&&data2.history.c&&data2.history.c.length>=5){
-              smcH1[k]=data2.history;
-              addCredit(); // extra credit for second call
-            }
-            renderSMC();
-          });
-        },1500);
-      });
-    },i*6000);
-  });
-}
-
-// Add to tabsLoaded and lazy load
-
-// ── FVG + BALANCE/IMBALANCE STRATEGY ─────────────────────────────
-var fvgDaily = {}, fvgH1 = {}, fvgErr = {};
-
-// ── Detect Balance Zone (consolidation) on Daily ──────────────────
-function detectBalance(hist){
-  if(!hist||!hist.c||hist.c.length<10) return null;
-  var h=hist.h, l=hist.l, c=hist.c, n=c.length;
-  var atrV = atr(h,l,c,14); if(!atrV) return null;
-
-  // Scan last 5-20 candles for tightest consolidation
-  var best = null;
-  for(var lb=5; lb<=Math.min(20,n-2); lb++){
-    var sh=h.slice(n-lb-1,n-1), sl=l.slice(n-lb-1,n-1);
-    var hi=Math.max.apply(null,sh), lo=Math.min.apply(null,sl);
-    var rng = hi-lo;
-    // Balance zone: range < 2x ATR, price oscillating
-    if(rng < atrV*2.5){
-      var mid = (hi+lo)/2;
-      // Check candles oscillating (not trending through range)
-      var crosses=0;
-      for(var i=1;i<sh.length;i++){
-        if((c[n-lb-1+i]>mid&&c[n-lb+i]<mid)||(c[n-lb-1+i]<mid&&c[n-lb+i]>mid)) crosses++;
-      }
-      if(!best||rng<best.range) best={high:hi,low:lo,mid:mid,range:rng,candles:lb,crosses:crosses,atr:atrV};
-    }
-  }
-  return best;
-}
-
-// ── Detect Expansion (imbalance move away from balance) ───────────
-function detectExpansion(hist, balance){
-  if(!hist||!balance) return null;
-  var h=hist.h, l=hist.l, c=hist.c, n=c.length;
-  // Last 3 candles — is price breaking decisively away from balance zone?
-  var lastC = c[n-1], lastH = h[n-1], lastL = l[n-1];
-  var bullExp = lastC > balance.high && lastC > balance.mid + balance.range;
-  var bearExp = lastC < balance.low  && lastC < balance.mid - balance.range;
-  if(!bullExp&&!bearExp) return null;
-  // Measure expansion strength
-  var dist = bullExp ? (lastC-balance.high)/balance.atr : (balance.low-lastC)/balance.atr;
-  return {
-    direction: bullExp?'bull':'bear',
-    distance:  dist,
-    strong:    dist > 1.5,
-    price:     lastC
-  };
-}
-
-// ── Detect Fair Value Gaps on 1H ──────────────────────────────────
-function detectFVGs(hist, direction){
-  if(!hist||!hist.c||hist.c.length<5) return [];
-  var h=hist.h, l=hist.l, c=hist.c, n=c.length;
-  var atrV = atr(h,l,c,14)||0;
-  var gaps = [];
-
-  // Scan last 30 candles for FVGs
-  for(var i=2; i<Math.min(30,n-1); i++){
-    var idx = n-1-i; // middle candle
-    if(idx<1||idx>=n-1) continue;
-
-    if(direction==='bull'){
-      // Bullish FVG: candle[idx-1].high < candle[idx+1].low
-      // Gap between previous candle high and next candle low
-      var gapLow  = h[idx-1];
-      var gapHigh = l[idx+1];
-      if(gapHigh > gapLow && (gapHigh-gapLow) >= atrV*0.3){
-        // Check if gap is still unmitigated (price hasn't returned to fill it)
-        var currentPrice = c[n-1];
-        var filled = false;
-        for(var j=idx+2; j<n; j++){
-          if(l[j] <= gapLow+( gapHigh-gapLow)*0.5){ filled=true; break; }
+        if(data.history&&data.history.c&&data.history.c.length>=5){
+          smcDaily[k]=data.history; // use 4h as daily proxy
+          smcH1[k]=data.history;    // same data for entry signals
         }
-        if(!filled) gaps.push({
-          type:'bull', high:gapHigh, low:gapLow,
-          mid:(gapHigh+gapLow)/2, size:gapHigh-gapLow,
-          age:i, filled:false, atrRatio:(gapHigh-gapLow)/atrV
-        });
-      }
-    } else {
-      // Bearish FVG: candle[idx-1].low > candle[idx+1].high
-      var gapHigh2 = l[idx-1];
-      var gapLow2  = h[idx+1];
-      if(gapHigh2 > gapLow2 && (gapHigh2-gapLow2) >= atrV*0.3){
-        var filled2 = false;
-        for(var j2=idx+2; j2<n; j2++){
-          if(h[j2] >= gapLow2+(gapHigh2-gapLow2)*0.5){ filled2=true; break; }
-        }
-        if(!filled2) gaps.push({
-          type:'bear', high:gapHigh2, low:gapLow2,
-          mid:(gapHigh2+gapLow2)/2, size:gapHigh2-gapLow2,
-          age:i, filled:false, atrRatio:(gapHigh2-gapLow2)/atrV
-        });
-      }
-    }
-  }
-  // Sort by most recent first
-  return gaps.sort(function(a,b){return a.age-b.age;}).slice(0,3);
-}
-
-// ── Session timing check ──────────────────────────────────────────
-function getSession(){
-  var now=new Date(), utc=now.getTime()+now.getTimezoneOffset()*60000;
-  var bst=now.getMonth()>=2&&now.getMonth()<=9;
-  var uk=new Date(utc+(bst?3600000:0));
-  var hr=uk.getHours(), dy=uk.getDay();
-  if(dy===0||dy===6) return{name:'Weekend',ok:false,col:'var(--dim)'};
-  if(hr>=8&&hr<13)   return{name:'London Session ✅',ok:true,col:'var(--g)'};
-  if(hr>=13&&hr<17)  return{name:'NY Overlap ✅ Best',ok:true,col:'var(--g)'};
-  if(hr>=17&&hr<21)  return{name:'NY Session ✅',ok:true,col:'var(--g)'};
-  return{name:'Off-Hours ⚠',ok:false,col:'var(--a)'};
-}
-
-// ── Full FVG Evaluation ───────────────────────────────────────────
-function evalFVG(key){
-  var dHist=fvgDaily[key], hHist=fvgH1[key], d=liveData[key], m=M8[key];
-  if(!dHist||!hHist||!d) return{signal:'none',score:0,checks:[],fvgs:[]};
-
-  var price = d.price;
-  var atrV  = atr(hHist.h,hHist.l,hHist.c,14)||0;
-  var adxV  = adx(hHist.h,hHist.l,hHist.c,14);
-  var sess  = getSession();
-
-  // ── Step 1: Daily Balance Zone ────────────────────────────────
-  var balance = detectBalance(dHist);
-  var balanceOk = balance !== null;
-
-  // ── Step 2: Expansion from balance zone ───────────────────────
-  var expansion = detectExpansion(dHist, balance);
-  var expansionOk = expansion !== null;
-  var direction = expansion ? expansion.direction : 'none';
-
-  // ── Step 3: FVGs on 1H in expansion direction ─────────────────
-  var fvgs = direction!=='none' ? detectFVGs(hHist, direction) : [];
-  var bestFVG = fvgs.length > 0 ? fvgs[0] : null;
-  var fvgOk   = bestFVG !== null;
-
-  // ── Step 4: Price near/in best FVG (entry zone) ───────────────
-  var inFVG = false, nearFVG = false;
-  if(bestFVG){
-    inFVG   = price >= bestFVG.low && price <= bestFVG.high;
-    nearFVG = direction==='bull' ?
-      (price >= bestFVG.low*0.999 && price <= bestFVG.high*1.002) :
-      (price >= bestFVG.low*0.998 && price <= bestFVG.high*1.001);
-  }
-  var entryOk = inFVG || nearFVG;
-
-  // ── Step 5: ADX confirms expansion is strong ──────────────────
-  var adxOk = adxV ? adxV.adx >= 20 : false;
-
-  // ── Step 6: Session timing ────────────────────────────────────
-  var sessOk = sess.ok;
-
-  // ── Step 7: ATR — FVG meaningful size ────────────────────────
-  var fvgSizeOk = bestFVG ? bestFVG.atrRatio >= 0.3 : false;
-
-  var checks = [
-    {name:'1. Daily Balance Zone',    ok:balanceOk,
-     txt:balanceOk?'Balance zone: '+parseFloat(balance.low).toFixed(m.d)+' → '+parseFloat(balance.high).toFixed(m.d)+' · FMV: '+parseFloat(balance.mid).toFixed(m.d):'No clear balance zone found in last 20 daily candles'},
-    {name:'2. Expansion Breakout',    ok:expansionOk,
-     txt:expansionOk?'Price broke '+(direction==='bull'?'above':'below')+' balance zone with '+(expansion.strong?'STRONG':'moderate')+' momentum ('+expansion.distance.toFixed(1)+'x ATR)':'Price still inside balance zone — wait for expansion break'},
-    {name:'3. FVG Identified (1H)',   ok:fvgOk,
-     txt:fvgOk?fvgs.length+' unmitigated FVG'+(fvgs.length>1?'s':'')+' found · Best: '+parseFloat(bestFVG.low).toFixed(m.d)+' → '+parseFloat(bestFVG.high).toFixed(m.d)+' (age: '+bestFVG.age+' candles)':'No unmitigated FVGs found on 1H in '+direction+' direction'},
-    {name:'4. Price at FVG Entry',    ok:entryOk,
-     txt:entryOk?(inFVG?'✅ Price INSIDE FVG — enter now!':'✅ Price near FVG entry zone'):bestFVG?'Price '+parseFloat(Math.abs(price-bestFVG.mid)).toFixed(m.d)+' away from FVG mid ('+parseFloat(bestFVG.mid).toFixed(m.d)+')':'No FVG to compare'},
-    {name:'5. ADX Trend Strength',    ok:adxOk,
-     txt:adxV?'ADX: '+parseFloat(adxV.adx).toFixed(1)+(adxOk?' ✅ trending (≥20)':" ⚠ weak (<20) — FVG fills less reliable")+' · +DI: '+parseFloat(adxV.diP).toFixed(1)+' · -DI: '+parseFloat(adxV.diN).toFixed(1):'Calculating ADX...'},
-    {name:'6. Session Timing',        ok:sessOk,
-     txt:sess.name+' · '+(sessOk?'FVGs most likely to fill now':'Wait for London 08:00 or NY 13:30 UK for best fills')},
-    {name:'7. FVG Size Valid (ATR)',   ok:fvgSizeOk,
-     txt:fvgSizeOk?'FVG = '+parseFloat(bestFVG.atrRatio*100).toFixed(0)+'% of ATR — meaningful size ✅':bestFVG?'FVG too small ('+parseFloat(bestFVG.atrRatio*100).toFixed(0)+'% ATR) — skip':'No FVG to measure'}
-  ];
-
-  var score = checks.filter(function(c){return c.ok;}).length;
-  var signal = (score>=5 && entryOk && expansionOk) ?
-    (direction==='bull'?'long':'short') : 'none';
-
-  // ── Levels ─────────────────────────────────────────────────────
-  var levels = null;
-  if(signal!=='none'&&bestFVG){
-    var isL = signal==='long';
-    // Stop: just beyond the FVG (if price moves past FVG, setup failed)
-    var stop   = isL ? bestFVG.low - atrV*0.1 : bestFVG.high + atrV*0.1;
-    var rd     = Math.abs(price - stop);
-    // Target: previous swing high/low on daily
-    var dH     = Math.max.apply(null, dHist.h.slice(-20));
-    var dL     = Math.min.apply(null, dHist.l.slice(-20));
-    var target = isL ? dH : dL;
-    var stake  = cap*0.02;
-    levels = {
-      stop:stop, target:target,
-      t1:isL?price+rd*2:price-rd*2,
-      t2:isL?price+rd*3:price-rd*3,
-      units:rd>0?(stake/rd).toFixed(3):'n/a',
-      stake:stake, atr:atrV, fvgMid:bestFVG.mid
-    };
-  }
-
-  return{signal:signal,score:score,checks:checks,levels:levels,
-         balance:balance,expansion:expansion,fvgs:fvgs,bestFVG:bestFVG,
-         direction:direction,inFVG:inFVG,nearFVG:nearFVG,
-         adx:adxV,sess:sess,price:price};
-}
-
-// ── Render FVG ────────────────────────────────────────────────────
-function renderFVG(){
-  var keys=Object.keys(M8), ready=0, watch=0, nosig=0, loaded=0;
-  keys.forEach(function(k){
-    if(fvgDaily[k]&&fvgH1[k]) loaded++;
-    var ev=evalFVG(k);
-    if(ev.signal!=='none') ready++;
-    else if(ev.score>=4) watch++;
-    else nosig++;
-  });
-
-  var st=document.getElementById('fvgSt');
-  if(st) st.innerHTML=loaded>=keys.length?'✅ '+keys.length+' markets (Daily + 1H)':
-    '<span class="pulse"></span>'+loaded+'/'+keys.length+' loaded...';
-  var sm=document.getElementById('fvgSum');
-  if(sm) sm.innerHTML=mkSum(ready,watch,nosig);
-
-  var el=document.getElementById('fvgCards');
-  if(!el) return;
-  var sess=getSession();
-
-  el.innerHTML=keys.map(function(key){
-    var m=M8[key]; if(!m) return '';
-    function f(n){return n||n===0?parseFloat(n).toFixed(m.d):'--';}
-    if(fvgErr[key]&&!fvgDaily[key]) return errCard(key,fvgErr[key]);
-    if(!fvgDaily[key]||!fvgH1[key]){
-      return '<div class="mcard nosig"><div class="mcard-top"><div>'+
-        '<div class="mcard-name">'+m.n+'</div>'+
-        '<div class="mcard-sub"><span class="pulse"></span>Loading Daily + 1H...</div>'+
-        '</div></div></div>';
-    }
-    var d=liveData[key];
-    if(!d) d={price:fvgH1[key].c[fvgH1[key].c.length-1],prev:0,chg:0,ts:new Date()};
-    var ev=evalFVG(key);
-    var isL=ev.signal==='long';
-    var cls=ev.signal!=='none'?'ready':ev.score>=4?'watch':'nosig';
-    var pill=ev.signal!=='none'?'✅ FVG ENTRY · '+(isL?'LONG':'SHORT')+' · '+m.n:
-             ev.score>=4?'👀 FVG FORMING · '+ev.score+'/7 · '+m.n:
-             '⚪ NO SETUP · '+m.n;
-
-    // Balance/Expansion/FVG visualiser
-    var vizHtml='';
-    if(ev.balance){
-      var B=ev.balance, exp=ev.expansion, fvg=ev.bestFVG;
-      var dir=ev.direction;
-      var isB=dir==='bull';
-
-      vizHtml='<div style="margin:0 14px 10px;background:rgba(0,0,0,0.2);border-radius:9px;padding:10px">'+
-        '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:8px">'+
-        '<span>⚖ BALANCE ZONE</span>'+
-        '<span style="color:'+(exp?'var(--a)':'var(--dim)')+'">'+(exp?'⚡ EXPANSION '+( isB?'▲':'▼'):'Waiting for expansion')+'</span>'+
-        '<span style="color:'+(fvg?'var(--g)':'var(--dim)')+'">'+(fvg?ev.fvgs.length+' FVG'+(ev.fvgs.length>1?'s':''):'No FVG yet')+'</span></div>'+
-
-        // Balance zone bar
-        '<div style="margin-bottom:6px">'+
-        '<div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:2px">'+
-        '<span style="color:var(--r)">'+f(B.low)+'</span>'+
-        '<span style="color:var(--dim)">FMV: '+f(B.mid)+'</span>'+
-        '<span style="color:var(--g)">'+f(B.high)+'</span></div>'+
-        '<div style="height:10px;border-radius:4px;background:linear-gradient(to right,rgba(255,77,109,0.2),rgba(77,171,247,0.3),rgba(0,217,126,0.2));border:1px solid var(--bdr);position:relative">'+
-        // Price dot
-        (function(){
-          var range=B.range||0.0001;
-          var pct=Math.min(95,Math.max(5,((d.price-B.low)/range)*100));
-          var col=isB?'#00d97e':'#ff4d6d';
-          return '<div style="position:absolute;top:-4px;width:18px;height:18px;background:'+col+';border-radius:50%;left:calc('+pct+'% - 9px);border:2px solid #0c1118"></div>';
-        })()+
-        '</div></div>'+
-
-        // FVG zones
-        (fvg?'<div style="margin-top:6px;font-size:10px;color:#b0ab9e">'+
-        '<span style="color:var(--g)">📦 Best FVG: </span>'+f(fvg.low)+' → '+f(fvg.high)+
-        ' <span style="color:'+(ev.inFVG?'var(--g)':ev.nearFVG?'var(--a)':'var(--dim)')+'">'+
-        (ev.inFVG?'← PRICE IS HERE 🎯':ev.nearFVG?'← Near entry':'← Wait for retrace')+
-        '</span></div>':
-        '<div style="margin-top:4px;font-size:10px;color:var(--dim)">No FVG on 1H yet — wait for retrace after expansion</div>')+
-
-        '</div>';
-    }
-
-    // Checks
-    var chkH='<div class="chklist">';
-    ev.checks.forEach(function(c){
-      chkH+='<div class="chk '+(c.ok?'ok':'fail')+'">'+
-        '<div class="chk-lbl">'+c.name+'</div>'+
-        '<div class="chk-val" style="color:'+(c.ok?'var(--g)':'var(--r)')+'">'+( c.ok?'✅':'❌')+'</div>'+
-        '<div class="chk-txt">'+c.txt+'</div></div>';
-    });
-    chkH+='</div>';
-
-    // Levels
-    var levH='';
-    if(ev.levels){
-      var L=ev.levels;
-      levH='<div class="levels">'+
-        '<div class="lev"><div class="lev-l">Entry (FVG mid)</div><div class="lev-v" style="color:var(--b)">'+f(L.fvgMid)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Stop (beyond FVG)</div><div class="lev-v" style="color:var(--r)">'+f(L.stop)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Target (Daily swing)</div><div class="lev-v" style="color:var(--g)">'+f(L.target)+'</div></div>'+
-        '<div class="lev"><div class="lev-l">Alt (3:1 R:R)</div><div class="lev-v" style="color:var(--g);opacity:.7">'+f(L.t2)+'</div></div></div>'+
-        '<div style="font-size:10px;color:var(--dim);padding:3px 14px 8px">Units: '+L.units+' · Risk: £'+L.stake.toFixed(2)+' · ATR: '+f(L.atr)+'</div>';
-    }
-
-    // Action
-    var actH='';
-    if(ev.signal!=='none'&&ev.levels){
-      var L=ev.levels;
-      actH='<div class="abox trade"><div class="abox-title">🎯 FVG Entry · '+m.n+' '+(isL?'LONG':'SHORT')+'</div>'+
-        '<b>Balance zone identified</b> · <b>Expansion '+(isL?'upward':'downward')+'</b> confirmed<br>'+
-        '<b>Price '+(ev.inFVG?'inside':'near')+' unmitigated FVG</b> — institutional order zone<br><br>'+
-        'Trade Nation → <b>'+m.tn+'</b> · '+(isL?'BUY':'SELL')+' at <b style="color:#4dabf7">~'+f(ev.bestFVG?ev.bestFVG.mid:d.price)+'</b><br>'+
-        'Stop: <b style="color:#ff4d6d">'+f(L.stop)+'</b> (beyond FVG boundary)<br>'+
-        'Target: <b style="color:#00d97e">'+f(L.target)+'</b> (Daily swing '+(isL?'high':'low')+')<br>'+
-        'Units: <b>'+L.units+'</b> · Risk: £'+L.stake.toFixed(2)+'<br>'+
-        '<b style="color:var(--a)">⚠ If price moves through FVG without reversing — exit. FVG invalidated.</b></div>';
-    } else if(ev.score>=4){
-      var miss=ev.checks.filter(function(c){return!c.ok;}).map(function(c){return c.name.split('.')[1];}).join(', ');
-      actH='<div class="abox wait"><div class="abox-title">👀 Setup Developing · '+ev.score+'/7</div>'+
-        'Waiting for: <b>'+miss+'</b><br>'+
-        (ev.expansion&&!ev.bestFVG?'Expansion detected — now waiting for 1H to retrace and form FVG entry zone.':
-         ev.balance&&!ev.expansion?'Balance zone confirmed. Watch for expansion break of '+f(ev.balance.high)+' (bull) or '+f(ev.balance.low)+' (bear).':
-         'Continue monitoring.')+
-        '</div>';
-    } else if(ev.balance){
-      actH='<div class="abox skip"><div class="abox-title">⚪ Phase 1 — Balance Zone Active</div>'+
-        'Price consolidating '+f(ev.balance.low)+' → '+f(ev.balance.high)+
-        ' (FMV: '+f(ev.balance.mid)+')<br>'+
-        'Wait for decisive break above '+f(ev.balance.high)+' or below '+f(ev.balance.low)+' to signal expansion.</div>';
-    } else {
-      actH='<div class="abox skip"><div class="abox-title">⚪ No Setup</div>No clear balance zone or FVG. Stand aside.</div>';
-    }
-
-    var ts=d.ts?d.ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' UK':'--';
-    var prob = (ev.signal!=='none') ? calcProbability(ev, null, isL) : null;
-  return '<div class="mcard '+cls+'">'+
-      '<div class="mcard-top"><div>'+
-      '<div class="mcard-name">'+(ev.signal!=='none'?'<span class="dirtag '+(isL?'long':'short')+'">'+(isL?'LONG':'SHORT')+'</span>':'')+m.n+'</div>'+
-      '<div class="mcard-sub">'+m.c+' · FVG Balance/Imbalance · Daily+1H · '+ts+'</div></div>'+
-      '<div><div class="mcard-price">'+f(d.price)+'</div>'+
-      '<div class="mcard-chg" style="color:'+(d.chg>=0?'var(--g)':'var(--r)')+'">'+(d.chg>=0?'▲':'▼')+' '+Math.abs(d.chg||0).toFixed(m.d)+'</div></div></div>'+
-      '<div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span>'+
-      '<span style="font-size:10px;color:'+sess.col+'">'+sess.name+'</span></div>'+
-      vizHtml+chkH+levH+probBadge(evalFVGProb(key,ev))+actH+'</div>';
-  }).join('');
-}
-
-function loadFVG(){
-  var keys=Object.keys(M8);
-  keys.forEach(function(k){delete fvgErr[k];});
-  renderFVG();
-  keys.forEach(function(k,i){
-    setTimeout(function(){
-      fetchC(k,'1day',function(err,data){
-        if(err){fvgErr[k]=err;renderFVG();return;}
-        liveData[k]={price:data.price,prev:data.prev,chg:data.change||0,chgPct:data.changePct||0,ts:new Date(),src:'12D'};
-        if(data.history&&data.history.c&&data.history.c.length>=5) fvgDaily[k]=data.history;
-        setTimeout(function(){
-          fetchC(k,'1h',function(err2,data2){
-            if(!err2&&data2&&data2.history&&data2.history.c&&data2.history.c.length>=5){
-              fvgH1[k]=data2.history; addCredit();
-            }
-            renderFVG();
-          });
-        },1500);
+        renderSMC();
       });
-    },i*6000);
+    },i*5500);
   });
 }
-setInterval(function(){if(Object.keys(fvgDaily).length>0)loadFVG();},1800000);
-
-
 
 setInterval(function(){if(Object.keys(smcDaily).length>0)loadSMC();},1800000);
 setInterval(function(){if(Object.keys(fvgDaily).length>0)loadFVG();},1800000);
+
+
 
 </script>
 </body>
