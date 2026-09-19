@@ -467,6 +467,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 
 
+
 // PROBABILITY
 function calcProbability(ev,hist,isL){
   if(!ev||ev.signal==='none')return null;
@@ -1080,7 +1081,7 @@ function loadTab(keys,store,interval,renderFn){
         if(data.history&&data.history.c&&data.history.c.length>=5)store[k]=data.history;
         renderFn();
       });
-    },i*5500);
+    },i*2000);
   });
 }
 function loadS1(){loadTab(Object.keys(M13),liveH4,'4h',renderS1);}
@@ -1280,7 +1281,7 @@ function loadFVG(){
         }
         renderFVG();
       });
-    },i*5500);
+    },i*2000);
   });
 }
 
@@ -1617,12 +1618,13 @@ function loadSMC(){
         }
         renderSMC();
       });
-    },i*5500);
+    },i*2000);
   });
 }
 
 setInterval(function(){if(Object.keys(smcDaily).length>0)loadSMC();},1800000);
 setInterval(function(){if(Object.keys(fvgDaily).length>0)loadFVG();},1800000);
+
 
 
 
