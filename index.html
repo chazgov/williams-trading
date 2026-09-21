@@ -468,6 +468,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 
 
+
+
 // PROBABILITY
 function calcProbability(ev,hist,isL){
   if(!ev||ev.signal==='none')return null;
@@ -591,7 +593,7 @@ var cap = 500;
 var credits = parseInt(localStorage.getItem('tc_'+new Date().toDateString())||'0');
 var liveData = {}, liveH4 = {}, liveH1 = {}, liveBand = {}, liveExp = {}, liveDrv = {};
 var liveErr  = {};
-var tabsLoaded = {s1:false,smc:true,fvg:false,band:false,news:false};
+var tabsLoaded = {}; // disabled - all tabs load on demand
 
 // ── MARKETS ───────────────────────────────────────────────────────
 var M13 = {
@@ -636,14 +638,11 @@ function showTab(id,btn){
   document.querySelectorAll('.ntab').forEach(function(b){b.classList.remove('on');});
   document.getElementById('p-'+id).classList.add('on');
   btn.classList.add('on');
-  if(!tabsLoaded[id]){
-    tabsLoaded[id]=true;
-    if(id==='s1')loadS1();
-    else if(id==='band')loadBand();
-    else if(id==='smc')loadSMC();
-    else if(id==='fvg')loadFVG();
-    else if(id==='news'){}
-  }
+  // Load data when tab is clicked if not yet loaded
+  if(id==='s1'&&Object.keys(liveH4).length===0){loadS1();}
+  if(id==='band'&&Object.keys(liveBand).length===0){loadBand();}
+  if(id==='smc'&&Object.keys(smcDaily).length===0){loadSMC();}
+  if(id==='fvg'&&Object.keys(fvgDaily).length===0){loadFVG();}
 }
 
 // ── CREDITS ──────────────────────────────────────────────────────
@@ -1628,6 +1627,8 @@ setInterval(function(){if(Object.keys(fvgDaily).length>0)loadFVG();},1800000);
 
 
 
+
+
 </script>
 </body>
-</html>
+  </html>
