@@ -126,6 +126,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="ntab"     onclick="showTab('calc',this)">🔒 POSITION CALC</button>
     <button class="ntab"     onclick="showTab('risk',this)">🚨 NEWS &amp; RISK</button>
     <button class="ntab"     onclick="showTab('journal',this)">📒 JOURNAL</button>
+    <button class="ntab"     onclick="showTab('vol',this)">⚡ VOLATILITY</button>
   </div>
 </div>
 
@@ -293,6 +294,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- VOLATILITY SCANNER -->
+<div id="p-vol" class="panel">
+  <div class="bn b"><b>⚡ Volatility Scanner — All 13 Markets Ranked</b><br>
+  ATR% shows how much a market is moving right now. ADX shows whether that movement is directional (trending) or choppy.<br>
+  <b>🔥 Trending</b> = high volatility + ADX≥25 (best conditions) · <b>👀 Moderate</b> = ADX 18-25 · <b>⚪ Low/Choppy</b> = weak trend<br>
+  Uses the same 4H data as the Pullback tab — no extra API credits used.</div>
+  <div class="stbar"><div id="volSt"><span class="pulse"></span>Loading...</div><button class="rbtn" onclick="loadVol()">↻ Refresh</button></div>
+  <div id="volCards"></div>
+  <div class="disc">Ranked by ATR as % of price, highest first. Not financial advice.</div>
+</div>
 
 <script>
 var cap=500,credits=0;
@@ -452,6 +463,41 @@ function loadMarkets(keys,store,interval,renderFn,statusId){
   });
 }
 
+// ── VOLATILITY SCANNER ───────────────────────────────────────────
+function evalVol(key){
+  var h=liveH4[key],d=liveData[key];
+  if(!h||!h.c||h.c.length<30||!d)return null;
+  var atr=calcATR(h.h,h.l,h.c,14),adxO=calcADX(h.h,h.l,h.c,14);
+  if(!atr||!adxO)return null;
+  var atrPct=atr/d.price*100;
+  var rh=h.h.slice(-6),rl=h.l.slice(-6);
+  var rangePct=rh.length?((Math.max.apply(null,rh)-Math.min.apply(null,rl))/d.price*100):null;
+  var pLen=h.c.length-14,atrPrior=pLen>=15?calcATR(h.h.slice(0,pLen),h.l.slice(0,pLen),h.c.slice(0,pLen),14):null;
+  var expansion=atrPrior?((atr-atrPrior)/atrPrior*100):null;
+  var status=adxO.adx>=25?'ready':adxO.adx>=18?'watch':'nosig';
+  return{key:key,price:d.price,chg:d.chg||0,atrPct:atrPct,adx:adxO.adx,rangePct:rangePct,expansion:expansion,status:status};
+}
+function mkVolCard(r,rank){
+  var m=M13[r.key];if(!m)return'';
+  var pill=r.status==='ready'?'🔥 TRENDING':r.status==='watch'?'👀 MODERATE':'⚪ LOW / CHOPPY';
+  var rangeTxt=r.rangePct!=null?r.rangePct.toFixed(2)+'%':'--';
+  var expTxt=r.expansion!=null?(r.expansion>=0?'+':'')+r.expansion.toFixed(1)+'%':'--';
+  var expC=r.expansion>0?'var(--g)':'var(--dim)';
+  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">#'+rank+' '+m.n+'</div><div class="mcard-sub">'+m.c+'</div></div><div><div class="mcard-price">'+parseFloat(r.price).toFixed(m.d)+'</div><div class="mcard-chg" style="color:'+(r.chg>=0?'var(--g)':'var(--r)')+'">'+(r.chg>=0?'▲':'▼')+' '+Math.abs(r.chg).toFixed(m.d)+'</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span><span style="font-size:10px;color:var(--dim)">Ranked by ATR%</span></div><div class="conf"><div class="conf-box"><div class="conf-lbl">ATR (Volatility)</div><div class="conf-val" style="color:var(--b)">'+r.atrPct.toFixed(2)+'%</div></div><div class="conf-box"><div class="conf-lbl">Today\'s Range</div><div class="conf-val" style="color:var(--b)">'+rangeTxt+'</div></div><div class="conf-box"><div class="conf-lbl">ADX (Direction)</div><div class="conf-val" style="color:'+(r.adx>=25?'var(--g)':r.adx>=18?'var(--a)':'var(--dim)')+'">'+r.adx.toFixed(1)+'</div></div><div class="conf-box"><div class="conf-lbl">Vol Trend (vs prior)</div><div class="conf-val" style="color:'+expC+'">'+expTxt+'</div></div></div></div>';
+}
+function renderVol(){
+  var results=Object.keys(M13).map(evalVol).filter(function(r){return r;});
+  results.sort(function(a,b){return b.atrPct-a.atrPct;});
+  var el=document.getElementById('volCards');if(!el)return;
+  if(!results.length){el.innerHTML='<div class="disc">Waiting for 4H data (loads with the Pullback tab)...</div>';return;}
+  el.innerHTML=results.map(function(r,i){return mkVolCard(r,i+1);}).join('');
+  var st=document.getElementById('volSt');
+  if(st){st.innerHTML='✅ '+results.length+' markets ranked';st.style.color='var(--g)';}
+}
+function loadVol(){
+  if(Object.keys(liveH4).length===0){loadS1();}else{renderVol();}
+}
+
 // ── 4H PULLBACK ───────────────────────────────────────────────────
 function evalS1(key){
   var h=liveH4[key],d=liveData[key];
@@ -500,11 +546,17 @@ function renderS1(){
   }).join('');
 }
 
-function loadS1(){liveH4={};liveErr={};renderS1();loadMarkets(Object.keys(M13),liveH4,'4h',renderS1,'s1St');}
+function renderShared(){
+  renderS1();renderSMC();renderFVG();renderVol();
+  var tf=document.getElementById('bandTF');
+  if(!tf||tf.value==='4h')renderBand();
+}
+function loadS1(){liveH4={};liveErr={};renderShared();loadMarkets(Object.keys(M13),liveH4,'4h',renderShared,'s1St');}
 
 // ── 200 EMA BAND ──────────────────────────────────────────────────
 function evalBand(key){
-  var h=liveBand[key],d=liveData[key];
+  var tfEl0=document.getElementById('bandTF'),tfv0=tfEl0?tfEl0.value:'4h';
+  var h=tfv0==='1h'?liveBand[key]:liveH4[key],d=liveData[key];
   if(!h||!d||h.c.length<20)return{signal:'none',score:0,checks:[]};
   var c=h.c,hi=h.h,lo=h.l,n=c.length,price=d.price;
   var p=Math.min(n-1,60);
@@ -537,19 +589,25 @@ function evalBand(key){
 
 function renderBand(){
   var tf=document.getElementById('bandTF'),tfv=tf?tf.value:'4h';
+  var store=tfv==='1h'?liveBand:liveH4;
   var keys=Object.keys(M8),r=0,w=0,n=0;
   keys.forEach(function(k){var ev=evalBand(k);if(ev.signal!=='none')r++;else if(ev.score>=2)w++;else n++;});
   var sm=document.getElementById('bandSum');if(sm)sm.innerHTML=mkSum(r,w,n);
   var el=document.getElementById('bandCards');if(!el)return;
   el.innerHTML=keys.map(function(k){
-    if(liveErr[k]&&!liveBand[k])return errCard(k,liveErr[k]);
-    if(!liveBand[k]||liveBand[k].c.length<10)return loadCard(k);
+    if(liveErr[k]&&!store[k])return errCard(k,liveErr[k]);
+    if(!store[k]||store[k].c.length<10)return loadCard(k);
     var d=liveData[k];if(!d)return loadCard(k,'Data loading...');
     return mkCard(k,d,evalBand(k),evalBand(k).checks,'200 EMA Band '+tfv.toUpperCase());
   }).join('');
 }
 
-function loadBand(){liveBand={};var tf=document.getElementById('bandTF');renderBand();loadMarkets(Object.keys(M8),liveBand,tf?tf.value:'4h',renderBand,'bandSt');}
+function loadBand(){
+  var tf=document.getElementById('bandTF'),tfv=tf?tf.value:'4h';
+  if(tfv==='1h'){liveBand={};renderBand();loadMarkets(Object.keys(M8),liveBand,'1h',renderBand,'bandSt');}
+  else if(Object.keys(liveH4).length===0){loadS1();}
+  else{renderBand();}
+}
 
 // ── SMART MONEY ───────────────────────────────────────────────────
 function detectPhase(hist){
@@ -569,7 +627,7 @@ function detectPhase(hist){
 }
 
 function evalSMC(key){
-  var h=smcData[key],d=liveData[key];
+  var h=liveH4[key],d=liveData[key];
   if(!h||!d||h.c.length<20)return{signal:'none',score:0,checks:[]};
   var c=h.c,hi=h.h,lo=h.l,n=c.length,price=d.price;
   var ph=detectPhase(h);if(!ph)return{signal:'none',score:0,checks:[]};
@@ -599,8 +657,8 @@ function renderSMC(){
   var sm=document.getElementById('smcSum');if(sm)sm.innerHTML=mkSum(r,w,n);
   var el=document.getElementById('smcCards');if(!el)return;
   el.innerHTML=keys.map(function(k){
-    if(liveErr[k]&&!smcData[k])return errCard(k,liveErr[k]);
-    if(!smcData[k]||smcData[k].c.length<10)return loadCard(k);
+    if(liveErr[k]&&!liveH4[k])return errCard(k,liveErr[k]);
+    if(!liveH4[k]||liveH4[k].c.length<10)return loadCard(k);
     var d=liveData[k];if(!d)return loadCard(k,'Data loading...');
     var ev=evalSMC(k),isL=ev.signal==='long',cls=ev.signal!=='none'?'ready':ev.score>=2?'watch':'nosig';
     var ph=ev.phase,pCol=ph?( ph.phase===3?'var(--g)':ph.phase===2?'var(--a)':'var(--b)'):'var(--dim)';
@@ -618,14 +676,14 @@ function renderSMC(){
   }).join('');
 }
 
-function loadSMC(){smcData={};renderSMC();loadMarkets(Object.keys(M8),smcData,'4h',renderSMC,'smcSt');}
+function loadSMC(){if(Object.keys(liveH4).length===0){loadS1();}else{renderSMC();}}
 
 // ── FVG ZONES ─────────────────────────────────────────────────────
 function detectBalance(hist){if(!hist||!hist.c||hist.c.length<10)return null;var h=hist.h,l=hist.l,c=hist.c,n=c.length,atrV=calcATR(h,l,c,14);if(!atrV)return null;var best=null;for(var lb=5;lb<=Math.min(20,n-2);lb++){var sh=h.slice(n-lb-1,n-1),sl=l.slice(n-lb-1,n-1),hi=Math.max.apply(null,sh),lo2=Math.min.apply(null,sl),rng=hi-lo2;if(rng<atrV*2.5){var mid=(hi+lo2)/2;if(!best||rng<best.range)best={high:hi,low:lo2,mid:mid,range:rng,candles:lb,atr:atrV};}}return best;}
 function detectFVGs(hist,direction){if(!hist||!hist.c||hist.c.length<5)return[];var h=hist.h,l=hist.l,c=hist.c,n=c.length,atrV=calcATR(h,l,c,14)||0,gaps=[];for(var i=2;i<Math.min(30,n-1);i++){var idx=n-1-i;if(idx<1||idx>=n-1)continue;if(direction==='bull'){var gL=h[idx-1],gH=l[idx+1];if(gH>gL&&(gH-gL)>=atrV*0.3){var filled=false;for(var j=idx+2;j<n;j++)if(l[j]<=gL+(gH-gL)*0.5){filled=true;break;}if(!filled)gaps.push({type:'bull',high:gH,low:gL,mid:(gH+gL)/2,size:gH-gL,age:i,atrRatio:(gH-gL)/atrV});}}else{var gH2=l[idx-1],gL2=h[idx+1];if(gH2>gL2&&(gH2-gL2)>=atrV*0.3){var filled2=false;for(var j2=idx+2;j2<n;j2++)if(h[j2]>=gL2+(gH2-gL2)*0.5){filled2=true;break;}if(!filled2)gaps.push({type:'bear',high:gH2,low:gL2,mid:(gH2+gL2)/2,size:gH2-gL2,age:i,atrRatio:(gH2-gL2)/atrV});}}}return gaps.sort(function(a,b){return a.age-b.age;}).slice(0,3);}
 
 function evalFVG(key){
-  var h=fvgData[key],d=liveData[key];
+  var h=liveH4[key],d=liveData[key];
   if(!h||!d||h.c.length<20)return{signal:'none',score:0,checks:[]};
   var c=h.c,hi=h.h,lo=h.l,n=c.length,price=d.price,atrV=calcATR(hi,lo,c,14)||0;
   var adxV=calcADX(hi,lo,c,14),balance=detectBalance(h);
@@ -665,8 +723,8 @@ function renderFVG(){
   var el=document.getElementById('fvgCards');if(!el)return;
   el.innerHTML=keys.map(function(k){
     var m=M8[k];if(!m)return'';
-    if(liveErr[k]&&!fvgData[k])return errCard(k,liveErr[k]);
-    if(!fvgData[k]||fvgData[k].c.length<10)return loadCard(k);
+    if(liveErr[k]&&!liveH4[k])return errCard(k,liveErr[k]);
+    if(!liveH4[k]||liveH4[k].c.length<10)return loadCard(k);
     var d=liveData[k];if(!d)return loadCard(k,'Data loading...');
     function f(x){return x||x===0?parseFloat(x).toFixed(m.d):'--';}
     var ev=evalFVG(k),isL=ev.signal==='long',cls=ev.signal!=='none'?'ready':ev.score>=4?'watch':'nosig';
@@ -683,7 +741,7 @@ function renderFVG(){
   }).join('');
 }
 
-function loadFVG(){fvgData={};renderFVG();loadMarkets(Object.keys(M8),fvgData,'4h',renderFVG,'fvgSt');}
+function loadFVG(){if(Object.keys(liveH4).length===0){loadS1();}else{renderFVG();}}
 
 // ── NEWS ──────────────────────────────────────────────────────────
 function loadNews(){
@@ -718,16 +776,14 @@ function exportCSV(){if(!trades.length){alert('No trades.');return;}var rows=['D
 renderJournal();renderJStats();
 
 // ── AUTO-REFRESH every 30 minutes ────────────────────────────────
+// One shared fetch refreshes SMC, FVG, Pullback, Band(4H) and Volatility together.
 setInterval(function(){if(Object.keys(liveH4).length>0)loadS1();},1800000);
-setInterval(function(){if(Object.keys(liveBand).length>0)loadBand();},1800000);
-setInterval(function(){if(Object.keys(smcData).length>0)loadSMC();},1800000);
-setInterval(function(){if(Object.keys(fvgData).length>0)loadFVG();},1800000);
+// Band's 1H mode uses its own store and only needs refreshing if the user is on 1H.
+setInterval(function(){var tf=document.getElementById('bandTF');if(tf&&tf.value==='1h'&&Object.keys(liveBand).length>0)loadBand();},1800000);
 
 // ── START ─────────────────────────────────────────────────────────
-loadSMC();
-setTimeout(function(){loadFVG();},500);
-setTimeout(function(){loadS1();},1000);
-setTimeout(function(){loadBand();},1500);
+// Single fetch of all 13 markets on load — every tab renders from it, no duplicate calls.
+loadS1();
 
 </script>
 </body>
