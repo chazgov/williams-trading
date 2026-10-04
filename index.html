@@ -167,7 +167,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- MARKET NEWS -->
 <div id="p-news" class="panel">
-  <div class="bn b"><b>📰 Market News</b></div>
+  <div class="bn b"><b>📰 Market News</b><br>Auto summary below covers GBP, USD, EUR, JPY, AUD and US indices — refreshes every 2h, shared with the confluence boxes on your signal tabs. Use the selector further down for a single-market deep dive.</div>
+  <div class="stbar"><div id="newsSumSt" style="font-size:10px;color:var(--dim)">Loading summary...</div><button class="rbtn" onclick="loadConfluenceNews()">↻ Refresh Summary</button></div>
+  <div id="newsSummary"></div>
+  <div class="bn a" style="margin-top:16px"><b>🔍 Single Market Deep Dive</b></div>
   <div class="stbar">
     <select id="newsMkt" class="ni" style="width:auto">
       <option value="EURUSD">EUR/USD</option><option value="GBPUSD">GBP/USD</option>
@@ -446,7 +449,8 @@ function mkCard(key,d,ev,checks,sub){
   }
 
   var ts=d.ts?d.ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' UK':'--';
-  return'<div class="mcard '+cls+'"><div class="mcard-top"><div><div class="mcard-name">'+(ev.signal!=='none'?'<span class="dirtag '+(isL?'long':'short')+'">'+(isL?'LONG':'SHORT')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+m.c+' · '+sub+' · '+ts+'</div></div><div><div class="mcard-price">'+f(d.price)+'</div><div class="mcard-chg" style="color:'+(d.chg>=0?'var(--g)':'var(--r)')+'">'+(d.chg>=0?'▲':'▼')+' '+Math.abs(d.chg||0).toFixed(m.d)+'</div></div></div><div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span><span style="font-size:10px;color:var(--dim)">'+ts+'</span></div>'+chkH+cf+levH+actH+'</div>';
+  var confH=ev.signal!=='none'?mkConfluenceBox(key):'';
+  return'<div class="mcard '+cls+'"><div class="mcard-top"><div><div class="mcard-name">'+(ev.signal!=='none'?'<span class="dirtag '+(isL?'long':'short')+'">'+(isL?'LONG':'SHORT')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+m.c+' · '+sub+' · '+ts+'</div></div><div><div class="mcard-price">'+f(d.price)+'</div><div class="mcard-chg" style="color:'+(d.chg>=0?'var(--g)':'var(--r)')+'">'+(d.chg>=0?'▲':'▼')+' '+Math.abs(d.chg||0).toFixed(m.d)+'</div></div></div><div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span><span style="font-size:10px;color:var(--dim)">'+ts+'</span></div>'+chkH+cf+levH+actH+confH+'</div>';
 }
 
 function errCard(key,err){var m=M13[key]||M8[key]||{n:key,d:5,c:'?'};return'<div class="mcard err"><div class="mcard-top"><div><div class="mcard-name">'+m.n+'</div><div class="mcard-sub" style="color:var(--r)">⚠ '+err+'</div></div></div></div>';}
@@ -586,7 +590,7 @@ function mkSweepCard(r){
     var grade=r.rr>=2.5?'Excellent':r.rr>=2.0?'Good':'Acceptable';
     body='<div class="conf"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP (past wick)</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET</div><div class="conf-val" style="color:var(--g)">'+r.target.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">R:R</div><div class="conf-val" style="color:var(--g)">1:'+r.rr.toFixed(2)+' · '+grade+'</div></div></div>'+
       '<div style="margin-top:8px;font-size:11px;color:var(--dim)">Swept level: '+r.sweepLevel.toFixed(m.d)+' · Daily ADX '+r.adx.toFixed(1)+'</div>'+
-      '<div style="margin-top:6px;font-size:11px;color:var(--a)">⏱ Time-stop: move to breakeven if no progress within ~48H (2 daily candles)</div>';
+      '<div style="margin-top:6px;font-size:11px;color:var(--a)">⏱ Time-stop: move to breakeven if no progress within ~48H (2 daily candles)</div>'+mkConfluenceBox(r.key);
   }else{
     body='<div style="margin-top:8px;font-size:11px;color:var(--dim)">'+(r.reason||'')+'</div>';
   }
@@ -673,7 +677,7 @@ function mkWSweepCard(r){
     var grade=r.rr>=2.5?'Excellent':r.rr>=2.0?'Good':'Acceptable';
     body='<div class="conf"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP (past wick)</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">T1 (Daily)</div><div class="conf-val" style="color:var(--g)">'+r.t1.toFixed(m.d)+' · 1:'+r.rr.toFixed(2)+'</div></div><div class="conf-box"><div class="conf-lbl">T2 (Weekly, extended)</div><div class="conf-val" style="color:var(--g)">'+r.t2.toFixed(m.d)+' · 1:'+r.rr2.toFixed(2)+'</div></div></div>'+
       '<div style="margin-top:8px;font-size:11px;color:var(--dim)">Swept level: '+r.sweepLevel.toFixed(m.d)+' · Weekly ADX '+r.wAdx.toFixed(1)+' · Daily ADX '+r.dAdx.toFixed(1)+' · Grade: '+grade+'</div>'+
-      '<div style="margin-top:6px;font-size:11px;color:var(--a)">⏱ Time-stop: move to breakeven if no progress toward T1 within ~48H</div>';
+      '<div style="margin-top:6px;font-size:11px;color:var(--a)">⏱ Time-stop: move to breakeven if no progress toward T1 within ~48H</div>'+mkConfluenceBox(r.key);
   }else{
     body='<div style="margin-top:8px;font-size:11px;color:var(--dim)">'+(r.reason||'')+'</div>';
   }
@@ -822,7 +826,8 @@ function renderSMC(){
     else if(ph&&ph.phase===3)actH='<div class="abox wait"><div class="abox-title">⏳ Phase 3 Active — Wait for Pullback</div>Trend confirmed. Wait for price to pull back to FMV ('+f(ph.fmv)+') and touch 20/50 EMA.</div>';
     else actH='<div class="abox skip"><div class="abox-title">⚪ Phase '+(ph?ph.phase:'?')+' — Not Ready</div>'+(ph&&ph.phase===1?'Consolidating. Wait for Phase 2 expansion then Phase 3 trend.':'Wait for trend phase to establish.')+'</div>';
     var ts=d2.ts?d2.ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' UK':'--';
-    return'<div class="mcard '+cls+'"><div class="mcard-top"><div><div class="mcard-name">'+(ev.signal!=='none'?'<span class="dirtag '+(isL?'long':'short')+'">'+(isL?'LONG':'SHORT')+'</span>':'')+M8[k].n+'</div><div class="mcard-sub">'+M8[k].c+' · Smart Money 3-Phase · '+ts+'</div></div><div><div class="mcard-price">'+f(d2.price)+'</div><div class="mcard-chg" style="color:'+(d2.chg>=0?'var(--g)':'var(--r)')+'">'+(d2.chg>=0?'▲':'▼')+' '+Math.abs(d2.chg||0).toFixed(M8[k].d)+'</div></div></div><div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span><span style="font-size:10px;color:'+pCol+'">Phase '+(ph?ph.phase:'?')+'</span></div>'+phHtml+chkH+levH+actH+'</div>';
+    var confH=ev.signal!=='none'?mkConfluenceBox(k):'';
+    return'<div class="mcard '+cls+'"><div class="mcard-top"><div><div class="mcard-name">'+(ev.signal!=='none'?'<span class="dirtag '+(isL?'long':'short')+'">'+(isL?'LONG':'SHORT')+'</span>':'')+M8[k].n+'</div><div class="mcard-sub">'+M8[k].c+' · Smart Money 3-Phase · '+ts+'</div></div><div><div class="mcard-price">'+f(d2.price)+'</div><div class="mcard-chg" style="color:'+(d2.chg>=0?'var(--g)':'var(--r)')+'">'+(d2.chg>=0?'▲':'▼')+' '+Math.abs(d2.chg||0).toFixed(M8[k].d)+'</div></div></div><div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span><span style="font-size:10px;color:'+pCol+'">Phase '+(ph?ph.phase:'?')+'</span></div>'+phHtml+chkH+levH+actH+confH+'</div>';
   }).join('');
 }
 
@@ -887,11 +892,113 @@ function renderFVG(){
     else if(ev.score>=4)actH='<div class="abox wait"><div class="abox-title">👀 Setup Developing</div>'+(ev.bullExp||ev.bearExp?'Expansion detected. Wait for price to retrace back into FVG zone.':'Balance zone found. Watch for breakout above '+f(ev.balance?ev.balance.high:0)+' or below '+f(ev.balance?ev.balance.low:0)+'.')+'</div>';
     else actH='<div class="abox skip"><div class="abox-title">⚪ No Setup</div>'+(ev.balance?'Balance zone: '+f(ev.balance.low)+' → '+f(ev.balance.high)+'. No expansion yet.':'No balance zone found. Market may be trending strongly.')+'</div>';
     var ts=d.ts?d.ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' UK':'--';
-    return'<div class="mcard '+cls+'"><div class="mcard-top"><div><div class="mcard-name">'+(ev.signal!=='none'?'<span class="dirtag '+(isL?'long':'short')+'">'+(isL?'LONG':'SHORT')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+m.c+' · FVG Balance/Imbalance · 4H · '+ts+'</div></div><div><div class="mcard-price">'+f(d.price)+'</div><div class="mcard-chg" style="color:'+(d.chg>=0?'var(--g)':'var(--r)')+'">'+(d.chg>=0?'▲':'▼')+' '+Math.abs(d.chg||0).toFixed(m.d)+'</div></div></div><div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span><span style="font-size:10px;color:var(--dim)">4H · FVG</span></div>'+vizH+chkH+levH+actH+'</div>';
+    var confH=ev.signal!=='none'?mkConfluenceBox(k):'';
+    return'<div class="mcard '+cls+'"><div class="mcard-top"><div><div class="mcard-name">'+(ev.signal!=='none'?'<span class="dirtag '+(isL?'long':'short')+'">'+(isL?'LONG':'SHORT')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+m.c+' · FVG Balance/Imbalance · 4H · '+ts+'</div></div><div><div class="mcard-price">'+f(d.price)+'</div><div class="mcard-chg" style="color:'+(d.chg>=0?'var(--g)':'var(--r)')+'">'+(d.chg>=0?'▲':'▼')+' '+Math.abs(d.chg||0).toFixed(m.d)+'</div></div></div><div class="sigbar"><span class="sigpill '+cls+'">'+pill+'</span><span style="font-size:10px;color:var(--dim)">4H · FVG</span></div>'+vizH+chkH+levH+actH+confH+'</div>';
   }).join('');
 }
 
 function loadFVG(){if(Object.keys(liveH4).length===0){loadS1();}else{renderFVG();}}
+
+// ── CONFLUENCE FACTORS (currency-news matching + risk gauge) ───────
+var newsStore={}; // symbol -> {articles:[...], ts:Date}
+var NEWS_SYMS=['GBPUSD','EURUSD','USDJPY','AUDUSD','XAUUSD','SPX'];
+var CUR_MAP={
+  eurusd:[{code:'EUR',sym:'EURUSD'},{code:'USD',sym:'EURUSD'}],
+  gbpusd:[{code:'GBP',sym:'GBPUSD'},{code:'USD',sym:'GBPUSD'}],
+  usdjpy:[{code:'USD',sym:'USDJPY'},{code:'JPY',sym:'USDJPY'}],
+  usdcad:[{code:'USD',sym:'EURUSD'},{code:'CAD',sym:null}],
+  audusd:[{code:'AUD',sym:'AUDUSD'},{code:'USD',sym:'AUDUSD'}],
+  usdchf:[{code:'USD',sym:'EURUSD'},{code:'CHF',sym:null}],
+  nzdusd:[{code:'NZD',sym:null},{code:'USD',sym:'AUDUSD'}],
+  gold:[{code:'GOLD',sym:'XAUUSD'},{code:'USD',sym:'XAUUSD'}],
+  silver:[{code:'GOLD',sym:'XAUUSD'},{code:'USD',sym:'XAUUSD'}],
+  us500:[{code:'USD',sym:'SPX'},{code:'RISK',sym:'SPX'}],
+  us100:[{code:'USD',sym:'SPX'},{code:'RISK',sym:'SPX'}],
+  uk100:[{code:'GBP',sym:'GBPUSD'},{code:'RISK',sym:'SPX'}],
+  ger40:[{code:'EUR',sym:'EURUSD'},{code:'RISK',sym:'SPX'}]
+};
+var REMINDERS={
+  GBP:'Driven by BoE rate path vs Fed, UK inflation/jobs data, and EUR correlation.',
+  USD:'Driven by Fed rate path, NFP/CPI surprises, and risk sentiment (safe-haven flows).',
+  EUR:'Driven by ECB rate path, Eurozone PMI/inflation, and fiscal stress in major members.',
+  JPY:'Dominated by risk sentiment (safe haven) and BoJ policy — often moves opposite to risk-on rallies.',
+  AUD:'Tied to RBA rate path, commodity prices, and Chinese data — trades as a China proxy.',
+  NZD:'Tied to RBNZ rate path, dairy/agri export prices, and broad risk sentiment; correlates with AUD.',
+  CAD:'Tied to BoC rate path and oil prices.',
+  CHF:'Safe-haven currency; strengthens in risk-off conditions alongside JPY and gold.',
+  GOLD:'Safe-haven asset; strengthens in risk-off conditions and on falling real yields/rate-cut expectations.',
+  RISK:'Equity indices are sensitive to rate expectations and broad risk sentiment.'
+};
+var NOFEED_LINKS={
+  CAD:[{n:'Bank of Canada — Press',u:'https://www.bankofcanada.ca/press/'}],
+  CHF:[{n:'Swiss National Bank',u:'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/communication'}],
+  NZD:[{n:'RBNZ News',u:'https://www.rbnz.govt.nz/hub/news'}]
+};
+function fetchNewsSymbol(sym,cb){
+  var xhr=new XMLHttpRequest();xhr.open('GET','/api/get-news?symbol='+encodeURIComponent(sym),true);xhr.timeout=12000;
+  xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;try{var d=JSON.parse(xhr.responseText);cb(d.news||[]);}catch(e){cb([]);}};
+  xhr.ontimeout=function(){cb([]);};xhr.onerror=function(){cb([]);};xhr.send();
+}
+function refreshAllCards(){
+  if(typeof renderSMC==='function')renderSMC();
+  if(typeof renderFVG==='function')renderFVG();
+  if(typeof renderS1==='function')renderS1();
+  if(typeof renderSweep==='function')renderSweep();
+  if(typeof renderWSweep==='function')renderWSweep();
+  if(typeof renderNewsSummary==='function')renderNewsSummary();
+}
+function loadConfluenceNews(){
+  NEWS_SYMS.forEach(function(sym,i){
+    setTimeout(function(){
+      fetchNewsSymbol(sym,function(articles){
+        newsStore[sym]={articles:articles,ts:new Date()};
+        refreshAllCards();
+      });
+    },i*800);
+  });
+}
+// Live risk-on/off gauge, from real gold vs US500 price change (not a guess)
+function riskContext(){
+  var g=liveData['gold'],s=liveData['us500'];
+  if(!g||!s||g.chg==null||s.chg==null)return{label:'Unavailable',color:'var(--dim)',desc:'Live gold/index data not loaded yet'};
+  if(g.chg>0&&s.chg<0)return{label:'Risk-OFF',color:'var(--r)',desc:'Gold up + US500 down — money flowing to safety (bearish AUD/NZD, bullish JPY/CHF/Gold)'};
+  if(g.chg<0&&s.chg>0)return{label:'Risk-ON',color:'var(--g)',desc:'Gold down + US500 up — money flowing to risk assets (bullish AUD/NZD/stocks, bearish JPY/CHF/Gold)'};
+  return{label:'Mixed',color:'var(--a)',desc:'Gold and US500 not confirming each other — no clear risk bias right now'};
+}
+function mkConfluenceBox(key){
+  var curs=CUR_MAP[key];if(!curs)return'';
+  var rc=riskContext();
+  var secs=curs.map(function(c){
+    var reminder=REMINDERS[c.code]||'',newsHtml='';
+    if(c.sym&&newsStore[c.sym]&&newsStore[c.sym].articles.length){
+      newsHtml=newsStore[c.sym].articles.slice(0,2).map(function(a){return'<div style="font-size:10px;color:#b0ab9e;margin-top:3px;padding-left:8px;border-left:2px solid var(--bdr)">'+(a.headline||'')+(a.source?' <span style="color:var(--dim)">— '+a.source+'</span>':'')+'</div>';}).join('');
+    }else if(c.sym){
+      newsHtml='<div style="font-size:10px;color:var(--dim);margin-top:3px">News loading — or visit 📰 Market News tab</div>';
+    }else{
+      var links=NOFEED_LINKS[c.code]||[];
+      newsHtml=links.length?links.map(function(l){return'<a href="'+l.u+'" target="_blank" style="font-size:10px;color:var(--b);margin-top:3px;display:block">🔗 '+l.n+'</a>';}).join(''):'<div style="font-size:10px;color:var(--dim)">No direct feed for '+c.code+'</div>';
+    }
+    return'<div style="margin-bottom:7px"><div style="font-size:10px;font-weight:700;color:#fff">'+c.code+'</div><div style="font-size:10px;color:var(--dim);margin-top:1px">'+reminder+'</div>'+newsHtml+'</div>';
+  }).join('');
+  return'<div style="margin:0 14px 10px;background:rgba(77,171,247,0.05);border:1px solid rgba(77,171,247,0.15);border-radius:9px;padding:11px"><div style="font-size:10px;font-weight:700;color:var(--b);margin-bottom:8px">📰 CONFLUENCE FACTORS</div>'+secs+'<div style="margin-top:4px;padding-top:7px;border-top:1px solid var(--bdr);font-size:10px"><span style="font-weight:700;color:'+rc.color+'">'+rc.label+'</span> <span style="color:var(--dim)">— '+rc.desc+'</span></div></div>';
+}
+
+function renderNewsSummary(){
+  var el=document.getElementById('newsSummary');if(!el)return;
+  var st=document.getElementById('newsSumSt');
+  var rc=riskContext();
+  var labels={GBPUSD:'🇬🇧 GBP',EURUSD:'🇪🇺 EUR',USDJPY:'🇯🇵 JPY',AUDUSD:'🇦🇺 AUD',XAUUSD:'🥇 Gold',SPX:'📈 US Indices'};
+  var anyLoaded=NEWS_SYMS.some(function(s){return newsStore[s];});
+  if(!anyLoaded){el.innerHTML='<div style="color:var(--dim);padding:10px">Loading...</div>';return;}
+  if(st)st.textContent='Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  var riskBanner='<div style="background:rgba(0,0,0,0.2);border:1px solid var(--bdr);border-radius:9px;padding:10px 12px;margin-bottom:10px"><span style="font-size:11px;font-weight:700;color:'+rc.color+'">⚖ '+rc.label+'</span> <span style="font-size:10px;color:var(--dim)">'+rc.desc+'</span></div>';
+  var cards=NEWS_SYMS.map(function(sym){
+    var store=newsStore[sym];
+    var body=store&&store.articles.length?store.articles.slice(0,3).map(function(a){var sent=getSentiment((a.headline||'')+(a.summary||''));return'<div style="margin-top:6px"><div style="display:flex;justify-content:space-between;gap:6px"><span style="font-size:11px;color:#fff;font-weight:600;line-height:1.4">'+(a.headline||'')+'</span><span style="font-size:9px;padding:1px 6px;border-radius:7px;background:'+sent.c+'22;color:'+sent.c+';flex-shrink:0;height:fit-content">'+sent.i+'</span></div><div style="font-size:9px;color:var(--dim);margin-top:2px">'+(a.source||'')+(a.url?' · <a href="'+a.url+'" target="_blank" style="color:var(--b)">Read →</a>':'')+'</div></div>';}).join(''):'<div style="font-size:10px;color:var(--dim);margin-top:4px">No headlines returned — try Refresh</div>';
+    return'<div style="background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:12px;margin-bottom:9px"><div style="font-size:11px;font-weight:800;color:#fff">'+(labels[sym]||sym)+'</div>'+body+'</div>';
+  }).join('');
+  el.innerHTML=riskBanner+cards;
+}
 
 // ── NEWS ──────────────────────────────────────────────────────────
 function loadNews(){
@@ -933,9 +1040,12 @@ setInterval(function(){if(Object.keys(dailyData).length>0)loadMarkets(Object.key
 setInterval(function(){if(Object.keys(h1Data).length>0)loadMarkets(Object.keys(M13),h1Data,'1h',function(){renderSweep();renderWSweep();},'h1St');},3600000);
 setInterval(function(){if(Object.keys(weeklyData).length>0)loadMarkets(Object.keys(M13),weeklyData,'1week',renderWSweep,'weeklySt');},24*3600000);
 
+setInterval(loadConfluenceNews,2*3600000);
+
 // ── START ─────────────────────────────────────────────────────────
 // Single fetch of all 13 markets on load — every tab renders from it, no duplicate calls.
 loadS1();
+loadConfluenceNews();
 
 </script>
 </body>
