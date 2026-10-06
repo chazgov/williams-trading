@@ -16,7 +16,9 @@ exports.handler = async (event) => {
 
   if (!sym) return { statusCode:400, headers:h, body:JSON.stringify({error:"Bad key: "+key}) };
 
-  const n = interval==="1day" ? 30 : 60;
+  // Daily needs more history than 30 candles — the Engulf Sniper tab's 50-day EMA
+  // needs at least 55 just to compute, and more than that to be a stable reading.
+  const n = interval==="1day" ? 100 : 60;
   const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${interval}&outputsize=${n}&apikey=${KEY}`;
 
   try {
@@ -35,6 +37,7 @@ exports.handler = async (event) => {
       change: price-prevP,
       changePct: (price-prevP)/prevP*100,
       history:{
+        o: rev.map(v=>parseFloat(v.open)),
         h: rev.map(v=>parseFloat(v.high)),
         l: rev.map(v=>parseFloat(v.low)),
         c: rev.map(v=>parseFloat(v.close)),
