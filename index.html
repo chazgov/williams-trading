@@ -118,7 +118,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="navwrap">
   <div class="nav">
     <button class="ntab on"  onclick="showTab('smc',this)">🧠 SMART MONEY</button>
-    <button class="ntab"     onclick="showTab('mtf',this)">🎯 W/D/1H FMV</button>
+    <button class="ntab"     onclick="showTab('brk',this)">📦 BREAKOUT RETEST</button>
     <button class="ntab"     onclick="showTab('s1',this)">📈 4H PULLBACK</button>
     <button class="ntab"     onclick="showTab('news',this)">📰 MARKET NEWS</button>
     <button class="ntab"     onclick="showTab('chk',this)">✅ CHECKLIST</button>
@@ -234,7 +234,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <select class="ni" id="jMkt"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CAD</option><option>AUD/USD</option><option>US Tech 100</option><option>US 500</option><option>UK 100</option><option>Germany 40</option><option>Gold</option><option>Silver</option></select>
     </div>
     <div class="frow"><label>Strategy</label>
-      <select class="ni" id="jStrat"><option>Smart Money</option><option>4H Pullback</option><option>W/D/1H FMV Entry</option><option>D/4H/1H FMV Entry</option></select>
+      <select class="ni" id="jStrat"><option>Smart Money</option><option>4H Pullback</option><option>Breakout Retest</option></select>
     </div>
     <div class="frow"><label>Direction</label>
       <select class="ni" id="jDir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -280,24 +280,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- DAILY BIAS / 1H LIQUIDITY SWEEP -->
-<div id="p-mtf" class="panel">
-  <div class="bn b"><b>🎯 Trend Alignment → Discount Entry on 1H FMV</b><br>
-  <b>Mode now: <span id="mtfModeTxt">Weekly + Daily + 1H</span></b> (switch below).<br>
-  <b>Weekly ON:</b> Weekly &amp; Daily must trend the same way (20 vs 50 EMA, price on the right side of the 50), and the 1H must agree.<br>
-  <b>Weekly OFF:</b> Daily sets direction, the 4H must agree and be pulling back to its 20/50 EMA, and the 1H must agree.<br>
-  <b>Trend strength:</b> Daily (and 4H when Weekly is off) need ADX 20+ with +DI/−DI leading in your direction. The 1H needs ADX 18+, and is skipped if ADX is rising while the opposite DI leads (pullback turning into a reversal).<br>
-  <b>Entry:</b> discount side of 1H FMV (midpoint of the recent 1H range) — <b>below FMV when buying, above when selling</b> — near the 1H 20/50 EMA.<br>
-  <b>Stop:</b> beyond the latest 1H swing, kept between 1x and 2.5x the 1H ATR (wider = skipped) · <b>Target:</b> nearest Daily swing · 1.5:1 minimum R:R · risk 1% of capital.<br>
-  Loads on first visit (~39 credits Weekly ON, ~26 OFF) · refreshes only while this tab is open.</div>
-  <div class="stbar"><div id="mtfSt"><span class="pulse"></span>Not loaded yet</div><div style="display:flex;gap:6px"><button class="rbtn" id="mtfWBtn" onclick="toggleMTFWeekly()">Weekly: ON</button><button class="rbtn" onclick="loadMTF()">↻ Refresh</button></div></div>
-  <div id="mtfSum" class="sumstrip"></div>
-  <div id="mtfCards"></div>
-  <div class="disc">Experimental and untested on real trades — journal every signal with the mode that produced it, then compare Weekly ON vs OFF on your own results. Not financial advice.</div>
+<div id="p-brk" class="panel">
+  <div class="bn b"><b>📦 Breakout Retest — Daily bias, 1H box, 15m entry</b><br>
+  <b>Markets:</b> you choose below (default EUR/USD, GBP/USD, USD/JPY). Each market costs 3 credits to load and about 5 credits an hour while this tab is open, so scan only the ones you will actually trade.<br>
+  <b>1 · Bias (morning, Daily chart):</b> ignore today's unfinished candle. Take the <b>last completed</b> Daily close and compare it with the 50 SMA (above = buy, below = sell), then check the last 3 swing highs and lows (buys: each higher than the one before; sells: each lower). <b>Both must agree</b> — if not, skip the day.<br>
+  <b>2 · Setup (1H):</b> a tight 12-candle box, then a big candle that closes strongly outside it in the bias direction. The zone must be fresh (not retested several times) and price must pull back to the broken edge — top edge for buys, bottom for sells. Middle of the box = skip.<br>
+  <b>3 · Entry (15m):</b> a 15m candle rejects the edge and closes in the trade direction. Stop just beyond the far side of the box (+ buffer), target 2x the stop, risk 1% of capital.<br>
+  <b>Skip:</b> 22:00–22:59 UK (rollover spread), outside 07:00–21:59 UK (this window suits forex; indices have their own hours, so check them too), price closed through the whole zone, stop wider than 3x the 1H ATR.<br>
+  Loads on first visit (up to 9 credits) · refreshes only while this tab is open.</div>
+  <div class="stbar"><div id="brkSt"><span class="pulse"></span>Not loaded yet</div><div style="display:flex;gap:6px"><button class="rbtn" onclick="loadBRK(true)">↻ Refresh</button></div></div>
+  <div id="brkPick" style="margin-bottom:4px"></div>
+  <div id="brkCost" style="font-size:10px;margin-bottom:10px"></div>
+  <div id="brkSum" class="sumstrip"></div>
+  <div id="brkCards"></div>
+  <div class="disc">Test on ~50 past trades and 2–3 months of demo before using real money. A method, not a guarantee — not financial advice. Max 2 trades open at once.</div>
 </div>
 
 <script>
 var cap=500,credits=0;
-var liveData={},liveH4={},liveErr={},weeklyData={},dailyData={},h1Data={};
+var liveData={},liveH4={},liveErr={},dailyData={},h1Data={};
 var M13={eurusd:{n:'EUR/USD',tn:'EUR/USD',c:'Forex',d:5},gbpusd:{n:'GBP/USD',tn:'GBP/USD',c:'Forex',d:5},usdjpy:{n:'USD/JPY',tn:'USD/JPY',c:'Forex',d:3},usdcad:{n:'USD/CAD',tn:'USD/CAD',c:'Forex',d:5},audusd:{n:'AUD/USD',tn:'AUD/USD',c:'Forex',d:5},usdchf:{n:'USD/CHF',tn:'USD/CHF',c:'Forex',d:5},nzdusd:{n:'NZD/USD',tn:'NZD/USD',c:'Forex',d:5},us100:{n:'US Tech 100',tn:'US Tech 100',c:'Index',d:1},us500:{n:'US 500',tn:'US 500',c:'Index',d:1},uk100:{n:'UK 100',tn:'UK 100',c:'Index',d:1},ger40:{n:'Germany 40',tn:'Germany 40',c:'Index',d:1},gold:{n:'Gold',tn:'Gold',c:'Commodity',d:2},silver:{n:'Silver',tn:'Silver',c:'Commodity',d:3}};
 var M8={eurusd:M13.eurusd,gbpusd:M13.gbpusd,usdjpy:M13.usdjpy,usdcad:M13.usdcad,audusd:M13.audusd,gold:M13.gold,us500:M13.us500,us100:M13.us100};
 
@@ -323,7 +324,7 @@ function showTab(id,btn){
   document.querySelectorAll('.ntab').forEach(function(b){b.classList.remove('on');});
   document.getElementById('p-'+id).classList.add('on');
   btn.classList.add('on');
-  if(id==='mtf'&&Object.keys(h1Data).length===0)loadMTF();
+  if(id==='brk'&&Object.keys(m15Data).length===0)loadBRK();
 }
 
 // CREDITS
@@ -515,149 +516,6 @@ function sweepDayOk(){
   var inSess=hr>=8&&hr<21,bestDay=dy>=2&&dy<=4;
   return{ok:inSess,warn:!bestDay,txt:inSess?(bestDay?'Tue–Thu session — best conditions':'Session active — lower conviction day'):'Outside main session'};
 }
-// ── TREND ALIGNMENT → DISCOUNT ENTRY ON 1H FMV ──
-// Mode "Weekly ON":  Weekly + Daily + 1H must all trend the same way.
-// Mode "Weekly OFF": Daily sets direction, 4H must agree and be pulling back to its 20/50 EMA, 1H must agree.
-// Entry is the DISCOUNT side of the 1H FMV (midpoint of the recent 1H range): below FMV when buying, above when selling.
-var mtfWeekly=(function(){try{return localStorage.getItem('mtfWeekly')!=='0';}catch(e){return true;}})();
-function emaBias(d){
-  if(!d||!d.c||d.c.length<55)return null;
-  var e20=ema(d.c,20),e50=ema(d.c,50),p=d.c[d.c.length-1];
-  if(e20==null||e50==null)return null;
-  var bias='neutral';
-  if(e20>e50&&p>e50)bias='bullish';else if(e20<e50&&p<e50)bias='bearish';
-  return{bias:bias,e20:e20,e50:e50,price:p};
-}
-function evalMTF(key){
-  var useW=mtfWeekly,w=weeklyData[key],d=dailyData[key],h1=h1Data[key],h4=liveH4[key],day=sweepDayOk();
-  var mode=useW?'W/D/1H':'D/4H/1H';
-  if(!d||!h1)return null;
-  if(useW&&!w)return null;
-  if(!useW&&!h4)return null;
-  function ns(reason){return{key:key,status:'nosig',bias:'neutral',day:day,mode:mode,reason:reason};}
-  if(useW&&w.c.length<55)return ns('Only '+w.c.length+' weekly candles available — need 55+ for the 50 EMA');
-  if(d.c.length<55)return ns('Only '+d.c.length+' daily candles — need 55+ for the 50 EMA (deploy the updated get-price.js)');
-  if(!useW&&h4.c.length<55)return ns('Only '+h4.c.length+' 4H candles — need 55+ for the 50 EMA');
-  if(h1.c.length<40)return ns('Not enough 1H candles yet');
-  var db=emaBias(d),wb=useW?emaBias(w):null;
-  if(!db||(useW&&!wb))return ns('Could not calculate the trend EMAs');
-  var bias;
-  if(useW){
-    if(wb.bias==='neutral'||wb.bias!==db.bias)return ns('Weekly ('+wb.bias+') and Daily ('+db.bias+') do not agree — no trade');
-    bias=wb.bias;
-  }else{
-    if(db.bias==='neutral')return ns('Daily trend unclear (20/50 EMA and price disagree) — no trade');
-    bias=db.bias;
-  }
-  var isL=bias==='bullish',n=h1.c.length,dd=M13[key]?M13[key].d:5;
-  function f(x){return parseFloat(x).toFixed(dd);}
-  var price=(liveData[key]&&liveData[key].price)||h1.c[n-1];
-  var adxD=calcADX(d.h,d.l,d.c,14),adxDv=adxD?adxD.adx:null;
-  var diDok=adxD?(isL?adxD.diP>adxD.diN:adxD.diN>adxD.diP):false;
-  var dStrong=adxDv!==null&&adxDv>=20&&diDok;
-  function diTxt(a){return a?' · '+(isL?'+DI '+a.diP.toFixed(0)+' vs −DI '+a.diN.toFixed(0):'−DI '+a.diN.toFixed(0)+' vs +DI '+a.diP.toFixed(0)):'';}
-  var e1_20=ema(h1.c,20),e1_50=ema(h1.c,50),atr1=calcATR(h1.h,h1.l,h1.c,14)||0,adx1=calcADX(h1.h,h1.l,h1.c,14),adx1v=adx1?adx1.adx:null;
-  var trend1=isL?e1_20>e1_50:e1_20<e1_50;
-  var lb=Math.min(30,n),rH=Math.max.apply(null,h1.h.slice(-lb)),rL=Math.min.apply(null,h1.l.slice(-lb)),fmv=(rH+rL)/2;
-  var discount=isL?price<=fmv:price>=fmv;
-  var nearEMA=atr1>0&&Math.min(Math.abs(price-e1_20),Math.abs(price-e1_50))<=atr1;
-  // ── Stop: beyond the latest 1H swing, bounded between 1x and 2.5x the 1H ATR ──
-  var sw1=findSwings(h1.h,h1.l,2),stop;
-  if(isL){var sl=sw1.lows.filter(function(s){return s.v<price;}).slice(-1)[0];stop=(sl?sl.v:rL)-atr1*0.15;}
-  else{var sh=sw1.highs.filter(function(s){return s.v>price;}).slice(-1)[0];stop=(sh?sh.v:rH)+atr1*0.15;}
-  var dist=Math.abs(price-stop),widened=false;
-  if(atr1>0&&dist<atr1){stop=isL?price-atr1:price+atr1;dist=atr1;widened=true;}
-  var stopX=atr1>0?dist/atr1:99,stopOk=atr1>0&&stopX<=2.5;
-  // ── Target: nearest Daily swing in the trade direction ──
-  var swd=findSwings(d.h,d.l,2),target=null,tMethod='';
-  if(isL){var ups=swd.highs.map(function(s){return s.v;}).filter(function(v){return v>price;});if(ups.length){target=Math.min.apply(null,ups);tMethod='Daily swing high';}else if(rH>price){target=rH;tMethod='1H range high (fallback)';}}
-  else{var dns=swd.lows.map(function(s){return s.v;}).filter(function(v){return v<price;});if(dns.length){target=Math.max.apply(null,dns);tMethod='Daily swing low';}else if(rL<price){target=rL;tMethod='1H range low (fallback)';}}
-  var reward=target!=null?Math.abs(target-price):0,rr=dist>0?reward/dist:0;
-  var stake=cap*0.01,units=dist>0?stake/dist:0;
-  var checks=[];
-  if(useW){
-    checks.push({name:'Weekly trend',ok:true,txt:(isL?'Bullish':'Bearish')+' — 20 EMA '+(isL?'above':'below')+' 50 EMA, price '+(isL?'above':'below')+' the 50'});
-    checks.push({name:'Daily trend',ok:dStrong,txt:'Agrees with Weekly · Daily ADX '+(adxDv!==null?adxDv.toFixed(1):'--')+diTxt(adxD)+(dStrong?' ✅':(adxDv!==null&&adxDv>=20?' — DI lines disagree with the trend':' — need ADX 20+'))});
-  }else{
-    var e4_20=ema(h4.c,20),e4_50=ema(h4.c,50),atr4=calcATR(h4.h,h4.l,h4.c,14)||0;
-    var trend4=isL?e4_20>e4_50:e4_20<e4_50;
-    var adx4=calcADX(h4.h,h4.l,h4.c,14),adx4v=adx4?adx4.adx:null;
-    var di4ok=adx4?(isL?adx4.diP>adx4.diN:adx4.diN>adx4.diP):false;
-    var s4=trend4&&adx4v!==null&&adx4v>=20&&di4ok;
-    var near4=atr4>0&&Math.min(Math.abs(price-e4_20),Math.abs(price-e4_50))<=atr4;
-    checks.push({name:'Daily trend',ok:dStrong,txt:(isL?'Bullish':'Bearish')+' · Daily ADX '+(adxDv!==null?adxDv.toFixed(1):'--')+diTxt(adxD)+(dStrong?' ✅':(adxDv!==null&&adxDv>=20?' — DI lines disagree with the trend':' — need ADX 20+'))});
-    checks.push({name:'4H trend',ok:s4,txt:'4H 20 EMA '+(trend4?(isL?'above':'below')+' 50 EMA':(isL?'not above':'not below')+' 50 EMA — 4H not lined up')+' · ADX '+(adx4v!==null?adx4v.toFixed(1):'--')+diTxt(adx4)+(s4?' ✅':(trend4&&adx4v!==null&&adx4v>=20?' — DI lines disagree':trend4?' — need ADX 20+':''))});
-    checks.push({name:'4H pullback',ok:near4,txt:near4?'Price within 1x 4H ATR of the 4H 20/50 EMA ✅':'Price not at the 4H 20/50 EMA yet — no pullback'});
-  }
-  checks.push({name:'1H trend',ok:trend1&&adx1v!==null&&adx1v>=18,txt:'1H 20 EMA '+(trend1?(isL?'above':'below')+' 50 EMA':(isL?'not above':'not below')+' 50 EMA — 1H not lined up')+' · ADX '+(adx1v!==null?adx1v.toFixed(1):'--')});
-  var revRisk=!!(adx1&&adx1.rising&&(isL?adx1.diN>adx1.diP:adx1.diP>adx1.diN));
-  checks.push({name:'Reversal risk',ok:!revRisk,txt:revRisk?'1H ADX rising with '+(isL?'−DI':'+DI')+' leading — pullback may be turning into a reversal, skip':'No warning — the pullback isn\'t gaining counter-trend strength'});
-  checks.push({name:'Discount of 1H FMV',ok:discount,txt:'FMV '+f(fmv)+' · price '+f(price)+(discount?' — '+(isL?'below':'above')+' FMV ✅ discount entry':' — '+(isL?'above':'below')+' FMV, wait for pullback')});
-  checks.push({name:'Near 1H 20/50 EMA',ok:nearEMA,txt:nearEMA?'Within 1x ATR of a 1H EMA ✅':'Price too far from the 1H EMAs — no pullback yet'});
-  checks.push({name:'Stop size',ok:stopOk,txt:'Stop '+f(stop)+' = '+(atr1>0?stopX.toFixed(1)+'x 1H ATR':'ATR unavailable')+(widened?' (widened to the 1x ATR minimum)':'')+(stopOk?'':' — too wide (max 2.5x), skip')});
-  checks.push({name:'R:R ≥ 1.5',ok:rr>=1.5,txt:target!=null?'Target '+f(target)+' ('+tMethod+') · R:R 1:'+rr.toFixed(2):'No structural target found'});
-  checks.push({name:'Timing',ok:day.ok,txt:day.txt});
-  var allOk=checks.every(function(c){return c.ok;});
-  var firstFail=checks.filter(function(c){return !c.ok;})[0];
-  return{key:key,status:allOk?'ready':'watch',bias:bias,isL:isL,mode:mode,checks:checks,entry:price,stop:stop,target:target,tMethod:tMethod,rr:rr,fmv:fmv,stake:stake,units:units,waiting:firstFail?firstFail.name:null,day:day};
-}
-function mkMTFCard(r){
-  var m=M13[r.key];if(!m)return'';
-  var pill=r.status==='ready'?'✅ DISCOUNT ENTRY · '+(r.isL?'LONG':'SHORT'):r.status==='watch'?'👀 ALIGNED · WAITING':'⚪ NOT ALIGNED';
-  var sub=r.status==='nosig'?r.mode+' not lined up':(r.isL?'LONG':'SHORT')+' · '+r.mode+' → 1H FMV entry';
-  var dayColor=!r.day?'var(--dim)':(r.day.ok?(r.day.warn?'var(--a)':'var(--g)'):'var(--r)');
-  var body='';
-  if(r.status==='nosig'){
-    body='<div style="margin-top:8px;font-size:11px;color:var(--dim)">'+(r.reason||'')+'</div>';
-  }else{
-    body='<div class="chklist" style="margin-top:8px">'+r.checks.map(function(c){return'<div class="chk '+(c.ok?'ok':'fail')+'"><div class="chk-lbl">'+c.name+'</div><div class="chk-val" style="color:'+(c.ok?'var(--g)':'var(--r)')+'">'+(c.ok?'✅':'❌')+'</div><div class="chk-txt">'+c.txt+'</div></div>';}).join('')+'</div>';
-    if(r.status==='ready'){
-      var grade=r.rr>=2.5?'Excellent':r.rr>=2.0?'Good':'Acceptable';
-      var u=r.units>=100?r.units.toFixed(0):r.units.toFixed(2);
-      body+='<div class="conf" style="margin-top:8px"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET</div><div class="conf-val" style="color:var(--g)">'+r.target.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">R:R</div><div class="conf-val" style="color:var(--g)">1:'+r.rr.toFixed(2)+' · '+grade+'</div></div></div>'+
-        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">Size: '+u+' units · Risk £'+r.stake.toFixed(2)+' (1% of capital) — a wider stop means a smaller size, not more risk</div>'+
-        '<div style="margin-top:6px;font-size:11px;color:var(--a)">⏱ Time-stop: move to breakeven if no progress within ~24 1H candles · Exit if the trend alignment breaks · Journal it as "'+(r.mode==='W/D/1H'?'W/D/1H FMV Entry':'D/4H/1H FMV Entry')+'"</div>'+mkConfluenceBox(r.key);
-    }else if(r.waiting){
-      body+='<div style="margin-top:8px;font-size:11px;color:var(--a)">Waiting for: '+r.waiting+'</div>';
-    }
-  }
-  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">'+(r.status==='ready'?'<span class="dirtag '+(r.isL?'long':'short')+'">'+(r.isL?'LONG':'SHORT')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+sub+'</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span><span style="font-size:10px;color:'+dayColor+'">'+(r.day?r.day.txt:'')+'</span></div>'+body+'</div>';
-}
-function renderMTF(){
-  var keys=Object.keys(M13),r=0,w=0,n=0,el=document.getElementById('mtfCards');
-  if(!el)return;
-  el.innerHTML=keys.map(function(k){
-    var missing=!dailyData[k]||!h1Data[k]||(mtfWeekly?!weeklyData[k]:!liveH4[k]);
-    if(liveErr[k]&&missing)return errCard(k,liveErr[k]);
-    if(missing)return loadCard(k,mtfWeekly?'Loading Weekly + Daily + 1H...':'Loading Daily + 4H + 1H...');
-    var res=evalMTF(k);
-    if(!res)return loadCard(k);
-    if(res.status==='ready')r++;else if(res.status==='watch')w++;else n++;
-    return mkMTFCard(res);
-  }).join('');
-  var sm=document.getElementById('mtfSum');if(sm)sm.innerHTML=mkSum(r,w,n);
-}
-function updateMTFBtn(){var b=document.getElementById('mtfWBtn');if(b)b.textContent='Weekly: '+(mtfWeekly?'ON':'OFF');var t=document.getElementById('mtfModeTxt');if(t)t.textContent=mtfWeekly?'Weekly + Daily + 1H':'Daily + 4H + 1H';}
-function toggleMTFWeekly(){
-  mtfWeekly=!mtfWeekly;
-  try{localStorage.setItem('mtfWeekly',mtfWeekly?'1':'0');}catch(e){}
-  updateMTFBtn();
-  if(mtfWeekly&&Object.keys(weeklyData).length===0&&Object.keys(h1Data).length>0)loadMarkets(Object.keys(M13),weeklyData,'1week',renderMTF,'mtfSt');
-  if(!mtfWeekly&&Object.keys(liveH4).length===0)loadS1();
-  renderMTF();
-}
-function loadMTF(){
-  // Weekly ON ≈ 39 credits (Weekly + Daily + 1H). Weekly OFF ≈ 26 credits (4H is already shared with other tabs).
-  dailyData={};h1Data={};
-  if(mtfWeekly)weeklyData={};
-  renderMTF();
-  if(mtfWeekly)loadMarkets(Object.keys(M13),weeklyData,'1week',renderMTF,'mtfSt');
-  else if(Object.keys(liveH4).length===0)loadS1();
-  loadMarkets(Object.keys(M13),dailyData,'1day',renderMTF,'mtfSt');
-  loadMarkets(Object.keys(M13),h1Data,'1h',renderMTF,'mtfSt');
-}
-// Refresh only while the tab is open and the browser tab is visible, to protect the 800/day credit limit.
-function mtfActive(){var p=document.getElementById('p-mtf');return p&&p.classList.contains('on')&&!document.hidden;}
 
 
 // ── 4H PULLBACK ───────────────────────────────────────────────────
@@ -826,7 +684,7 @@ function fetchNewsSymbol(sym,cb){
 function refreshAllCards(){
   if(typeof renderSMC==='function')renderSMC();
   if(typeof renderS1==='function')renderS1();
-  if(typeof renderMTF==='function')renderMTF();
+  if(typeof renderBRK==='function')renderBRK();
   if(typeof renderNewsSummary==='function')renderNewsSummary();
 }
 function loadConfluenceNews(){
@@ -918,17 +776,186 @@ renderJournal();renderJStats();
 // One shared fetch refreshes SMC, FVG, Pullback, Band(4H) and Volatility together.
 setInterval(function(){if(Object.keys(liveH4).length>0)loadS1();},1800000);
 // Sweep tab: Daily bias barely moves intraday (refresh every 5h); 1H entries refresh hourly with candle close.
-setInterval(function(){if(mtfActive())loadMarkets(Object.keys(M13),h1Data,'1h',renderMTF,'mtfSt');},3600000);
-setInterval(function(){if(mtfActive())loadMarkets(Object.keys(M13),dailyData,'1day',renderMTF,'mtfSt');},6*3600000);
-setInterval(function(){if(mtfActive()&&mtfWeekly)loadMarkets(Object.keys(M13),weeklyData,'1week',renderMTF,'mtfSt');},24*3600000);
 
 setInterval(loadConfluenceNews,2*3600000);
+
+// ── BREAKOUT RETEST (Daily 50-MA bias → 1H consolidation-box break → pullback to the edge → 15m rejection) ──
+// Pairs: EUR/USD, GBP/USD, USD/JPY only. Uses completed candles only (the still-forming candle is ignored).
+var BRK_KEYS=(function(){try{var a=JSON.parse(localStorage.getItem('brkKeys')||'null');if(a&&a.length)return a.filter(function(k){return M13[k];});}catch(e){}return['eurusd','gbpusd','usdjpy'];})();
+if(!BRK_KEYS.length)BRK_KEYS=['eurusd'];
+var BRK_SWINGS=3; // how many of the latest Daily swing highs AND lows must step the right way (use 2 to loosen)
+function stepSeq(a,up){if(a.length<2)return false;for(var i=1;i<a.length;i++){if(up?a[i]<=a[i-1]:a[i]>=a[i-1])return false;}return true;}
+var m15Data={};
+// number of COMPLETED candles in a data set (the last one is dropped if it is still forming)
+function doneN(d,mins){
+  var n=d.c.length,t=d.t&&d.t[n-1];if(!t)return n;
+  t=String(t);var s=Date.parse(t.length>10?t.replace(' ','T')+'Z':t+'T00:00:00Z');
+  if(isNaN(s))return n;
+  return s+mins*60000>Date.now()?n-1:n;
+}
+function ukParts(){
+  try{
+    var o={};new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short',hour:'2-digit',hour12:false}).formatToParts(new Date()).forEach(function(x){o[x.type]=x.value;});
+    return{wd:o.weekday,h:parseInt(o.hour,10)%24};
+  }catch(e){var n=new Date();return{wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][n.getUTCDay()],h:n.getUTCHours()};}
+}
+function brkTiming(){
+  var u=ukParts();
+  if(u.wd==='Sat'||u.wd==='Sun')return{ok:false,txt:'Weekend — market closed'};
+  if(u.h===22)return{ok:false,txt:'22:00–22:59 UK — rollover spread, do not trade'};
+  if(u.h>=7&&u.h<22)return{ok:true,txt:'07:00–21:59 UK — spread should be normal'};
+  return{ok:false,txt:'Outside 07:00–21:59 UK — spread may be wide'};
+}
+function brkBias(d){
+  var n=doneN(d,1440);if(n<51)return null;
+  var s=d.c.slice(n-50,n).reduce(function(a,b){return a+b;},0)/50,p=d.c[n-1];
+  return{bias:p>s?'bullish':p<s?'bearish':'neutral',sma:s,close:p};
+}
+// Newest qualifying box break: 12-candle tight box (≤2.5x ATR tall), then a big, strong-closing candle through one edge.
+function findBox(h1,n1,isL,atr){
+  var H=h1.h,L=h1.l,C=h1.c,O=h1.o||h1.c,BOX=12;
+  for(var b=n1-1;b>=Math.max(BOX,n1-32);b--){
+    var bh=-Infinity,bl=Infinity;
+    for(var j=b-BOX;j<b;j++){bh=Math.max(bh,H[j]);bl=Math.min(bl,L[j]);}
+    var ht=bh-bl;if(ht>2.5*atr||ht<=0)continue;
+    var rng=H[b]-L[b],body=Math.abs(C[b]-O[b]);
+    if(rng<1.2*atr||body<0.5*rng)continue;
+    if(isL&&C[b]>bh&&C[b]>O[b]&&C[b]>=L[b]+0.7*rng)return{b:b,hi:bh,lo:bl,ht:ht,edge:bh,far:bl};
+    if(!isL&&C[b]<bl&&C[b]<O[b]&&C[b]<=H[b]-0.7*rng)return{b:b,hi:bh,lo:bl,ht:ht,edge:bl,far:bh};
+  }
+  return null;
+}
+function evalBRK(key){
+  var d=dailyData[key],h1=h1Data[key],m=m15Data[key],day=brkTiming();
+  if(!d||!h1||!m)return null;
+  function ns(reason){return{key:key,status:'nosig',day:day,reason:reason};}
+  var bi=brkBias(d);
+  if(!bi)return ns('Not enough daily candles for the 50-day MA');
+  if(bi.bias==='neutral')return ns('Daily close is on the 50-day MA — bias unclear, skip today');
+  var isL=bi.bias==='bullish',dd=M13[key].d,pip=Math.pow(10,-(dd-1)); // FX 'pip' (0.0001 / 0.01 for JPY); 1 point on indices; 10c gold; 1c silver
+  // Daily structure: the latest swing highs and lows (completed candles only) must step the same way as the 50-MA side
+  var nd=doneN(d,1440),dsw=findSwings(d.h.slice(0,nd),d.l.slice(0,nd),2);
+  var sH=dsw.highs.slice(-BRK_SWINGS).map(function(s){return s.v;}),sL=dsw.lows.slice(-BRK_SWINGS).map(function(s){return s.v;});
+  var structOk=sH.length>=2&&sL.length>=2&&stepSeq(sH,isL)&&stepSeq(sL,isL);
+  if(!structOk)return ns('Daily close is '+(isL?'above':'below')+' the 50-day MA, but the Daily swing highs/lows are not clearly '+(isL?'rising (higher highs and higher lows)':'falling (lower highs and lower lows)')+' — the two checks disagree, skip today.');
+  function f(x){return parseFloat(x).toFixed(dd);}
+  var n1=doneN(h1,60),n15=doneN(m,15);
+  if(n1<30||n15<4)return ns('Not enough 1H / 15m candles yet');
+  var atr=calcATR(h1.h.slice(0,n1),h1.l.slice(0,n1),h1.c.slice(0,n1),14);
+  if(!atr)return ns('Could not calculate the 1H ATR');
+  var price=(liveData[key]&&liveData[key].price)||m.c[m.c.length-1];
+  var box=findBox(h1,n1,isL,atr);
+  if(!box){
+    var opp=findBox(h1,n1,!isL,atr);
+    return ns(opp?'The latest 1H box break goes '+(isL?'DOWN':'UP')+' — against the Daily bias ('+bi.bias+'). Skip.':'No fresh 1H consolidation-box break in the last ~30 hours.');
+  }
+  var H=h1.h,L=h1.l,C=h1.c,edge=box.edge;
+  // through the whole zone?
+  for(var k=box.b+1;k<n1;k++){if(isL?C[k]<box.lo:C[k]>box.hi)return ns('Price closed back through the whole zone — setup is dead.');}
+  if(isL?price<box.lo:price>box.hi)return ns('Price is through the whole zone — setup is dead.');
+  // freshness: count separate visits to the edge since the break (incl. now)
+  var fl=[];for(k=box.b+1;k<n1;k++)fl.push(isL?L[k]<=edge+0.3*atr:H[k]>=edge-0.3*atr);
+  fl.push(Math.abs(price-edge)<=0.5*atr);
+  var touches=0;for(k=0;k<fl.length;k++)if(fl[k]&&(k===0||!fl[k-1]))touches++;
+  var fresh=touches<=2;
+  // pullback to the edge, not mid-box
+  var inMid=isL?(price<box.lo+0.67*box.ht&&price<=edge):(price>box.hi-0.67*box.ht&&price>=edge);
+  var atEdge=!inMid&&(isL?price<=edge+0.5*atr:price>=edge-0.5*atr);
+  // 15m rejection: either of the last two completed 15m candles
+  var rej=null;
+  for(k=n15-1;k>=n15-2&&!rej;k--){
+    var o=m.o?m.o[k]:m.c[k-1],hh=m.h[k],ll=m.l[k],cc=m.c[k],rg=hh-ll;if(rg<=0)continue;
+    if(isL){var lw=Math.min(o,cc)-ll;if(ll<=edge+0.3*atr&&cc>edge&&cc>o&&lw>=0.3*rg)rej={i:k,c:cc};}
+    else{var uw=hh-Math.max(o,cc);if(hh>=edge-0.3*atr&&cc<edge&&cc<o&&uw>=0.3*rg)rej={i:k,c:cc};}
+  }
+  // stop just beyond the far side of the zone (+ buffer), target at 2x the stop distance
+  var buf=Math.max(3*pip,0.2*atr),stop=isL?box.far-buf:box.far+buf,dist=Math.abs(price-stop);
+  var stopX=dist/atr,stopOk=dist>0&&stopX<=3;
+  var target=isL?price+2*dist:price-2*dist;
+  var swd=findSwings(d.h,d.l,2),obst=null;
+  if(isL){var ups=swd.highs.map(function(s){return s.v;}).filter(function(v){return v>price&&v<target;});if(ups.length)obst=Math.min.apply(null,ups);}
+  else{var dns=swd.lows.map(function(s){return s.v;}).filter(function(v){return v<price&&v>target;});if(dns.length)obst=Math.max.apply(null,dns);}
+  var unit=M13[key].c==='Forex'?'pip':'point',stake=cap*0.01,pips=dist/pip,perPip=pips>0?stake/pips:0;
+  var checks=[];
+  checks.push({name:'Daily bias',ok:true,txt:'Last completed Daily close '+f(bi.close)+' is '+(isL?'above':'below')+' the 50-day MA ('+f(bi.sma)+') — '+(isL?'BUY':'SELL')+' only'});
+  checks.push({name:'Daily structure',ok:true,txt:'Last '+sH.length+' swing highs and '+sL.length+' swing lows are '+(isL?'rising (HH + HL)':'falling (LH + LL)')+' — agrees with the 50-MA side'});
+  checks.push({name:'Box break',ok:true,txt:'Strong '+(isL?'up':'down')+' break of a 12-candle 1H box ('+f(box.lo)+' – '+f(box.hi)+') — matches the Daily bias'});
+  checks.push({name:'Zone fresh',ok:fresh,txt:touches+' visit'+(touches===1?'':'s')+' to the '+(isL?'top':'bottom')+' edge since the break'+(fresh?' ✅':' — retested too many times, skip')});
+  checks.push({name:'Pullback to edge',ok:atEdge,txt:inMid?'Price is in the middle of the box — skip':atEdge?'Price '+f(price)+' is at the '+(isL?'top':'bottom')+' edge ('+f(edge)+') ✅':'Price '+f(price)+' has not pulled back to the edge ('+f(edge)+') yet'});
+  checks.push({name:'15m rejection',ok:!!rej,txt:rej?'A 15m candle rejected the edge and closed '+(isL?'up':'down')+' at '+f(rej.c)+' ✅':'Waiting for a 15m candle to reject the edge and close '+(isL?'up':'down')+' (last 2 closed candles checked)'});
+  checks.push({name:'Stop size',ok:stopOk,txt:'Stop '+f(stop)+' = '+pips.toFixed(1)+' '+unit+'s ('+stopX.toFixed(1)+'x 1H ATR)'+(stopOk?'':' — too wide (max 3x), skip')});
+  checks.push({name:'Spread window',ok:day.ok,txt:day.txt});
+  var allOk=checks.every(function(c){return c.ok;}),ff=checks.filter(function(c){return !c.ok;})[0];
+  return{key:key,status:allOk?'ready':'watch',isL:isL,checks:checks,entry:price,stop:stop,target:target,pips:pips,perPip:perPip,unit:unit,stake:stake,obst:obst,waiting:ff?ff.name:null,day:day};
+}
+function mkBrkCard(r){
+  var m=M13[r.key];if(!m)return'';
+  var pill=r.status==='ready'?'✅ RETEST ENTRY · '+(r.isL?'BUY':'SELL'):r.status==='watch'?'👀 SETUP FORMING':'⚪ NO SETUP';
+  var sub=r.status==='nosig'?'Daily 50-MA bias → 1H box break → 15m rejection':(r.isL?'BUY':'SELL')+' · retest of the broken box edge';
+  var dayColor=r.day.ok?'var(--g)':'var(--r)',body='';
+  if(r.status==='nosig'){body='<div style="margin-top:8px;font-size:11px;color:var(--dim)">'+r.reason+'</div>';}
+  else{
+    body='<div class="chklist" style="margin-top:8px">'+r.checks.map(function(c){return'<div class="chk '+(c.ok?'ok':'fail')+'"><div class="chk-lbl">'+c.name+'</div><div class="chk-val" style="color:'+(c.ok?'var(--g)':'var(--r)')+'">'+(c.ok?'✅':'❌')+'</div><div class="chk-txt">'+c.txt+'</div></div>';}).join('')+'</div>';
+    if(r.status==='ready'){
+      body+='<div class="conf" style="margin-top:8px"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET (2R)</div><div class="conf-val" style="color:var(--g)">'+r.target.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">RISK</div><div class="conf-val" style="color:var(--a)">£'+r.stake.toFixed(2)+'</div></div></div>'+
+        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">Stop '+r.pips.toFixed(1)+' '+r.unit+'s · about £'+r.perPip.toFixed(3)+' per '+r.unit+' for 1% risk (approx., check Trade Nation\'s minimum stake) · max 2 trades open</div>'+
+        (r.obst!=null?'<div style="margin-top:6px;font-size:11px;color:var(--a)">⚠ A Daily swing level at '+r.obst.toFixed(m.d)+' sits before the 2R target — consider taking profit there.</div>':'')+
+        '<div style="margin-top:6px;font-size:11px;color:var(--a)">Journal it as "Breakout Retest" · Skip if you see a red-folder news release in the next hour</div>'+mkConfluenceBox(r.key);
+    }else if(r.waiting){body+='<div style="margin-top:8px;font-size:11px;color:var(--a)">Waiting for: '+r.waiting+'</div>';}
+  }
+  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">'+(r.status==='ready'?'<span class="dirtag '+(r.isL?'long':'short')+'">'+(r.isL?'BUY':'SELL')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+sub+'</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span><span style="font-size:10px;color:'+dayColor+'">'+r.day.txt+'</span></div>'+body+'</div>';
+}
+function renderBRK(){
+  var el=document.getElementById('brkCards');if(!el)return;
+  var r=0,w=0,n=0;
+  el.innerHTML=BRK_KEYS.map(function(k){
+    var missing=!dailyData[k]||!h1Data[k]||!m15Data[k];
+    if(liveErr[k]&&missing)return errCard(k,liveErr[k]);
+    if(missing)return loadCard(k,'Loading Daily + 1H + 15m...');
+    var res=evalBRK(k);if(!res)return loadCard(k);
+    if(res.status==='ready')r++;else if(res.status==='watch')w++;else n++;
+    return mkBrkCard(res);
+  }).join('');
+  renderBrkPick();
+  var sm=document.getElementById('brkSum');if(sm)sm.innerHTML=mkSum(r,w,n);
+}
+// Loads only what is missing (Daily / 1H may already be there from the W/D/1H tab). Max 9 credits.
+function loadBRK(full){
+  var need1=BRK_KEYS.filter(function(k){return full||!dailyData[k];}),need2=BRK_KEYS.filter(function(k){return full||!h1Data[k];});
+  renderBRK();
+  if(need1.length)loadMarkets(need1,dailyData,'1day',renderBRK,'brkSt');
+  if(need2.length)loadMarkets(need2,h1Data,'1h',renderBRK,'brkSt');
+  loadMarkets(BRK_KEYS,m15Data,'15min',renderBRK,'brkSt');
+}
+function renderBrkPick(){
+  var el=document.getElementById('brkPick');if(!el)return;
+  el.innerHTML=Object.keys(M13).map(function(k){
+    var on=BRK_KEYS.indexOf(k)>=0;
+    return'<button onclick="toggleBrkKey(\''+k+'\')" style="cursor:pointer;margin:0 6px 6px 0;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:600;border:1px solid '+(on?'var(--g)':'var(--bdr)')+';background:'+(on?'rgba(0,217,126,0.12)':'transparent')+';color:'+(on?'var(--g)':'var(--dim)')+'">'+(on?'✓ ':'')+M13[k].n+'</button>';
+  }).join('');
+  var c=document.getElementById('brkCost');
+  if(c){var n=BRK_KEYS.length;c.textContent=n+' market'+(n===1?'':'s')+' selected · first load ≤ '+n*3+' credits · about '+n*5+' credits per hour while this tab is open in the 07:00–21:59 window';c.style.color=n*5*10>700?'var(--r)':n>6?'var(--a)':'var(--dim)';}
+}
+function toggleBrkKey(k){
+  var i=BRK_KEYS.indexOf(k);
+  if(i>=0){if(BRK_KEYS.length===1)return;BRK_KEYS.splice(i,1);}
+  else{BRK_KEYS.push(k);
+    if(!dailyData[k])loadMarkets([k],dailyData,'1day',renderBRK,'brkSt');
+    if(!h1Data[k])loadMarkets([k],h1Data,'1h',renderBRK,'brkSt');
+    if(!m15Data[k])loadMarkets([k],m15Data,'15min',renderBRK,'brkSt');}
+  try{localStorage.setItem('brkKeys',JSON.stringify(BRK_KEYS));}catch(e){}
+  renderBRK();
+}
+function brkActive(){var p=document.getElementById('p-brk');return p&&p.classList.contains('on')&&!document.hidden;}
+// While the tab is open: 15m every 15 min, 1H hourly, Daily every 6h (about 12-15 credits an hour, 3 markets only).
+setInterval(function(){if(brkActive()&&brkTiming().ok)loadMarkets(BRK_KEYS,m15Data,'15min',renderBRK,'brkSt');},15*60000);
+setInterval(function(){if(brkActive())loadMarkets(BRK_KEYS,h1Data,'1h',renderBRK,'brkSt');},3600000);
+setInterval(function(){if(brkActive())loadMarkets(BRK_KEYS,dailyData,'1day',renderBRK,'brkSt');},6*3600000);
 
 // ── START ─────────────────────────────────────────────────────────
 // Single fetch of all 13 markets on load — every tab renders from it, no duplicate calls.
 loadS1();
 loadConfluenceNews();
-updateMTFBtn();
 
 </script>
 </body>
