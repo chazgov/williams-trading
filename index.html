@@ -359,8 +359,32 @@ credits=parseInt(localStorage.getItem('tc_'+new Date().toDateString())||'0');
 document.getElementById('crdN').textContent=credits;
 
 // FETCH - single simple function
+// Twelve Data's free plan allows 8 requests per MINUTE (800 per day). Every request goes through this queue,
+// one every 8 seconds (7.5 a minute), so the minute limit is never hit. Identical requests already waiting are merged.
+var fq=[],fqBusy=false,fqLast=0,FQ_GAP=8000;
 function fetchC(key,interval,cb){
-  addCredit();
+  for(var i=0;i<fq.length;i++){if(fq[i].key===key&&fq[i].interval===interval){fq[i].cbs.push(cb);return;}}
+  fq.push({key:key,interval:interval,cbs:[cb],tries:0});
+  fqPump();
+}
+function fqPump(){
+  if(fqBusy||!fq.length)return;
+  fqBusy=true;
+  var wait=Math.max(0,fqLast+FQ_GAP-Date.now());
+  setTimeout(function(){
+    var j=fq.shift();fqLast=Date.now();
+    doFetch(j.key,j.interval,function(err,data){
+      if(err&&j.tries<2&&/run out|credits|minute|limit/i.test(String(err))){
+        // hit the per-minute limit anyway: wait 30s and try again, still one request at a time
+        j.tries++;fq.unshift(j);fqLast=Date.now()+30000-FQ_GAP;fqBusy=false;fqPump();return;
+      }
+      if(!err)addCredit(); // only successful requests use credits
+      j.cbs.forEach(function(c){try{c(err,data);}catch(e){}});
+      fqBusy=false;fqPump();
+    });
+  },wait);
+}
+function doFetch(key,interval,cb){
   var xhr=new XMLHttpRequest();
   var url='/api/get-price?key='+encodeURIComponent(key)+'&interval='+encodeURIComponent(interval);
   xhr.open('GET',url,true);
@@ -1143,8 +1167,8 @@ setInterval(function(){if(vwActive()){var ks=vwOpenKeys();if(ks.length)loadMarke
 
 // ── START ─────────────────────────────────────────────────────────
 // Single fetch of all 13 markets on load — every tab renders from it, no duplicate calls.
-loadS1();
-loadVW(); // VWAP tab is the opening tab
+loadVW(); // VWAP tab is the opening tab — its requests go first
+setTimeout(loadS1,5000); // the other 13 markets queue behind it
 loadConfluenceNews();
 
 </script>
