@@ -18,8 +18,8 @@ exports.handler = async (event) => {
 
   // Daily needs more history than 30 candles — the Engulf Sniper tab's 50-day EMA
   // needs at least 55 just to compute, and more than that to be a stable reading.
-  const n = interval==="1day" ? 100 : 60;
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${interval}&outputsize=${n}&apikey=${KEY}`;
+  const n = interval==="1day" ? 100 : interval==="15min" ? 200 : 60;
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${interval}&outputsize=${n}&timezone=UTC&apikey=${KEY}`;
 
   try {
     const r = await fetch(url);
@@ -42,7 +42,8 @@ exports.handler = async (event) => {
         l: rev.map(v=>parseFloat(v.low)),
         c: rev.map(v=>parseFloat(v.close)),
         v: rev.map(v=>parseFloat(v.volume||0)),
-        t: rev.map(v=>v.datetime)
+        t: rev.map(v=>v.datetime),
+        tz: "UTC"
       },
       interval, candles:d.values.length, symbol:sym
     })};
