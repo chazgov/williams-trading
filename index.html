@@ -117,7 +117,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div class="navwrap">
   <div class="nav">
-    <button class="ntab on"  onclick="showTab('smc',this)">🧠 SMART MONEY</button>
+    <button class="ntab on"  onclick="showTab('vw',this)">〰️ VWAP PULLBACK</button>
+    <button class="ntab"     onclick="showTab('smc',this)">🧠 SMART MONEY</button>
     <button class="ntab"     onclick="showTab('brk',this)">📦 BREAKOUT RETEST</button>
     <button class="ntab"     onclick="showTab('s1',this)">📈 4H PULLBACK</button>
     <button class="ntab"     onclick="showTab('news',this)">📰 MARKET NEWS</button>
@@ -130,7 +131,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- SMART MONEY -->
-<div id="p-smc" class="panel on">
+<div id="p-smc" class="panel">
   <div class="bn g"><b>🧠 Smart Money — 3 Phase System</b><br>
   Phase 1: Consolidation (ADX&lt;20, tight range, FMV=midpoint) · Phase 2: Expansion (breakout) · Phase 3: Trend (enter here)<br>
   Enter when 4H trend confirmed + price pulls back below FMV + touches 20 or 50 EMA<br>
@@ -234,7 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <select class="ni" id="jMkt"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CAD</option><option>AUD/USD</option><option>US Tech 100</option><option>US 500</option><option>UK 100</option><option>Germany 40</option><option>Gold</option><option>Silver</option></select>
     </div>
     <div class="frow"><label>Strategy</label>
-      <select class="ni" id="jStrat"><option>Smart Money</option><option>4H Pullback</option><option>Breakout Retest</option></select>
+      <select class="ni" id="jStrat"><option>Smart Money</option><option>4H Pullback</option><option>Breakout Retest</option><option>VWAP Pullback</option></select>
     </div>
     <div class="frow"><label>Direction</label>
       <select class="ni" id="jDir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -296,6 +297,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="disc">Test on ~50 past trades and 2–3 months of demo before using real money. A method, not a guarantee — not financial advice. Max 2 trades open at once.</div>
 </div>
 
+<div id="p-vw" class="panel on">
+  <div class="bn b"><b>〰️ VWAP Pullback — day trading with 15m entries</b><br>
+  <b>VWAP</b> = the average price paid so far today. It restarts at each market's cash open (DAX 09:00 German time, UK 100 08:00 UK, US indices 09:30 New York). Institutions use it as a fair-price line, so price often pauses and bounces there in a trend.<br>
+  <b>1 · Trend:</b> price on one side of VWAP for most of the last 8 closes <u>and</u> VWAP sloping the same way. Choppy across VWAP = no trade.<br>
+  <b>2 · Higher timeframe:</b> the 1H 20 EMA must agree with the direction.<br>
+  <b>2b · Value area:</b> yesterday's fair value (POC and value area, built from time spent at each price). Buys need price above yesterday's POC, sells below. If the market opened inside yesterday's value, expect a range day and take profit early. Levels in your way before the target are flagged.<br>
+  <b>3 · Pullback:</b> price comes back and tags VWAP within the last 3 candles without closing through it.<br>
+  <b>4 · Entry (15m):</b> a candle rejects VWAP with a wick and closes back in the trend direction.<br>
+  <b>5 · Stop:</b> beyond the rejection candle (0.8x–2.5x the 15m ATR) · <b>Target:</b> 2x the stop · risk 1% of capital.<br>
+  <b>Skip:</b> the first hour after the open, the last hour before the close, chop, a stop wider than 2.5x ATR. Close the trade before the session ends — this is a day-trading method, nothing held overnight.<br>
+  <b>Data note:</b> index feeds often have no volume, so VWAP may be an equal-weighted average price — the card tells you which. Needs the updated get-price.js. Loads on first visit (2 credits per market).</div>
+  <div class="stbar"><div id="vwSt"><span class="pulse"></span>Not loaded yet</div><div style="display:flex;gap:6px"><button class="rbtn" onclick="loadVW(true)">↻ Refresh</button></div></div>
+  <div id="vwPick" style="margin-bottom:4px"></div>
+  <div id="vwCost" style="font-size:10px;margin-bottom:10px"></div>
+  <div id="vwSum" class="sumstrip"></div>
+  <div id="vwCards"></div>
+  <div class="disc">Untested on real trades — journal every signal, test on demo first. Not financial advice.</div>
+</div>
+
 <script>
 var cap=500,credits=0;
 var liveData={},liveH4={},liveErr={},dailyData={},h1Data={};
@@ -324,7 +344,8 @@ function showTab(id,btn){
   document.querySelectorAll('.ntab').forEach(function(b){b.classList.remove('on');});
   document.getElementById('p-'+id).classList.add('on');
   btn.classList.add('on');
-  if(id==='brk'&&Object.keys(m15Data).length===0)loadBRK();
+  if(id==='brk'&&brkMissing())loadBRK();
+  if(id==='vw'&&vwMissing())loadVW();
 }
 
 // CREDITS
@@ -685,6 +706,7 @@ function refreshAllCards(){
   if(typeof renderSMC==='function')renderSMC();
   if(typeof renderS1==='function')renderS1();
   if(typeof renderBRK==='function')renderBRK();
+  if(typeof renderVW==='function')renderVW();
   if(typeof renderNewsSummary==='function')renderNewsSummary();
 }
 function loadConfluenceNews(){
@@ -925,8 +947,10 @@ function loadBRK(full){
   renderBRK();
   if(need1.length)loadMarkets(need1,dailyData,'1day',renderBRK,'brkSt');
   if(need2.length)loadMarkets(need2,h1Data,'1h',renderBRK,'brkSt');
-  loadMarkets(BRK_KEYS,m15Data,'15min',renderBRK,'brkSt');
+  var need3=BRK_KEYS.filter(function(k){return full||!m15Data[k];});
+  if(need3.length)loadMarkets(need3,m15Data,'15min',renderBRK,'brkSt');
 }
+function brkMissing(){return BRK_KEYS.some(function(k){return !dailyData[k]||!h1Data[k]||!m15Data[k];});}
 function renderBrkPick(){
   var el=document.getElementById('brkPick');if(!el)return;
   el.innerHTML=Object.keys(M13).map(function(k){
@@ -952,9 +976,175 @@ setInterval(function(){if(brkActive()&&brkTiming().ok)loadMarkets(BRK_KEYS,m15Da
 setInterval(function(){if(brkActive())loadMarkets(BRK_KEYS,h1Data,'1h',renderBRK,'brkSt');},3600000);
 setInterval(function(){if(brkActive())loadMarkets(BRK_KEYS,dailyData,'1day',renderBRK,'brkSt');},6*3600000);
 
+// ── VWAP PULLBACK (session VWAP + 1H trend + 15m rejection) ──
+// VWAP is anchored at each market's cash open and uses completed 15m candles only.
+// If the price feed has no volume (common for indices), it falls back to an equal-weighted average price and says so on the card.
+var VW_KEYS=(function(){try{var a=JSON.parse(localStorage.getItem('vwKeys')||'null');if(a&&a.length)return a.filter(function(k){return M13[k];});}catch(e){}return['ger40','us100'];})();
+if(!VW_KEYS.length)VW_KEYS=['ger40'];
+// o/c = session open and close in minutes after midnight, in the exchange's own time zone (so daylight-saving changes are handled).
+var SESS={ger40:{tz:'Europe/Berlin',o:540,c:1050},uk100:{tz:'Europe/London',o:480,c:990},us100:{tz:'America/New_York',o:570,c:960},us500:{tz:'America/New_York',o:570,c:960},gold:{tz:'Europe/London',o:480,c:1260},silver:{tz:'Europe/London',o:480,c:1260},eurusd:{tz:'Europe/London',o:420,c:1260},gbpusd:{tz:'Europe/London',o:420,c:1260},usdjpy:{tz:'Europe/London',o:420,c:1260},usdcad:{tz:'Europe/London',o:420,c:1260},audusd:{tz:'Europe/London',o:420,c:1260},usdchf:{tz:'Europe/London',o:420,c:1260},nzdusd:{tz:'Europe/London',o:420,c:1260}};
+var _tzf={};
+function tzParts(ms,tz){
+  var f=_tzf[tz]||(_tzf[tz]=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})),o={};
+  f.formatToParts(new Date(ms)).forEach(function(x){o[x.type]=x.value;});
+  return{date:o.year+'-'+o.month+'-'+o.day,min:(parseInt(o.hour,10)%24)*60+parseInt(o.minute,10)};
+}
+function tsMs(t){t=String(t);return Date.parse(t.length>10?t.replace(' ','T')+'Z':t+'T00:00:00Z');}
+// Time-at-price profile of one session (no volume needed): each 15m candle adds 1 to every price bin it covered.
+// POC = busiest bin. Value area = the busiest bins around it that hold 70% of the activity.
+function profileOf(m,idx,bin){
+  var lo=Infinity,hi=-Infinity,i,x;
+  for(i=0;i<idx.length;i++){lo=Math.min(lo,m.l[idx[i]]);hi=Math.max(hi,m.h[idx[i]]);}
+  var nb=Math.ceil((hi-lo)/bin)+1,cnt=[],tot=0;
+  for(x=0;x<nb;x++)cnt.push(0);
+  for(i=0;i<idx.length;i++){var a=Math.floor((m.l[idx[i]]-lo)/bin),b=Math.floor((m.h[idx[i]]-lo)/bin);for(x=a;x<=b;x++){cnt[x]++;tot++;}}
+  var poc=0,mid=(nb-1)/2;
+  for(x=1;x<nb;x++){if(cnt[x]>cnt[poc]||(cnt[x]===cnt[poc]&&Math.abs(x-mid)<Math.abs(poc-mid)))poc=x;}
+  var L=poc,H=poc,acc=cnt[poc];
+  while(acc<0.7*tot){var up=H+1<nb?cnt[H+1]:-1,dn=L-1>=0?cnt[L-1]:-1;if(up<0&&dn<0)break;if(up>=dn){H++;acc+=up;}else{L--;acc+=dn;}}
+  return{poc:lo+(poc+0.5)*bin,vah:lo+(H+1)*bin,val:lo+L*bin,hi:hi,lo:lo};
+}
+function evalVW(key){
+  var m=m15Data[key],h1=h1Data[key],S=SESS[key],M=M13[key];
+  if(!m||!h1||!S||!M)return null;
+  function ns(reason){return{key:key,status:'nosig',reason:reason};}
+  if(m.tz!=='UTC'||h1.tz!=='UTC')return ns('Deploy the updated get-price.js (it adds UTC timestamps, needed to find the session open), then press Refresh.');
+  var n=doneN(m,15),n1=doneN(h1,60);
+  if(n<20||n1<50)return ns('Not enough 15m / 1H candles yet');
+  var nowP=tzParts(Date.now(),S.tz),lp=tzParts(tsMs(m.t[n-1]),S.tz);
+  if(lp.date!==nowP.date)return ns('Market not open yet today (latest data is from '+lp.date+') — VWAP starts at the cash open.');
+  var s=-1,i,j;
+  for(i=n-1;i>=0;i--){var p=tzParts(tsMs(m.t[i]),S.tz);if(p.date!==nowP.date||p.min<S.o)break;s=i;}
+  if(s<0)return ns('Waiting for the cash open.');
+  var k=n-s;
+  if(k<4)return ns('Waiting: VWAP needs about 60 minutes of trading after the open ('+k+' of 4 candles so far).');
+  var useVol=false;for(i=s;i<n;i++){if(m.v&&m.v[i]>0){useVol=true;break;}}
+  var cw=0,cp=0,cp2=0,vw=[],sd=[];
+  for(i=s;i<n;i++){var tp=(m.h[i]+m.l[i]+m.c[i])/3,w=useVol?(m.v[i]||0):1;cw+=w;cp+=w*tp;cp2+=w*tp*tp;var v=cw>0?cp/cw:tp;vw.push(v);sd.push(Math.sqrt(Math.max(cp2/cw-v*v,0)));}
+  var V=vw[k-1],SD=sd[k-1],atr=calcATR(m.h.slice(0,n),m.l.slice(0,n),m.c.slice(0,n),14);
+  if(!atr)return ns('Could not calculate the 15m ATR');
+  var dd=M.d;function f(x){return parseFloat(x).toFixed(dd);}
+  var price=(liveData[key]&&liveData[key].price)||m.c[n-1];
+  // Yesterday's (previous session's) value area, from the 15m candles already loaded
+  var prior=null,openPos=null;
+  (function(){
+    var byDate={},q,pp;
+    for(q=0;q<s;q++){pp=tzParts(tsMs(m.t[q]),S.tz);if(pp.date===nowP.date||pp.min<S.o||pp.min>=S.c)continue;(byDate[pp.date]=byDate[pp.date]||[]).push(q);}
+    var ds=Object.keys(byDate).sort();if(!ds.length)return;
+    var idx=byDate[ds[ds.length-1]];if(idx.length<8)return;
+    prior=profileOf(m,idx,atr*0.25);prior.date=ds[ds.length-1];
+    var op=m.o?m.o[s]:m.c[s>0?s-1:s];
+    openPos=op>prior.vah?'above':op<prior.val?'below':'inside';
+  })();
+  // direction: price on one side of VWAP for most of the last 8 candles AND VWAP sloping that way
+  var wn=Math.min(8,k),up=0;for(i=0;i<wn;i++){if(m.c[n-1-i]>vw[k-1-i])up++;}
+  var slope=V-vw[Math.max(0,k-5)],thr=0.1*atr,isL;
+  if(up/wn>=0.75&&slope>thr)isL=true;else if(up/wn<=0.25&&slope<-thr)isL=false;
+  else return ns('No clear VWAP trend — price is chopping across VWAP ('+up+' of the last '+wn+' closes above it) or VWAP is flat. Nothing to do.');
+  var cn=Math.min(12,k),crosses=0;
+  for(i=1;i<cn;i++){var a=m.c[n-i]-vw[k-i],b=m.c[n-i-1]-vw[k-i-1];if((a>0)!==(b>0))crosses++;}
+  var e20=ema(h1.c.slice(0,n1),20),e50=ema(h1.c.slice(0,n1),50),trend1=isL?e20>e50:e20<e50;
+  // pullback: one of the last 3 completed candles reached VWAP, and price has not lost it
+  var touched=false;
+  for(j=n-1;j>=n-3;j--){var vj=vw[j-s];if(isL?m.l[j]<=vj+0.3*atr:m.h[j]>=vj+(-0.3*atr))touched=true;}
+  var lost=isL?price<V-0.5*atr:price>V+0.5*atr;
+  // 15m rejection candle at VWAP (last 2 completed candles)
+  var rej=null;
+  for(j=n-1;j>=n-2&&!rej;j--){
+    var o=m.o?m.o[j]:m.c[j-1],hh=m.h[j],ll=m.l[j],cc=m.c[j],rg=hh-ll,vj2=vw[j-s];if(rg<=0)continue;
+    if(isL){if(ll<=vj2+0.3*atr&&cc>vj2&&cc>o&&Math.min(o,cc)-ll>=0.3*rg)rej={i:j,c:cc,ext:ll};}
+    else{if(hh>=vj2-0.3*atr&&cc<vj2&&cc<o&&hh-Math.max(o,cc)>=0.3*rg)rej={i:j,c:cc,ext:hh};}
+  }
+  var base=rej?rej.ext:(isL?Math.min(m.l[n-1],m.l[n-2]):Math.max(m.h[n-1],m.h[n-2]));
+  var stop=isL?base-0.15*atr:base+0.15*atr,dist=Math.abs(price-stop),widened=false;
+  if(dist<0.8*atr){stop=isL?price-0.8*atr:price+0.8*atr;dist=0.8*atr;widened=true;}
+  var stopX=dist/atr,stopOk=stopX<=2.5,target=isL?price+2*dist:price-2*dist;
+  var obst=null;
+  if(prior){var lvs=[prior.poc,prior.vah,prior.val,prior.hi,prior.lo].filter(function(x){return isL?(x>price&&x<target):(x<price&&x>target);});if(lvs.length)obst=isL?Math.min.apply(null,lvs):Math.max.apply(null,lvs);}
+  var stake=cap*0.01,perPt=dist>0?stake/dist:0;
+  var timeOk=nowP.min>=S.o+60&&nowP.min<S.c-60;
+  var checks=[];
+  checks.push({name:'VWAP trend',ok:true,txt:(isL?'Price above':'Price below')+' VWAP for '+(isL?up:wn-up)+' of the last '+wn+' closes, VWAP '+(isL?'rising':'falling')+' · VWAP '+f(V)+(useVol?' (volume-weighted)':' (equal-weighted, no volume in feed)')});
+  checks.push({name:'Not choppy',ok:crosses<4,txt:crosses+' VWAP cross'+(crosses===1?'':'es')+' in the last '+cn+' candles'+(crosses<4?' ✅':' — too choppy, skip')});
+  checks.push({name:'1H trend agrees',ok:trend1,txt:'1H 20 EMA '+(trend1?(isL?'above':'below')+' the 50 EMA ✅':(isL?'not above':'not below')+' the 50 EMA — 1H disagrees')});
+  var valOk=true,valTxt='Yesterday\'s value area not available yet (needs the previous session in the 15m data)';
+  if(prior){
+    valOk=isL?price>=prior.poc:price<=prior.poc;
+    valTxt='Price '+f(price)+' is '+(valOk?(isL?'above':'below')+' yesterday\'s fair value (POC '+f(prior.poc)+') ✅':(isL?'below':'above')+' yesterday\'s POC '+f(prior.poc)+' — fighting fair value')+' · opened '+openPos+' yesterday\'s value'+(openPos==='inside'?' (range-day risk — take profit early)':'');
+  }
+  checks.push({name:'Value area',ok:valOk,txt:valTxt});
+  checks.push({name:'Pullback to VWAP',ok:touched&&!lost,txt:lost?'Price has moved through VWAP — trend may be over':touched?'Price tagged VWAP in the last 3 candles ✅':'Price has not pulled back to VWAP ('+f(Math.abs(price-V))+' away)'});
+  checks.push({name:'15m rejection',ok:!!rej,txt:rej?'A 15m candle rejected VWAP and closed '+(isL?'up':'down')+' at '+f(rej.c)+' ✅':'Waiting for a 15m candle to reject VWAP with a wick and close '+(isL?'up':'down')+' (last 2 closed candles checked)'});
+  checks.push({name:'Stop size',ok:stopOk,txt:'Stop '+f(stop)+' = '+(dist).toFixed(dd>2?dd:1)+' points = '+stopX.toFixed(1)+'x 15m ATR'+(widened?' (widened to the 0.8x ATR minimum)':'')+(stopOk?'':' — too wide (max 2.5x), skip')});
+  checks.push({name:'Time of session',ok:timeOk,txt:nowP.min<S.o+60?'First hour after the open — wait for VWAP to settle':nowP.min>=S.c-60?'Last hour before the close — no new entries':'Inside the trading window ✅'});
+  var allOk=checks.every(function(c){return c.ok;}),ff=checks.filter(function(c){return !c.ok;})[0];
+  return{key:key,status:allOk?'ready':'watch',isL:isL,checks:checks,entry:price,stop:stop,target:target,perPt:perPt,stake:stake,waiting:ff?ff.name:null,V:V,SD:SD,band:isL?V+2*SD:V-2*SD,lv:prior,openPos:openPos,obst:obst,useVol:useVol,dist:dist};
+}
+function mkVWCard(r){
+  var m=M13[r.key];if(!m)return'';
+  var pill=r.status==='ready'?'✅ VWAP PULLBACK · '+(r.isL?'BUY':'SELL'):r.status==='watch'?'👀 TREND · WAITING':'⚪ NO TREND';
+  var sub=r.status==='nosig'?'Session VWAP · 1H trend · 15m rejection':(r.isL?'BUY':'SELL')+' · pullback to session VWAP';
+  var body='';
+  if(r.status==='nosig'){body='<div style="margin-top:8px;font-size:11px;color:var(--dim)">'+r.reason+'</div>';}
+  else{
+    body='<div class="chklist" style="margin-top:8px">'+r.checks.map(function(c){return'<div class="chk '+(c.ok?'ok':'fail')+'"><div class="chk-lbl">'+c.name+'</div><div class="chk-val" style="color:'+(c.ok?'var(--g)':'var(--r)')+'">'+(c.ok?'✅':'❌')+'</div><div class="chk-txt">'+c.txt+'</div></div>';}).join('')+'</div>';
+    if(r.status==='ready'){
+      body+='<div class="conf" style="margin-top:8px"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET (2R)</div><div class="conf-val" style="color:var(--g)">'+r.target.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">RISK</div><div class="conf-val" style="color:var(--a)">£'+r.stake.toFixed(2)+'</div></div></div>'+
+        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">About £'+r.perPt.toFixed(2)+' per point for 1% risk (check Trade Nation\'s minimum stake) · VWAP '+r.V.toFixed(m.d)+' · '+(r.isL?'upper':'lower')+' 2σ band '+r.band.toFixed(m.d)+' · max 2 trades open</div>'+
+        '<div style="margin-top:6px;font-size:11px;color:var(--a)">Day-trade: close before the session ends · move the stop to breakeven at 1R · exit if price closes through VWAP against you · Journal it as "VWAP Pullback"</div>'+mkConfluenceBox(r.key);
+    }else if(r.waiting){body+='<div style="margin-top:8px;font-size:11px;color:var(--a)">Waiting for: '+r.waiting+'</div>';}
+  }
+  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">'+(r.status==='ready'?'<span class="dirtag '+(r.isL?'long':'short')+'">'+(r.isL?'BUY':'SELL')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+sub+'</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span></div>'+body+(r.lv?'<div style="margin-top:6px;font-size:10px;color:var(--dim)">Yesterday ('+r.lv.date+'): POC '+r.lv.poc.toFixed(m.d)+' · value '+r.lv.val.toFixed(m.d)+' – '+r.lv.vah.toFixed(m.d)+' · high '+r.lv.hi.toFixed(m.d)+' · low '+r.lv.lo.toFixed(m.d)+'</div>':'')+(r.obst!=null?'<div style="margin-top:6px;font-size:11px;color:var(--a)">⚠ Yesterday\'s level at '+r.obst.toFixed(m.d)+' sits before the 2R target — consider taking profit there.</div>':'')+'</div>';
+}
+function renderVW(){
+  var el=document.getElementById('vwCards');if(!el)return;
+  var r=0,w=0,n=0;
+  el.innerHTML=VW_KEYS.map(function(k){
+    var missing=!m15Data[k]||!h1Data[k];
+    if(liveErr[k]&&missing)return errCard(k,liveErr[k]);
+    if(missing)return loadCard(k,'Loading 15m + 1H...');
+    var res=evalVW(k);if(!res)return loadCard(k);
+    if(res.status==='ready')r++;else if(res.status==='watch')w++;else n++;
+    return mkVWCard(res);
+  }).join('');
+  var sm=document.getElementById('vwSum');if(sm)sm.innerHTML=mkSum(r,w,n);
+  renderVwPick();
+}
+function renderVwPick(){
+  var el=document.getElementById('vwPick');if(!el)return;
+  el.innerHTML=Object.keys(M13).map(function(k){
+    var on=VW_KEYS.indexOf(k)>=0;
+    return'<button onclick="toggleVwKey(\''+k+'\')" style="cursor:pointer;margin:0 6px 6px 0;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:600;border:1px solid '+(on?'var(--g)':'var(--bdr)')+';background:'+(on?'rgba(0,217,126,0.12)':'transparent')+';color:'+(on?'var(--g)':'var(--dim)')+'">'+(on?'✓ ':'')+M13[k].n+'</button>';
+  }).join('');
+  var c=document.getElementById('vwCost');
+  if(c){var n=VW_KEYS.length;c.textContent=n+' market'+(n===1?'':'s')+' selected · first load ≤ '+n*2+' credits · about '+n*5+' credits per hour while this tab is open during the session';c.style.color=n>6?'var(--a)':'var(--dim)';}
+}
+function toggleVwKey(k){
+  var i=VW_KEYS.indexOf(k);
+  if(i>=0){if(VW_KEYS.length===1)return;VW_KEYS.splice(i,1);}
+  else{VW_KEYS.push(k);
+    if(!h1Data[k])loadMarkets([k],h1Data,'1h',renderVW,'vwSt');
+    if(!m15Data[k])loadMarkets([k],m15Data,'15min',renderVW,'vwSt');}
+  try{localStorage.setItem('vwKeys',JSON.stringify(VW_KEYS));}catch(e){}
+  renderVW();
+}
+function vwMissing(){return VW_KEYS.some(function(k){return !m15Data[k]||!h1Data[k];});}
+function loadVW(full){
+  var n1=VW_KEYS.filter(function(k){return full||!h1Data[k];}),n2=VW_KEYS.filter(function(k){return full||!m15Data[k];});
+  renderVW();
+  if(n1.length)loadMarkets(n1,h1Data,'1h',renderVW,'vwSt');
+  if(n2.length)loadMarkets(n2,m15Data,'15min',renderVW,'vwSt');
+}
+function vwActive(){var p=document.getElementById('p-vw');return p&&p.classList.contains('on')&&!document.hidden;}
+// While the tab is open: 15m every 15 min, 1H hourly (only for markets whose session is running).
+function vwOpenKeys(){return VW_KEYS.filter(function(k){var S=SESS[k],p=tzParts(Date.now(),S.tz),d=new Date().getUTCDay();return d>0&&d<6&&p.min>=S.o&&p.min<S.c;});}
+setInterval(function(){if(vwActive()){var ks=vwOpenKeys();if(ks.length)loadMarkets(ks,m15Data,'15min',renderVW,'vwSt');}},15*60000);
+setInterval(function(){if(vwActive()){var ks=vwOpenKeys();if(ks.length)loadMarkets(ks,h1Data,'1h',renderVW,'vwSt');}},3600000);
+
 // ── START ─────────────────────────────────────────────────────────
 // Single fetch of all 13 markets on load — every tab renders from it, no duplicate calls.
 loadS1();
+loadVW(); // VWAP tab is the opening tab
 loadConfluenceNews();
 
 </script>
