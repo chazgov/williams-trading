@@ -18,7 +18,7 @@ exports.handler = async (event) => {
 
   // Daily needs more history than 30 candles — the Engulf Sniper tab's 50-day EMA
   // needs at least 55 just to compute, and more than that to be a stable reading.
-  const n = interval==="1day" ? 100 : interval==="15min" ? 200 : 60;
+  const n = interval==="1day" ? 250 : interval==="1h" ? 260 : interval==="15min" ? 200 : 60;
   const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${interval}&outputsize=${n}&timezone=UTC&apikey=${KEY}`;
 
   try {
