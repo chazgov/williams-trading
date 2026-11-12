@@ -117,8 +117,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div class="navwrap">
   <div class="nav">
-    <button class="ntab on"  onclick="showTab('ma',this)">📊 MA TREND</button>
-    <button class="ntab"     onclick="showTab('orb',this)">🌅 ORB</button>
+    <button class="ntab on"  onclick="showTab('ms',this)">🧭 STRUCTURE</button>
     <button class="ntab"     onclick="showTab('smc',this)">🧠 SMART MONEY</button>
     <button class="ntab"     onclick="showTab('s1',this)">📈 4H PULLBACK</button>
     <button class="ntab"     onclick="showTab('news',this)">📰 MARKET NEWS</button>
@@ -235,7 +234,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <select class="ni" id="jMkt"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CAD</option><option>AUD/USD</option><option>US Tech 100</option><option>US 500</option><option>UK 100</option><option>Germany 40</option><option>Gold</option><option>Silver</option></select>
     </div>
     <div class="frow"><label>Strategy</label>
-      <select class="ni" id="jStrat"><option>Smart Money</option><option>4H Pullback</option><option>MA Trend (Swing)</option><option>MA Trend (Day)</option><option>ORB</option></select>
+      <select class="ni" id="jStrat"><option>Smart Money</option><option>4H Pullback</option><option>Market Structure</option></select>
     </div>
     <div class="frow"><label>Direction</label>
       <select class="ni" id="jDir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -281,40 +280,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- DAILY BIAS / 1H LIQUIDITY SWEEP -->
-<div id="p-ma" class="panel on">
-  <div class="bn b"><b>📊 MA Trend — 50/200 regime, 20/50 pullback, 9/20 trigger</b><br>
-  <b>Mode now: <span id="maModeTxt"></span></b><br>
-  <b>1 · Regime:</b> 50 SMA above 200 SMA with price above both = <b>buy only</b>. The reverse = <b>sell only</b>. Otherwise stand aside.<br>
-  <b>2 · Strength:</b> ADX 20+ with +DI/−DI agreeing. Below 20 the market is ranging and moving-average signals fail.<br>
-  <b>3 · Pullback:</b> within the last 3 candles price reaches the 20 EMA zone but does not close through the 50 EMA, and the 20 stays on the right side of the 50.<br>
-  <b>4 · Trigger:</b> the 9 EMA crosses back through the 20 EMA in the trend direction (within the last 3 candles).<br>
-  <b>5 · Stop:</b> beyond the pullback extreme (1x–3x ATR) · <b>Target:</b> 2x the stop · risk 1% of capital.<br>
-  <b>Exit:</b> take half at 2R, then trail with the 20 EMA; leave if the 20 EMA crosses the 50 against you. Day trades close before the session ends.<br>
-  Indices trend best with this; forex pairs range more, so expect fewer valid signals there. Needs the updated get-price.js (longer history).</div>
-  <div id="maModeBtns" style="margin-bottom:10px"></div>
-  <div class="stbar"><div id="maSt"><span class="pulse"></span>Not loaded yet</div><div style="display:flex;gap:6px"><button class="rbtn" onclick="loadMA(true)">↻ Refresh</button></div></div>
-  <div id="maPick" style="margin-bottom:4px"></div>
-  <div id="maCost" style="font-size:10px;margin-bottom:10px"></div>
-  <div id="maSum" class="sumstrip"></div>
-  <div id="maCards"></div>
-  <div class="disc">Moving averages lag: expect roughly half your trades or more to lose, with winners at least 2x losers. Untested — use demo and the Journal first. Not financial advice.</div>
-</div>
-
-<div id="p-orb" class="panel">
-  <div class="bn b"><b>🌅 ORB — 15-minute Opening Range Breakout</b><br>
-  <b>Range:</b> the high and low of the first 15-minute candle after the cash open (DAX 09:00 German time, UK 100 08:00 UK, US indices 09:30 New York).<br>
-  <b>Filter:</b> the Daily 50 SMA / 200 SMA trend. Uptrend = only buy breaks, downtrend = only sell breaks. No clear trend = no trade.<br>
-  <b>Entry:</b> a 15m candle must <u>close</u> outside the range (a wick doesn't count). Skip if price is already more than half a range-height past the edge, or has fallen back inside.<br>
-  <b>Range size:</b> must be 10%–60% of the Daily ATR — too small goes nowhere, too wide means a huge stop.<br>
-  <b>Stop:</b> the other side of the range (1x–3x the 15m ATR) · <b>Target:</b> 2x the stop · risk 1% of capital.<br>
-  <b>Window:</b> entries from 15 minutes after the open up to 4 hours after it, never in the last hour. One ORB trade per market per day. Skip major news days.<br>
-  Needs the updated get-price.js. Loads on first visit (2 credits per market).</div>
-  <div class="stbar"><div id="orbSt"><span class="pulse"></span>Not loaded yet</div><div style="display:flex;gap:6px"><button class="rbtn" onclick="loadORB(true)">↻ Refresh</button></div></div>
-  <div id="orbPick" style="margin-bottom:4px"></div>
-  <div id="orbCost" style="font-size:10px;margin-bottom:10px"></div>
-  <div id="orbSum" class="sumstrip"></div>
-  <div id="orbCards"></div>
-  <div class="disc">ORB wins on trend days and loses on range days; expect many small losses. Untested — use demo and the Journal first. Not financial advice.</div>
+<div id="p-ms" class="panel on">
+  <div id="msInfoBook" class="bn b"><b>🧭 Structure — book method (short → intermediate → long-term swings), BUY and SELL</b><br>
+  <b>Swing points:</b> a short-term high is a high with lower highs on both sides (lows the same, mirrored). An <b>intermediate-term</b> high is a short-term high with lower short-term highs on both sides. A <b>long-term</b> point is the same rule applied once more. The dashboard marks all three levels for you.<br>
+  <b>BUY:</b> a new intermediate-term low that is <b>higher</b> than the previous one, confirmed by a higher short-term low. Entry: a buy stop at the high of the confirming bar.<br>
+  <b>SELL:</b> a new intermediate-term high that is <b>lower</b> than the previous one, confirmed by a lower short-term high. Entry: a sell stop at the low of the confirming bar.<br>
+  <b>Stop:</b> beyond the intermediate-term low (buy) or high (sell). <b>Target:</b> distance from the last intermediate-term high to the intermediate-term low, added above that high (mirrored for sells). No Fibonacci.<br>
+  <b>Exit:</b> trail the stop under each new higher short-term low (over each lower short-term high for sells), or leave when the next intermediate-term point forms before the target.<br>
+  Choose the bar size above — Daily bars give a handful of signals a month and suit a full-time job; 4H, 1H and 15m bars give progressively more signals, but smaller swings mean more noise and spreads take a bigger share of each move. I added two sanity checks the book doesn't require: a reward-to-risk of at least 1.5 and a stop of no more than 4x ATR.</div>
+  <div id="msInfoStrict" class="bn b" style="display:none"><b>🧭 Structure — strict version (buy only)</b><br>
+  <b>Zigzag:</b> ignores small moves (anything under 2–2.5x ATR). <b>1 · Daily structure:</b> higher high AND higher low, price above the latest Daily higher low. <b>2 · 4H structure:</b> higher high, higher low, new high, then a pullback that holds above that higher low. <b>3 · Buy zone:</b> the pullback retraces 38–79% of the last 4H up-leg, with at least 2 of 3 confluences (golden zone 50–70.5%, the Daily trendline through the last two Daily higher lows, the 4H/Daily 50 average). <b>4 · Trigger (1H):</b> a 1H candle closes above the last lower high of the pullback.<br>
+  <b>Stop:</b> under the pullback low (skipped if wider than 1.5x the Daily ATR) · <b>Target 1:</b> previous 4H high · <b>Target 2:</b> 1.272 extension (needs R:R of 2.5+). Uses Fibonacci, which the book's author doesn't trust — compare it with the book method on demo.</div>
+  <div id="msModeBtns" style="margin-bottom:6px"></div>
+  <div class="stbar"><div id="msSt"><span class="pulse"></span>Not loaded yet</div><div style="display:flex;gap:6px"><button class="rbtn" onclick="loadMS(true)">↻ Refresh</button></div></div>
+  <div id="msPick" style="margin-bottom:4px"></div>
+  <div id="msCost" style="font-size:10px;margin-bottom:10px"></div>
+  <div id="msSum" class="sumstrip"></div>
+  <div id="msCards"></div>
+  <div class="disc">Structure setups are rare and still lose some of the time. Untested — use demo and the Journal first. Not financial advice.</div>
 </div>
 
 <script>
@@ -345,8 +328,7 @@ function showTab(id,btn){
   document.querySelectorAll('.ntab').forEach(function(b){b.classList.remove('on');});
   document.getElementById('p-'+id).classList.add('on');
   btn.classList.add('on');
-  if(id==='ma'&&maMissing())loadMA();
-  if(id==='orb'&&orbMissing())loadORB();
+  if(id==='ms'&&msMissing())loadMS();
 }
 
 // CREDITS
@@ -730,8 +712,7 @@ function fetchNewsSymbol(sym,cb){
 function refreshAllCards(){
   if(typeof renderSMC==='function')renderSMC();
   if(typeof renderS1==='function')renderS1();
-  if(typeof renderMA==='function')renderMA();
-  if(typeof renderORB==='function')renderORB();
+  if(typeof renderMS==='function')renderMS();
   if(typeof renderNewsSummary==='function')renderNewsSummary();
 }
 function loadConfluenceNews(){
@@ -826,12 +807,7 @@ setInterval(function(){if(Object.keys(liveH4).length>0)loadS1();},1800000);
 
 setInterval(loadConfluenceNews,2*3600000);
 
-// ── MA TREND (Daily/1H regime with 50 & 200 SMA → pullback to 20/50 EMA → 9/20 EMA cross trigger) ──
-// Two modes share the same logic:  Short swing  = Daily regime · 4H pullback · 1H trigger
-//                                  Day trading  = 1H regime · 15m pullback + 15m trigger
-var MA_KEYS=(function(){try{var a=JSON.parse(localStorage.getItem('maKeys')||'null');if(a&&a.length)return a.filter(function(k){return M13[k];});}catch(e){}return['us500','ger40'];})();
-if(!MA_KEYS.length)MA_KEYS=['us500'];
-var maMode=(function(){try{return localStorage.getItem('maMode')==='day'?'day':'swing';}catch(e){return'swing';}})();
+// ── SHARED HELPERS (time zones, session times, completed-candle count) used by the Structure tab ──
 var m15Data={};
 // Session open/close (minutes after midnight, exchange's own time zone) — used for day-trading hours.
 var SESS={ger40:{tz:'Europe/Berlin',o:540,c:1050},uk100:{tz:'Europe/London',o:480,c:990},us100:{tz:'America/New_York',o:570,c:960},us500:{tz:'America/New_York',o:570,c:960},gold:{tz:'Europe/London',o:480,c:1260},silver:{tz:'Europe/London',o:480,c:1260},eurusd:{tz:'Europe/London',o:420,c:1260},gbpusd:{tz:'Europe/London',o:420,c:1260},usdjpy:{tz:'Europe/London',o:420,c:1260},usdcad:{tz:'Europe/London',o:420,c:1260},audusd:{tz:'Europe/London',o:420,c:1260},usdchf:{tz:'Europe/London',o:420,c:1260},nzdusd:{tz:'Europe/London',o:420,c:1260}};
@@ -848,279 +824,290 @@ function doneN(d,mins){
   var s=tsMs(t);if(isNaN(s))return n;
   return s+mins*60000>Date.now()?n-1:n;
 }
-function emaArr(c,p){
-  var out=[],k=2/(p+1),v,i;
-  for(i=0;i<c.length;i++)out.push(null);
-  if(c.length<p)return out;
-  v=c.slice(0,p).reduce(function(a,b){return a+b;},0)/p;out[p-1]=v;
-  for(i=p;i<c.length;i++){v=c[i]*k+v*(1-k);out[i]=v;}
-  return out;
-}
 function smaOf(c,p){return c.slice(-p).reduce(function(a,b){return a+b;},0)/p;}
-function maCfg(){
-  return maMode==='day'
-    ?{R:{st:h1Data,iv:'1h',mins:60,nm:'1H'},P:{st:m15Data,iv:'15min',mins:15,nm:'15m'},T:{st:m15Data,iv:'15min',mins:15,nm:'15m'}}
-    :{R:{st:dailyData,iv:'1day',mins:1440,nm:'Daily'},P:{st:liveH4,iv:'4h',mins:240,nm:'4H'},T:{st:h1Data,iv:'1h',mins:60,nm:'1H'}};
+
+// ── STRUCTURE (market-structure BUY: Daily + 4H zigzag swings, pullback into the buy zone, 1H break of structure) ──
+// Zigzag = ignore every move smaller than k x ATR, so only the real swing highs/lows remain.
+// Daily swings = long-term structure · 4H swings = intermediate structure · 1H swings = entry trigger.
+var MS_K={d:2,h4:2.5,h1:1.5};
+var MS_KEYS=(function(){try{var a=JSON.parse(localStorage.getItem('msKeys')||'null');if(a&&a.length)return a.filter(function(k){return M13[k];});}catch(e){}return['us500','us100','ger40'];})();
+if(!MS_KEYS.length)MS_KEYS=['us500'];
+// Zigzag on highs/lows. Returns confirmed pivots, the current direction (1 = up-leg, -1 = down-leg) and the still-forming extreme.
+function zigzag(H,L,thr){
+  var piv=[],dir=0,hi=H[0],hiI=0,lo=L[0],loI=0,i;
+  for(i=1;i<H.length;i++){
+    if(dir===0){
+      if(H[i]>hi){hi=H[i];hiI=i;}
+      if(L[i]<lo){lo=L[i];loI=i;}
+      if(H[i]-lo>=thr&&loI<i){piv.push({i:loI,v:lo,t:'L'});dir=1;hi=H[i];hiI=i;}
+      else if(hi-L[i]>=thr&&hiI<i){piv.push({i:hiI,v:hi,t:'H'});dir=-1;lo=L[i];loI=i;}
+    }else if(dir===1){
+      if(H[i]>hi){hi=H[i];hiI=i;}
+      else if(hi-L[i]>=thr){piv.push({i:hiI,v:hi,t:'H'});dir=-1;lo=L[i];loI=i;}
+    }else{
+      if(L[i]<lo){lo=L[i];loI=i;}
+      else if(H[i]-lo>=thr){piv.push({i:loI,v:lo,t:'L'});dir=1;hi=H[i];hiI=i;}
+    }
+  }
+  var pend=dir===1?{i:hiI,v:hi,t:'H',pending:true}:dir===-1?{i:loI,v:lo,t:'L',pending:true}:null;
+  return{piv:piv,dir:dir,pend:pend};
 }
-function maTiming(key){
-  var now=Date.now(),L=tzParts(now,'Europe/London');
+function msTiming(){
+  var L=tzParts(Date.now(),'Europe/London');
   if(L.wd==='Sat'||L.wd==='Sun')return{ok:false,txt:'Weekend — market closed'};
-  if(maMode==='swing'){
-    if(L.min>=1320&&L.min<1380)return{ok:false,txt:'22:00–22:59 UK — rollover spread, skip'};
-    if(L.wd==='Fri'&&L.min>=1200)return{ok:false,txt:'Friday evening — weekend gap risk, skip new swings'};
-    return{ok:true,txt:'Swing entry window OK'};
-  }
-  var S=SESS[key];if(!S)return{ok:true,txt:'No session data'};
-  var p=tzParts(now,S.tz);
-  if(p.min<S.o)return{ok:false,txt:'Market not open yet'};
-  if(p.min<S.o+30)return{ok:false,txt:'First 30 minutes after the open — wait'};
-  if(p.min>=S.c-60)return{ok:false,txt:p.min>=S.c?'Session closed':'Last hour before the close — no new day trades'};
-  return{ok:true,txt:'Inside the day-trading window'};
+  if(L.min>=1320&&L.min<1380)return{ok:false,txt:'22:00–22:59 UK — rollover spread, skip'};
+  if(L.wd==='Fri'&&L.min>=1200)return{ok:false,txt:'Friday evening — weekend gap risk, skip new swings'};
+  return{ok:true,txt:'Entry window OK (weekday, outside rollover)'};
 }
-function evalMA(key){
-  var C=maCfg(),M=M13[key];if(!M)return null;
-  var R=C.R.st[key],P=C.P.st[key],T=C.T.st[key];
-  if(!R||!P||!T)return null;
+function evalMSStrict(key){
+  var M=M13[key],D=dailyData[key],P=liveH4[key],T=h1Data[key];
+  if(!M||!D||!P||!T)return null;
   function ns(r){return{key:key,status:'nosig',reason:r};}
-  if(R.tz!=='UTC'||P.tz!=='UTC'||T.tz!=='UTC')return ns('Deploy the updated get-price.js (UTC timestamps and longer history), then press Refresh.');
-  var nR=doneN(R,C.R.mins),nP=doneN(P,C.P.mins),nT=doneN(T,C.T.mins);
-  if(nR<205)return ns('Only '+nR+' '+C.R.nm+' candles — the 200 SMA needs 205+. Deploy the updated get-price.js (250 Daily / 260 1H candles), then press Refresh.');
-  if(nP<55||nT<55)return ns('Not enough '+C.P.nm+' / '+C.T.nm+' candles yet');
+  if(D.tz!=='UTC'||P.tz!=='UTC'||T.tz!=='UTC')return ns('Deploy the updated get-price.js (UTC timestamps and longer history), then press Refresh.');
+  var nD=doneN(D,1440),nP=doneN(P,240),nT=doneN(T,60);
+  if(nD<120||nP<80||nT<80)return ns('Not enough history (Daily '+nD+', 4H '+nP+', 1H '+nT+'). Deploy the updated get-price.js (150 4H candles), then press Refresh.');
   var dd=M.d;function f(x){return parseFloat(x).toFixed(dd);}
-  // 1 · Regime
-  var cR=R.c.slice(0,nR),s50=smaOf(cR,50),s200=smaOf(cR,200),pR=cR[nR-1];
-  var isL;
-  if(s50>s200&&pR>s50)isL=true;else if(s50<s200&&pR<s50)isL=false;
-  else return ns(C.R.nm+' regime unclear: 50 SMA '+f(s50)+', 200 SMA '+f(s200)+', last close '+f(pR)+' — they do not line up (50 above 200 with price above both = buy; the reverse = sell). Stand aside.');
-  var adx=calcADX(R.h.slice(0,nR),R.l.slice(0,nR),cR,14),adxv=adx?adx.adx:null;
-  var diOk=adx?(isL?adx.diP>adx.diN:adx.diN>adx.diP):false,strong=adxv!==null&&adxv>=20&&diOk;
-  // 2 · Pullback to the 20/50 EMA zone
-  var cP=P.c.slice(0,nP),e20=ema(cP,20),e50=ema(cP,50),atrP=calcATR(P.h.slice(0,nP),P.l.slice(0,nP),cP,14);
-  if(!atrP)return ns('Could not calculate the '+C.P.nm+' ATR');
-  var intact=isL?e20>e50:e20<e50,touched=false,through=false,j;
-  for(j=nP-1;j>=nP-3;j--){
-    if(isL?P.l[j]<=e20+0.25*atrP:P.h[j]>=e20-0.25*atrP)touched=true;
-    if(isL?cP[j]<e50:cP[j]>e50)through=true;
+  var i,j;
+  // 1 · Daily structure: higher high + higher low, and the latest Daily higher low still holds
+  var atrD=calcATR(D.h.slice(0,nD),D.l.slice(0,nD),D.c.slice(0,nD),14),atrP=calcATR(P.h.slice(0,nP),P.l.slice(0,nP),P.c.slice(0,nP),14),atr1=calcATR(T.h.slice(0,nT),T.l.slice(0,nT),T.c.slice(0,nT),14);
+  if(!atrD||!atrP||!atr1)return ns('Could not calculate ATR');
+  var zD=zigzag(D.h.slice(0,nD),D.l.slice(0,nD),MS_K.d*atrD),sD=zD.piv.concat(zD.pend?[zD.pend]:[]);
+  var dH=sD.filter(function(p){return p.t==='H';}),dL=sD.filter(function(p){return p.t==='L';});
+  if(dH.length<2||dL.length<2)return ns('Not enough Daily swings to read the structure yet.');
+  var h2=dH[dH.length-1],h1=dH[dH.length-2],l2=dL[dL.length-1],l1=dL[dL.length-2],lastD=D.c[nD-1];
+  if(!(h2.v>h1.v&&l2.v>l1.v&&lastD>l2.v))return ns('Daily structure is not a clean uptrend (needs a higher high AND a higher low, with price above the latest higher low '+f(l2.v)+'). Latest Daily swing highs '+f(h1.v)+' → '+f(h2.v)+', lows '+f(l1.v)+' → '+f(l2.v)+'.');
+  // 2 · 4H structure: [higher-high H, higher-low L, higher-high H, pullback low L]
+  var zP=zigzag(P.h.slice(0,nP),P.l.slice(0,nP),MS_K.h4*atrP),cf=zP.piv;
+  var q=zP.dir===-1?cf.slice(-3).concat(zP.pend?[zP.pend]:[]):cf.slice(-4);
+  if(q.length<4||q[0].t!=='H'||q[1].t!=='L'||q[2].t!=='H'||q[3].t!=='L'||!(q[2].v>q[0].v)||!(q[3].v>q[1].v))
+    return ns('Daily uptrend is intact, but there is no clean 4H pullback pattern right now (needs 4H higher high, higher low, new high, then a pullback that holds above the last higher low).');
+  var Hp=q[0],La=q[1],Hb=q[2],Lc=q[3],leg=Hb.v-La.v,retr=(Hb.v-Lc.v)/leg;
+  var price=(liveData[key]&&liveData[key].price)||T.c[nT-1];
+  if(zP.dir===1&&zP.pend&&zP.pend.v>Hb.v)return ns('The 4H already made a new high after the pullback — the buy-zone entry has passed.');
+  // confluences at the pullback low
+  var tl=null,slope=(l2.v-l1.v)/(l2.i-l1.i);
+  if(slope>0)tl=l2.v+slope*(nD-l2.i);
+  var c1=retr>=0.5&&retr<=0.705;
+  var c2=tl!==null&&Math.abs(Lc.v-tl)<=0.5*atrD;
+  var e50=ema(P.c.slice(0,nP),50),s50=D.c.length>=nD&&nD>=50?smaOf(D.c.slice(0,nD),50):null;
+  var c3=(e50!==null&&Math.abs(Lc.v-e50)<=0.5*atrP)||(s50!==null&&Math.abs(Lc.v-s50)<=0.5*atrD);
+  var conf=(c1?1:0)+(c2?1:0)+(c3?1:0),confTxt=[c1?'golden zone (50–70.5% pullback)':null,c2?'Daily trendline':null,c3?'4H/Daily 50 average':null].filter(Boolean).join(' + ');
+  // 1H trigger: close above the last 1H lower high formed during the pullback (break of structure)
+  var hbT=tsMs(P.t[Hb.i]),j0=-1;
+  for(j=0;j<nT;j++){if(tsMs(T.t[j])>=hbT){j0=j;break;}}
+  var trig=false,lvl=null,pull1=null;
+  if(j0>=0&&nT-j0>=12){
+    var sh=T.h.slice(j0,nT),sl=T.l.slice(j0,nT),z1=zigzag(sh,sl,MS_K.h1*atr1),hs=z1.piv.filter(function(p){return p.t==='H';});
+    pull1=Math.min.apply(null,sl);
+    if(hs.length>=2){
+      lvl=hs[hs.length-1].v;
+      for(j=nT-1;j>=nT-3;j--){if(T.c[j]>lvl&&T.c[j-1]<=lvl)trig=true;}
+      trig=trig&&T.c[nT-1]>lvl;
+    }
   }
-  var pullOk=intact&&touched&&!through;
-  // 3 · Trigger: 9 EMA crosses back through the 20 EMA within the last 3 completed candles
-  var cT=T.c.slice(0,nT),a9=emaArr(cT,9),a20=emaArr(cT,20),t50=ema(cT,50),crossed=false;
-  for(j=nT-1;j>=nT-3;j--){
-    if(isL?(a9[j]>a20[j]&&a9[j-1]<=a20[j-1]):(a9[j]<a20[j]&&a9[j-1]>=a20[j-1]))crossed=true;
-  }
-  var trigOk=crossed&&(isL?a9[nT-1]>a20[nT-1]&&a20[nT-1]>t50:a9[nT-1]<a20[nT-1]&&a20[nT-1]<t50);
-  // Stop beyond the pullback extreme, 1x–3x the pullback-timeframe ATR; target 2x the stop
-  var price=(liveData[key]&&liveData[key].price)||cT[nT-1],ext;
-  if(isL){ext=Math.min.apply(null,P.l.slice(nP-6,nP));}else{ext=Math.max.apply(null,P.h.slice(nP-6,nP));}
-  var stop=isL?ext-0.2*atrP:ext+0.2*atrP,dist=Math.abs(price-stop),widened=false;
-  if(dist<atrP){stop=isL?price-atrP:price+atrP;dist=atrP;widened=true;}
-  var stopX=dist/atrP,stopOk=stopX<=3,target=isL?price+2*dist:price-2*dist;
-  var sw=findSwings(R.h.slice(0,nR),R.l.slice(0,nR),2),obst=null,lv;
-  if(isL){lv=sw.highs.map(function(s){return s.v;}).filter(function(v){return v>price&&v<target;});if(lv.length)obst=Math.min.apply(null,lv);}
-  else{lv=sw.lows.map(function(s){return s.v;}).filter(function(v){return v<price&&v>target;});if(lv.length)obst=Math.max.apply(null,lv);}
-  var stake=cap*0.01,perPt=dist>0?stake/dist:0,tm=maTiming(key);
+  // stop under the pullback low; targets = previous 4H high (T1) and 1.272 extension (T2)
+  var base=Math.min(Lc.v,pull1===null?Lc.v:pull1),stop=base-0.2*atr1,dist=price-stop,widened=false;
+  if(dist<atr1){stop=price-atr1;dist=atr1;widened=true;}
+  var T1=Hb.v,T2=Lc.v+1.272*leg,rr1=(T1-price)/dist,rr2=(T2-price)/dist;
+  var stopOk=dist<=1.5*atrD,roomOk=price<T1&&price<=Lc.v+0.6*(Hb.v-Lc.v),rrOk=rr2>=2.5,tm=msTiming();
   var checks=[
-    {name:C.R.nm+' regime',ok:true,txt:'50 SMA '+f(s50)+' '+(isL?'above':'below')+' 200 SMA '+f(s200)+', last close '+f(pR)+' '+(isL?'above':'below')+' both — '+(isL?'BUY':'SELL')+' only'},
-    {name:'Trend strength',ok:strong,txt:C.R.nm+' ADX '+(adxv!==null?adxv.toFixed(1):'--')+(adx?' · '+(isL?'+DI '+adx.diP.toFixed(0)+' vs −DI '+adx.diN.toFixed(0):'−DI '+adx.diN.toFixed(0)+' vs +DI '+adx.diP.toFixed(0)):'')+(strong?' ✅':(adxv!==null&&adxv>=20?' — DI lines disagree':' — need ADX 20+ (market is ranging)'))},
-    {name:C.P.nm+' pullback',ok:pullOk,txt:!intact?C.P.nm+' 20 EMA is not '+(isL?'above':'below')+' the 50 EMA — pullback trend broken':through?'Price closed through the '+C.P.nm+' 50 EMA — trend may be over':touched?'Price pulled back to the '+C.P.nm+' 20 EMA zone and held the 50 EMA ✅':'No pullback yet — price has not reached the '+C.P.nm+' 20 EMA ('+f(e20)+')'},
-    {name:C.T.nm+' 9/20 trigger',ok:trigOk,txt:trigOk?C.T.nm+' 9 EMA crossed '+(isL?'above':'below')+' the 20 EMA in the last 3 candles, 20 '+(isL?'above':'below')+' 50 ✅':'Waiting for the '+C.T.nm+' 9 EMA to cross '+(isL?'back above':'back below')+' the 20 EMA (within the last 3 candles)'},
-    {name:'Stop size',ok:stopOk,txt:'Stop '+f(stop)+' = '+dist.toFixed(dd>2?dd:1)+' points = '+stopX.toFixed(1)+'x '+C.P.nm+' ATR'+(widened?' (widened to the 1x ATR minimum)':'')+(stopOk?'':' — too wide (max 3x), skip')},
+    {name:'Daily structure',ok:true,txt:'Higher high ('+f(h1.v)+' → '+f(h2.v)+') and higher low ('+f(l1.v)+' → '+f(l2.v)+'), price above the latest Daily higher low ✅'},
+    {name:'4H structure',ok:true,txt:'4H swing sequence: high '+f(Hp.v)+' → low '+f(La.v)+' → higher high '+f(Hb.v)+' → pullback low '+f(Lc.v)+' (still above the higher low) ✅'},
+    {name:'Pullback depth',ok:retr>=0.382&&retr<=0.786,txt:'Pullback retraced '+(retr*100).toFixed(0)+'% of the last 4H up-leg'+(retr>=0.382&&retr<=0.786?' — inside the 38–79% buy zone ✅':(retr<0.382?' — too shallow to be a value entry':' — too deep, the structure is weakening'))},
+    {name:'Confluence 2 of 3',ok:conf>=2,txt:conf+' of 3 at the pullback low'+(confTxt?': '+confTxt:'')+(tl!==null?' · Daily trendline now '+f(tl):'')+(conf>=2?' ✅':' — need at least 2 (golden zone / Daily trendline / 50 average)')},
+    {name:'1H structure break',ok:trig,txt:trig?'A 1H candle just closed above the last 1H lower high ('+f(lvl)+') — the pullback has turned up ✅':lvl!==null?'Waiting for a 1H close above '+f(lvl)+' (the last 1H lower high of the pullback)':'No 1H lower high has formed in the pullback yet'},
+    {name:'Room to run',ok:roomOk,txt:price>=T1?'Price is already at or above the previous high':roomOk?'Price '+f(price)+' is still in the lower 60% of the up-leg ✅':'Price has moved more than 60% back up the leg — late entry'},
+    {name:'Stop size',ok:stopOk,txt:'Stop '+f(stop)+' = '+dist.toFixed(dd>2?dd:1)+' points = '+(dist/atrD).toFixed(1)+'x Daily ATR'+(widened?' (widened to the 1x 1H ATR minimum)':'')+(stopOk?'':' — too wide (max 1.5x Daily ATR), skip')},
+    {name:'R:R to Target 2 ≥ 2.5',ok:rrOk,txt:'Target 1 '+f(T1)+' = 1:'+rr1.toFixed(1)+' · Target 2 '+f(T2)+' = 1:'+rr2.toFixed(1)+(rrOk?' ✅':' — not enough reward for the risk')},
     {name:'Timing',ok:tm.ok,txt:tm.txt}
   ];
-  var allOk=checks.every(function(c){return c.ok;}),ff=checks.filter(function(c){return !c.ok;})[0];
-  return{key:key,status:allOk?'ready':'watch',isL:isL,checks:checks,entry:price,stop:stop,target:target,perPt:perPt,stake:stake,obst:obst,waiting:ff?ff.name:null,reg:C.R.nm};
+  var allOk=checks.every(function(c){return c.ok;}),ff=checks.filter(function(c){return !c.ok;})[0],stake=cap*0.01;
+  return{key:key,status:allOk?'ready':'watch',checks:checks,entry:price,stop:stop,T1:T1,T2:T2,stake:stake,perPt:dist>0?stake/dist:0,waiting:ff?ff.name:null,lc:Lc.v,la:La.v};
 }
-function mkMACard(r){
+function mkMSCard(r){
+  if(r.book)return mkMSBookCard(r);
   var m=M13[r.key];if(!m)return'';
-  var pill=r.status==='ready'?'✅ MA PULLBACK · '+(r.isL?'BUY':'SELL'):r.status==='watch'?'👀 TREND · WAITING':'⚪ NO TREND';
-  var sub=r.status==='nosig'?(maMode==='day'?'Day trading · 1H regime · 15m entry':'Short swing · Daily regime · 4H/1H entry'):(r.isL?'BUY':'SELL')+' · '+(maMode==='day'?'day trade':'short swing');
+  var pill=r.status==='ready'?'✅ STRUCTURE BUY':r.status==='watch'?'👀 PULLBACK FORMING':'⚪ NO SETUP';
   var body='';
   if(r.status==='nosig'){body='<div style="margin-top:8px;font-size:11px;color:var(--dim)">'+r.reason+'</div>';}
   else{
     body='<div class="chklist" style="margin-top:8px">'+r.checks.map(function(c){return'<div class="chk '+(c.ok?'ok':'fail')+'"><div class="chk-lbl">'+c.name+'</div><div class="chk-val" style="color:'+(c.ok?'var(--g)':'var(--r)')+'">'+(c.ok?'✅':'❌')+'</div><div class="chk-txt">'+c.txt+'</div></div>';}).join('')+'</div>';
     if(r.status==='ready'){
-      body+='<div class="conf" style="margin-top:8px"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET (2R)</div><div class="conf-val" style="color:var(--g)">'+r.target.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">RISK</div><div class="conf-val" style="color:var(--a)">£'+r.stake.toFixed(2)+'</div></div></div>'+
-        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">About £'+r.perPt.toFixed(2)+' per point for 1% risk (check Trade Nation\'s minimum stake) · max 2 trades open</div>'+
-        (r.obst!=null?'<div style="margin-top:6px;font-size:11px;color:var(--a)">⚠ A '+r.reg+' swing level at '+r.obst.toFixed(m.d)+' sits before the 2R target — consider taking profit there.</div>':'')+
-        '<div style="margin-top:6px;font-size:11px;color:var(--a)">'+(maMode==='day'
-          ?'Exit plan: take half at 2R and trail the rest beyond the 15m 20 EMA · exit if the 15m 20 EMA crosses the 50 against you · close before the session ends, nothing held overnight'
-          :'Exit plan: take half at 2R, move the stop to breakeven, trail the rest beyond the 4H 20 EMA · exit if the 4H 20 EMA crosses the 50 against you or the Daily 50/200 SMA lose alignment')+' · Journal it as "'+(maMode==='day'?'MA Trend (Day)':'MA Trend (Swing)')+'"</div>'+mkConfluenceBox(r.key);
+      body+='<div class="conf" style="margin-top:8px"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET 1 (prev high)</div><div class="conf-val" style="color:var(--g)">'+r.T1.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET 2 (extension)</div><div class="conf-val" style="color:var(--g)">'+r.T2.toFixed(m.d)+'</div></div></div>'+
+        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">Risk £'+r.stake.toFixed(2)+' (1%) · about £'+r.perPt.toFixed(2)+' per point (check Trade Nation\'s minimum stake) · max 2 trades open</div>'+
+        '<div style="margin-top:6px;font-size:11px;color:var(--a)">Exit plan: take half at Target 1 and move the stop to breakeven · trail the rest under each new 1H higher low, aiming for Target 2 · leave if a 4H candle closes below the pullback low '+r.lc.toFixed(m.d)+' · skip big-news days · Journal it as "Market Structure"</div>'+mkConfluenceBox(r.key);
     }else if(r.waiting){body+='<div style="margin-top:8px;font-size:11px;color:var(--a)">Waiting for: '+r.waiting+'</div>';}
   }
-  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">'+(r.status==='ready'?'<span class="dirtag '+(r.isL?'long':'short')+'">'+(r.isL?'BUY':'SELL')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+sub+'</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span></div>'+body+'</div>';
+  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">'+(r.status==='ready'?'<span class="dirtag long">BUY</span>':'')+m.n+'</div><div class="mcard-sub">Daily + 4H zigzag structure · 1H break of structure</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span></div>'+body+'</div>';
 }
-function maNeeds(){return maMode==='day'?'Loading 1H + 15m...':'Loading Daily + 4H + 1H...';}
-function renderMA(){
-  var el=document.getElementById('maCards');if(!el)return;
-  var C=maCfg(),r=0,w=0,n=0;
-  el.innerHTML=MA_KEYS.map(function(k){
-    var missing=!C.R.st[k]||!C.P.st[k]||!C.T.st[k];
-    if(liveErr[k]&&missing)return errCard(k,liveErr[k]);
-    if(missing)return loadCard(k,maNeeds());
-    var res=evalMA(k);if(!res)return loadCard(k);
-    if(res.status==='ready')r++;else if(res.status==='watch')w++;else n++;
-    return mkMACard(res);
-  }).join('');
-  var sm=document.getElementById('maSum');if(sm)sm.innerHTML=mkSum(r,w,n);
-  renderMaPick();
+// ── BOOK METHOD (Larry Williams style): short-term → intermediate-term → long-term swing points, BUY and SELL ──
+// Short-term high = a high with lower highs on both sides (short-term low = a low with higher lows on both sides).
+// Intermediate-term high = a short-term high with lower short-term highs on both sides (and the mirror for lows). Long-term = the same rule applied once more.
+var msMode=(function(){try{return localStorage.getItem('msMode')==='strict'?'strict':'book';}catch(e){return'book';}})();
+var msTF=(function(){try{var v=localStorage.getItem('msTF');return v==='4h'||v==='1h'||v==='15m'?v:'daily';}catch(e){return'daily';}})();
+function msStore(){
+  return msTF==='4h'?{st:liveH4,iv:'4h',mins:240,nm:'4H'}:msTF==='1h'?{st:h1Data,iv:'1h',mins:60,nm:'1H'}:msTF==='15m'?{st:m15Data,iv:'15min',mins:15,nm:'15m'}:{st:dailyData,iv:'1day',mins:1440,nm:'Daily'};
 }
-function renderMaPick(){
-  var md=document.getElementById('maModeBtns');
-  if(md)md.innerHTML=[['swing','Short swing'],['day','Day trading']].map(function(x){var on=maMode===x[0];return'<button onclick="setMaMode(\''+x[0]+'\')" style="cursor:pointer;margin-right:8px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid '+(on?'var(--g)':'var(--bdr)')+';background:'+(on?'rgba(0,217,126,0.12)':'transparent')+';color:'+(on?'var(--g)':'var(--dim)')+'">'+x[1]+'</button>';}).join('');
-  var el=document.getElementById('maPick');if(!el)return;
-  el.innerHTML=Object.keys(M13).map(function(k){
-    var on=MA_KEYS.indexOf(k)>=0;
-    return'<button onclick="toggleMaKey(\''+k+'\')" style="cursor:pointer;margin:0 6px 6px 0;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:600;border:1px solid '+(on?'var(--g)':'var(--bdr)')+';background:'+(on?'rgba(0,217,126,0.12)':'transparent')+';color:'+(on?'var(--g)':'var(--dim)')+'">'+(on?'✓ ':'')+M13[k].n+'</button>';
-  }).join('');
-  var c=document.getElementById('maCost'),mt=document.getElementById('maModeTxt'),n=MA_KEYS.length;
-  if(mt)mt.textContent=maMode==='day'?'Day trading — 1H regime (50/200 SMA), 15m pullback and 9/20 trigger':'Short swing — Daily regime (50/200 SMA), 4H pullback, 1H 9/20 trigger';
-  if(c){c.textContent=n+' market'+(n===1?'':'s')+' selected · first load ≤ '+n*2+' credits'+(maMode==='swing'?' (4H data is shared with the other tabs)':'')+' · '+(maMode==='day'?'about '+n*5+' credits an hour while open in session hours':'about '+n+' credits an hour while open');c.style.color=n>6?'var(--a)':'var(--dim)';}
-}
-function setMaMode(m){
-  maMode=m;try{localStorage.setItem('maMode',m);}catch(e){}
-  if(maMissing())loadMA();
-  renderMA();
-}
-function toggleMaKey(k){
-  var i=MA_KEYS.indexOf(k);
-  if(i>=0){if(MA_KEYS.length===1)return;MA_KEYS.splice(i,1);}
-  else{MA_KEYS.push(k);loadMA();}
-  try{localStorage.setItem('maKeys',JSON.stringify(MA_KEYS));}catch(e){}
-  renderMA();
-}
-function maMissing(){var C=maCfg();return MA_KEYS.some(function(k){return !C.R.st[k]||!C.P.st[k]||!C.T.st[k];});}
-// Loads only what is missing for the current mode (full = reload everything). Each timeframe is requested once.
-function loadMA(full){
-  var C=maCfg(),seen={};
-  renderMA();
-  [C.R,C.P,C.T].forEach(function(x){
-    if(seen[x.iv])return;seen[x.iv]=1;
-    var ks=MA_KEYS.filter(function(k){return full||!x.st[k];});
-    if(ks.length)loadMarkets(ks,x.st,x.iv,renderMA,'maSt');
+function swAlt(pts){
+  var out=[];
+  pts.forEach(function(p){
+    var q=out[out.length-1];
+    if(q&&q.t===p.t){if((p.t==='H'&&p.v>q.v)||(p.t==='L'&&p.v<q.v))out[out.length-1]=p;}else out.push(p);
   });
+  return out;
 }
-function maActive(){var p=document.getElementById('p-ma');return p&&p.classList.contains('on')&&!document.hidden;}
-// While the tab is open: 15m data every 15 min (day mode, session hours only), 1H hourly, Daily every 6 hours.
-function maOpenKeys(){return MA_KEYS.filter(function(k){var S=SESS[k]||{tz:'Europe/London',o:420,c:1260},p=tzParts(Date.now(),S.tz);return p.wd!=='Sat'&&p.wd!=='Sun'&&p.min>=S.o&&p.min<S.c;});}
-setInterval(function(){if(maActive()&&maMode==='day'){var ks=maOpenKeys();if(ks.length)loadMarkets(ks,m15Data,'15min',renderMA,'maSt');}},15*60000);
-setInterval(function(){if(maActive())loadMarkets(MA_KEYS,h1Data,'1h',renderMA,'maSt');},3600000);
-setInterval(function(){if(maActive()&&maMode==='swing')loadMarkets(MA_KEYS,dailyData,'1day',renderMA,'maSt');},6*3600000);
-
-// ── ORB (15-minute Opening Range Breakout, with the Daily 50/200 SMA trend as the filter) ──
-// Range = high/low of the first completed 15m candle after the cash open. Trade the first 15m CLOSE outside it, in the Daily trend direction.
-var ORB_KEYS=(function(){try{var a=JSON.parse(localStorage.getItem('orbKeys')||'null');if(a&&a.length)return a.filter(function(k){return M13[k];});}catch(e){}return['ger40','us500'];})();
-if(!ORB_KEYS.length)ORB_KEYS=['ger40'];
-function evalORB(key){
-  var M=M13[key],S=SESS[key],m=m15Data[key],d=dailyData[key];
-  if(!M||!S)return null;
-  if(!m||!d)return null;
-  function ns(r){return{key:key,status:'nosig',reason:r};}
-  if(m.tz!=='UTC'||d.tz!=='UTC')return ns('Deploy the updated get-price.js (UTC timestamps and longer history), then press Refresh.');
-  var n=doneN(m,15),nd=doneN(d,1440);
-  if(nd<205)return ns('Only '+nd+' Daily candles — the 200 SMA needs 205+. Deploy the updated get-price.js, then press Refresh.');
-  if(n<20)return ns('Not enough 15m candles yet');
+function stSwings(H,L,n){
+  var pts=[],i;
+  for(i=1;i<n-1;i++){
+    var isH=H[i]>H[i-1]&&H[i]>H[i+1],isL=L[i]<L[i-1]&&L[i]<L[i+1];
+    if(isH&&!isL)pts.push({i:i,v:H[i],t:'H'});else if(isL&&!isH)pts.push({i:i,v:L[i],t:'L'});
+  }
+  return swAlt(pts);
+}
+// next level up: highs with lower highs on both sides, lows with higher lows on both sides
+function nextLevel(pts){
+  var hs=pts.filter(function(p){return p.t==='H';}),ls=pts.filter(function(p){return p.t==='L';}),out=[],k;
+  for(k=1;k<hs.length-1;k++){if(hs[k].v>hs[k-1].v&&hs[k].v>hs[k+1].v)out.push(hs[k]);}
+  for(k=1;k<ls.length-1;k++){if(ls[k].v<ls[k-1].v&&ls[k].v<ls[k+1].v)out.push(ls[k]);}
+  out.sort(function(a,b){return a.i-b.i;});
+  return swAlt(out);
+}
+// A confirmed higher intermediate low (buy) or lower intermediate high (sell).
+function bookSetup(isL,S,I,H,L,n){
+  var T=isL?'L':'H',same=S.filter(function(p){return p.t===T;}),x;
+  if(same.length<2)return null;
+  var cur=same[same.length-1],prev=same[same.length-2];
+  if(isL?!(cur.v>prev.v):!(cur.v<prev.v))return null;           // the newest short-term swing must confirm (higher low / lower high)
+  var k=-1;for(x=0;x<I.length;x++){if(I[x].i===prev.i&&I[x].t===T)k=x;}
+  if(k<1)return null;                                           // the swing before it must be an intermediate-term point
+  var it=I[k],before=I[k-1];if(before.t===T)return null;
+  var priorSame=null;for(x=k-1;x>=0;x--){if(I[x].t===T){priorSame=I[x];break;}}
+  if(!priorSame)return null;
+  if(isL?!(it.v>priorSame.v):!(it.v<priorSame.v))return null;   // higher intermediate low / lower intermediate high
+  var c=cur.i+1;if(c>n-1)return null;
+  var level=isL?H[c]:L[c],trig=-1,j,broken=false;
+  for(j=c+1;j<n;j++){
+    if(isL?L[j]<it.v:H[j]>it.v){broken=true;break;}
+    if(isL?H[j]>level:L[j]<level){trig=j;break;}
+  }
+  return{isL:isL,it:it,before:before,priorSame:priorSame,cur:cur,prev:prev,c:c,level:level,trig:trig,broken:broken};
+}
+function evalMSBook(key){
+  var M=M13[key],C=msStore(),D=C.st[key];
+  if(!M||!D)return null;
+  function ns(r,info){return{key:key,status:'nosig',book:true,reason:r,info:info||''};}
+  if(D.tz!=='UTC')return ns('Deploy the updated get-price.js (UTC timestamps and longer history), then press Refresh.');
+  var n=doneN(D,C.mins);
+  if(n<60)return ns('Only '+n+' '+C.nm+' bars — not enough to find the swing points. Deploy the updated get-price.js, then press Refresh.');
   var dd=M.d;function f(x){return parseFloat(x).toFixed(dd);}
-  var now=tzParts(Date.now(),S.tz);
-  if(now.wd==='Sat'||now.wd==='Sun')return ns('Weekend — market closed.');
-  function hm(x){return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0');}
-  // today's session candles (exchange time zone)
-  var s=-1,i;
-  for(i=n-1;i>=0;i--){var p=tzParts(tsMs(m.t[i]),S.tz);if(p.date!==now.date||p.min<S.o)break;s=i;}
-  if(s<0){
-    return ns(now.min<S.o?'Market not open yet — the opening range forms at '+hm(S.o)+' ('+S.tz.split('/')[1].replace('_',' ')+' time) and completes 15 minutes later.':'No candles from today\'s session in the data yet — press Refresh.');
-  }
-  var open0=tzParts(tsMs(m.t[s]),S.tz);
-  if(open0.min>=S.o+15)return ns('The first candle after the open is missing from the data — press Refresh.');
-  var ORH=m.h[s],ORL=m.l[s],R=ORH-ORL;
-  if(R<=0)return ns('Opening range has no height yet.');
-  // 1 · Daily regime
-  var cD=d.c.slice(0,nd),s50=smaOf(cD,50),s200=smaOf(cD,200),pD=cD[nd-1],isL;
-  if(s50>s200&&pD>s50)isL=true;else if(s50<s200&&pD<s50)isL=false;
-  else return ns('Daily trend unclear (50 SMA '+f(s50)+', 200 SMA '+f(s200)+', last close '+f(pD)+') — ORB only trades with a clear Daily trend. Stand aside.');
-  var atrD=calcATR(d.h.slice(0,nd),d.l.slice(0,nd),cD,14),atr15=calcATR(m.h.slice(0,n),m.l.slice(0,n),m.c.slice(0,n),14);
-  if(!atrD||!atr15)return ns('Could not calculate ATR');
-  var ratio=R/atrD,rangeOk=ratio>=0.1&&ratio<=0.6;
-  // 2 · Breakout: first completed 15m close outside the range in the trend direction
-  var brk=-1;
-  for(i=s+1;i<n;i++){if(isL?m.c[i]>ORH:m.c[i]<ORL){brk=i;break;}}
-  var price=(liveData[key]&&liveData[key].price)||m.c[n-1];
-  var edge=isL?ORH:ORL,failed=false,chased=false,stop=isL?ORL:ORH;
-  var dist=Math.abs(price-stop),widened=false;
-  if(brk>=0){
-    failed=isL?price<=ORH:price>=ORL;
-    chased=Math.abs(price-edge)>0.5*R;
-  }
-  if(dist<atr15){stop=isL?price-atr15:price+atr15;dist=atr15;widened=true;}
-  var stopX=dist/atr15,stopOk=stopX<=3,target=isL?price+2*dist:price-2*dist;
-  var openMin=now.min-S.o,timeOk=now.min>=S.o+15&&openMin<=240&&now.min<S.c-60;
-  var timeTxt=now.min<S.o+15?'Opening range still forming':openMin>240?'More than 4 hours after the open — drop the idea for today':now.min>=S.c-60?'Last hour before the close — no new entries':'Inside the entry window ('+hm(S.o+15)+' – '+hm(S.o+240)+') ✅';
+  function when(i){var t=String(D.t[i]);return C.mins>=1440?t.slice(5,10):t.slice(5,16).replace('T',' ');}
+  var H=D.h.slice(0,n),L=D.l.slice(0,n),Cl=D.c.slice(0,n),atr=calcATR(H,L,Cl,14);
+  if(!atr)return ns('Could not calculate ATR');
+  var S=stSwings(H,L,n),I=nextLevel(S),LT=nextLevel(I);
+  var lastI=I.slice(-4).map(function(p){return(p.t==='H'?'high ':'low ')+f(p.v)+' ('+when(p.i)+')';}).join(' → ');
+  var ltTxt=LT.length?'Long-term swings: '+LT.slice(-3).map(function(p){return(p.t==='H'?'high ':'low ')+f(p.v)+' ('+when(p.i)+')';}).join(' → '):'Long-term swings: not enough history yet';
+  var info='Intermediate swings: '+(lastI||'none yet')+' · '+ltTxt;
+  var b=bookSetup(true,S,I,H,L,n),s=bookSetup(false,S,I,H,L,n),su;
+  if(b&&s)su=b.c>=s.c?b:s;else su=b||s;
+  if(!su)return ns('No book setup right now. A buy needs a HIGHER intermediate-term low (confirmed by a higher short-term low); a sell needs a LOWER intermediate-term high (confirmed by a lower short-term high).',info);
+  var isL=su.isL,price=(liveData[key]&&liveData[key].price)||Cl[n-1],bars=n-1-su.c;
+  var liveTrig=su.trig<0&&(isL?price>su.level:price<su.level);
+  var state,entry;
+  if(su.broken||(isL?price<su.it.v:price>su.it.v))return ns('The '+(isL?'higher intermediate low':'lower intermediate high')+' ('+f(su.it.v)+') has been broken — setup cancelled.',info);
+  if(su.trig>=0||liveTrig){
+    var chase=Math.abs(price-su.level);
+    state=chase<=0.5*atr?'triggered':'late';entry=price;
+  }else if(bars<=2){state='armed';entry=su.level;}
+  else{state='expired';entry=su.level;}
+  var it=su.it,bf=su.before,stop=isL?it.v-0.1*atr:it.v+0.1*atr,dist=Math.abs(entry-stop);
+  var target=isL?bf.v+(bf.v-it.v):bf.v-(it.v-bf.v),rr=dist>0?Math.abs(target-entry)/dist:0;
+  var rewardOk=isL?target>entry:target<entry,stopOk=dist<=4*atr,tm=msTiming();
   var checks=[
-    {name:'Daily trend',ok:true,txt:'50 SMA '+f(s50)+' '+(isL?'above':'below')+' 200 SMA '+f(s200)+', last close '+f(pD)+' — '+(isL?'BUY breaks only':'SELL breaks only')},
-    {name:'Range size',ok:rangeOk,txt:'Opening range '+f(ORL)+' – '+f(ORH)+' = '+f(R)+' points = '+(ratio*100).toFixed(0)+'% of the Daily ATR'+(rangeOk?' ✅':(ratio<0.1?' — too small, breaks tend to go nowhere':' — too wide for a tight stop, skip'))},
-    {name:'Breakout',ok:brk>=0,txt:brk>=0?'A 15m candle closed '+(isL?'above '+f(ORH):'below '+f(ORL))+' ✅':'Waiting for a 15m candle to CLOSE '+(isL?'above '+f(ORH):'below '+f(ORL))+' (no trade on a wick)'},
-    {name:'Break holding',ok:brk>=0&&!failed,txt:brk<0?'No breakout yet':failed?'Price is back inside the range — failed break, skip':'Price is still '+(isL?'above':'below')+' the range edge ✅'},
-    {name:'Not chased',ok:brk>=0&&!chased,txt:brk<0?'No breakout yet':chased?'Price is more than half a range-height beyond the edge — too late, skip':'Entry is close to the break level ✅'},
-    {name:'Stop size',ok:brk>=0&&stopOk,txt:brk<0?'No breakout yet':'Stop '+f(stop)+' (other side of the range) = '+dist.toFixed(dd>2?dd:1)+' points = '+stopX.toFixed(1)+'x 15m ATR'+(widened?' (widened to the 1x ATR minimum)':'')+(stopOk?'':' — too wide (max 3x), skip')},
-    {name:'Timing',ok:timeOk,txt:timeTxt}
+    {name:isL?'Higher intermediate low':'Lower intermediate high',ok:true,txt:'Intermediate-term '+(isL?'low ':'high ')+f(it.v)+' ('+when(it.i)+') is '+(isL?'higher':'lower')+' than the previous one ('+f(su.priorSame.v)+') — the '+(isL?'up':'down')+'trend is intact ✅'},
+    {name:'Short-term confirmation',ok:true,txt:'Newest short-term '+(isL?'low ':'high ')+f(su.cur.v)+' ('+when(su.cur.i)+') is '+(isL?'higher':'lower')+' than the one before ('+f(su.prev.v)+'), which confirmed the intermediate point ✅'},
+    {name:'Entry order',ok:state==='armed'||state==='triggered',txt:state==='armed'?(isL?'Buy stop':'Sell stop')+' at '+f(su.level)+' (the '+(isL?'high':'low')+' of the confirming bar, '+when(su.c)+') — not triggered yet ✅':state==='triggered'?'Triggered through '+f(su.level)+' and price is still within half an ATR of it ✅':state==='late'?'Triggered through '+f(su.level)+' but price has already run more than half an ATR — too late, wait for the next setup':'The entry order was not hit within 3 bars of the signal — expired'},
+    {name:'Stop size',ok:stopOk,txt:'Stop '+f(stop)+' (beyond the intermediate '+(isL?'low':'high')+') = '+dist.toFixed(dd>2?dd:1)+' points = '+(dist/atr).toFixed(1)+'x '+C.nm+' ATR'+(stopOk?'':' — too wide (max 4x), skip')},
+    {name:'Reward vs risk ≥ 1.5',ok:rewardOk&&rr>=1.5,txt:'Target '+f(target)+' = '+(rewardOk?'1:'+rr.toFixed(1):'already passed')+(rewardOk&&rr>=1.5?' ✅':' — not enough room for the risk')},
+    {name:'Timing',ok:tm.ok,txt:tm.txt}
   ];
   var allOk=checks.every(function(c){return c.ok;}),ff=checks.filter(function(c){return !c.ok;})[0],stake=cap*0.01;
-  return{key:key,status:allOk?'ready':'watch',isL:isL,checks:checks,ORH:ORH,ORL:ORL,entry:price,stop:stop,target:target,stake:stake,perPt:dist>0?stake/dist:0,waiting:ff?ff.name:null,closeBy:hm(S.c-60)};
+  return{key:key,book:true,status:allOk?'ready':'watch',isL:isL,state:state,checks:checks,entry:entry,level:su.level,stop:stop,target:target,stake:stake,perPt:dist>0?stake/dist:0,waiting:ff?ff.name:null,info:info,nm:C.nm,it:it.v,trailLow:su.cur.v};
 }
-function mkORBCard(r){
+function mkMSBookCard(r){
   var m=M13[r.key];if(!m)return'';
-  var pill=r.status==='ready'?'✅ ORB BREAKOUT · '+(r.isL?'BUY':'SELL'):r.status==='watch'?'👀 RANGE SET · WAITING':'⚪ NO ORB';
-  var sub=r.status==='nosig'?'15-minute Opening Range Breakout':'15m opening range · '+(r.isL?'buy breaks only':'sell breaks only');
+  var dir=r.isL?'BUY':'SELL';
+  var pill=r.status==='ready'?'✅ '+dir+(r.state==='armed'?' STOP READY':' TRIGGERED'):r.status==='watch'?'👀 '+(r.isL?'BUY':'SELL')+' SETUP · WAITING':'⚪ NO SETUP';
   var body='';
   if(r.status==='nosig'){body='<div style="margin-top:8px;font-size:11px;color:var(--dim)">'+r.reason+'</div>';}
   else{
     body='<div class="chklist" style="margin-top:8px">'+r.checks.map(function(c){return'<div class="chk '+(c.ok?'ok':'fail')+'"><div class="chk-lbl">'+c.name+'</div><div class="chk-val" style="color:'+(c.ok?'var(--g)':'var(--r)')+'">'+(c.ok?'✅':'❌')+'</div><div class="chk-txt">'+c.txt+'</div></div>';}).join('')+'</div>';
     if(r.status==='ready'){
-      body+='<div class="conf" style="margin-top:8px"><div class="conf-box"><div class="conf-lbl">ENTRY</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET (2R)</div><div class="conf-val" style="color:var(--g)">'+r.target.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">RISK</div><div class="conf-val" style="color:var(--a)">£'+r.stake.toFixed(2)+'</div></div></div>'+
-        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">About £'+r.perPt.toFixed(2)+' per point for 1% risk (check Trade Nation\'s minimum stake) · one ORB trade per market per day</div>'+
-        '<div style="margin-top:6px;font-size:11px;color:var(--a)">Exit plan: target 2R, or close the trade by '+r.closeBy+' (an hour before the close) · move the stop to breakeven at 1R · skip big-news days (check 🚨 NEWS &amp; RISK) · Journal it as "ORB"</div>'+mkConfluenceBox(r.key);
+      body+='<div class="conf" style="margin-top:8px"><div class="conf-box"><div class="conf-lbl">'+(r.state==='armed'?dir+' STOP AT':'ENTRY')+'</div><div class="conf-val" style="color:var(--b)">'+r.entry.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">STOP</div><div class="conf-val" style="color:var(--r)">'+r.stop.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">TARGET</div><div class="conf-val" style="color:var(--g)">'+r.target.toFixed(m.d)+'</div></div><div class="conf-box"><div class="conf-lbl">RISK</div><div class="conf-val" style="color:var(--a)">£'+r.stake.toFixed(2)+'</div></div></div>'+
+        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">About £'+r.perPt.toFixed(2)+' per point for 1% risk (check Trade Nation\'s minimum stake) · max 2 trades open</div>'+
+        '<div style="margin-top:6px;font-size:11px;color:var(--a)">Exit plan (book method): trail the stop '+(r.isL?'up under':'down over')+' each new '+(r.isL?'higher short-term low':'lower short-term high')+' · or leave when the next intermediate-term '+(r.isL?'high':'low')+' forms before the target · cancel an unfilled order after 3 bars · skip big-news days · Journal it as "Market Structure"</div>'+mkConfluenceBox(r.key);
     }else if(r.waiting){body+='<div style="margin-top:8px;font-size:11px;color:var(--a)">Waiting for: '+r.waiting+'</div>';}
   }
-  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">'+(r.status==='ready'?'<span class="dirtag '+(r.isL?'long':'short')+'">'+(r.isL?'BUY':'SELL')+'</span>':'')+m.n+'</div><div class="mcard-sub">'+sub+'</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span></div>'+body+'</div>';
+  return'<div class="mcard '+r.status+'"><div class="mcard-top"><div><div class="mcard-name">'+(r.status==='ready'?'<span class="dirtag '+(r.isL?'long':'short')+'">'+dir+'</span>':'')+m.n+'</div><div class="mcard-sub">Book method · '+(msStore().nm)+' bars · short → intermediate → long-term swings</div></div></div><div class="sigbar"><span class="sigpill '+r.status+'">'+pill+'</span></div>'+body+(r.info?'<div style="margin-top:6px;font-size:10px;color:var(--dim)">'+r.info+'</div>':'')+'</div>';
 }
-function renderORB(){
-  var el=document.getElementById('orbCards');if(!el)return;
-  var r=0,w=0,n=0;
-  el.innerHTML=ORB_KEYS.map(function(k){
-    var missing=!m15Data[k]||!dailyData[k];
+function evalMS(key){return msMode==='book'?evalMSBook(key):evalMSStrict(key);}
+function msNeedStores(k){var C=msStore();return msMode==='book'?[C.st]:[dailyData,liveH4,h1Data];}
+function renderMS(){
+  var el=document.getElementById('msCards');if(!el)return;
+  var r=0,w=0,n=0,book=msMode==='book';
+  var ib=document.getElementById('msInfoBook'),is=document.getElementById('msInfoStrict');
+  if(ib)ib.style.display=book?'block':'none';if(is)is.style.display=book?'none':'block';
+  el.innerHTML=MS_KEYS.map(function(k){
+    var missing=msNeedStores().some(function(st){return !st[k];});
     if(liveErr[k]&&missing)return errCard(k,liveErr[k]);
-    if(missing)return loadCard(k,'Loading 15m + Daily...');
-    var res=evalORB(k);if(!res)return loadCard(k);
+    if(missing)return loadCard(k,book?'Loading '+msStore().nm+' data...':'Loading Daily + 4H + 1H...');
+    var res=evalMS(k);if(!res)return loadCard(k);
     if(res.status==='ready')r++;else if(res.status==='watch')w++;else n++;
-    return mkORBCard(res);
+    return mkMSCard(res);
   }).join('');
-  var sm=document.getElementById('orbSum');if(sm)sm.innerHTML=mkSum(r,w,n);
-  var pk=document.getElementById('orbPick');
-  if(pk)pk.innerHTML=Object.keys(M13).map(function(k){var on=ORB_KEYS.indexOf(k)>=0;return'<button onclick="toggleOrbKey(\''+k+'\')" style="cursor:pointer;margin:0 6px 6px 0;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:600;border:1px solid '+(on?'var(--g)':'var(--bdr)')+';background:'+(on?'rgba(0,217,126,0.12)':'transparent')+';color:'+(on?'var(--g)':'var(--dim)')+'">'+(on?'✓ ':'')+M13[k].n+'</button>';}).join('');
-  var c=document.getElementById('orbCost'),nk=ORB_KEYS.length;
-  if(c){c.textContent=nk+' market'+(nk===1?'':'s')+' selected · first load ≤ '+nk*2+' credits · about '+nk*4+' credits an hour while this tab is open in session hours';c.style.color=nk>6?'var(--a)':'var(--dim)';}
+  var sm=document.getElementById('msSum');if(sm)sm.innerHTML=mkSum(r,w,n);
+  var mb=document.getElementById('msModeBtns');
+  function btn(on,label,fn){return'<button onclick="'+fn+'" style="cursor:pointer;margin:0 8px 6px 0;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid '+(on?'var(--g)':'var(--bdr)')+';background:'+(on?'rgba(0,217,126,0.12)':'transparent')+';color:'+(on?'var(--g)':'var(--dim)')+'">'+label+'</button>';}
+  if(mb)mb.innerHTML=btn(book,'Book method (buy + sell)',"setMsMode('book')")+btn(!book,'Strict (buy only)',"setMsMode('strict')")+(book?'<span style="display:inline-block;width:14px"></span>'+btn(msTF==='daily','Daily bars',"setMsTF('daily')")+btn(msTF==='4h','4H bars',"setMsTF('4h')")+btn(msTF==='1h','1H bars',"setMsTF('1h')")+btn(msTF==='15m','15m bars',"setMsTF('15m')"):'');
+  var pk=document.getElementById('msPick');
+  if(pk)pk.innerHTML=Object.keys(M13).map(function(k){var on=MS_KEYS.indexOf(k)>=0;return'<button onclick="toggleMsKey(\''+k+'\')" style="cursor:pointer;margin:0 6px 6px 0;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:600;border:1px solid '+(on?'var(--g)':'var(--bdr)')+';background:'+(on?'rgba(0,217,126,0.12)':'transparent')+';color:'+(on?'var(--g)':'var(--dim)')+'">'+(on?'✓ ':'')+M13[k].n+'</button>';}).join('');
+  var c=document.getElementById('msCost'),nk=MS_KEYS.length;
+  if(c){c.textContent=nk+' market'+(nk===1?'':'s')+' selected · first load ≤ '+(book?nk:nk*2)+' credits'+(book?'':' (4H data is shared with the other tabs)')+' · about '+(book&&msTF==='15m'?nk*4:nk)+' credits an hour while open'+(book&&msTF==='15m'?' (15m refreshes every 15 min during market hours)':'');c.style.color=nk>6?'var(--a)':'var(--dim)';}
 }
-function toggleOrbKey(k){
-  var i=ORB_KEYS.indexOf(k);
-  if(i>=0){if(ORB_KEYS.length===1)return;ORB_KEYS.splice(i,1);}
-  else{ORB_KEYS.push(k);loadORB();}
-  try{localStorage.setItem('orbKeys',JSON.stringify(ORB_KEYS));}catch(e){}
-  renderORB();
+function setMsMode(m){msMode=m;try{localStorage.setItem('msMode',m);}catch(e){}if(msMissing())loadMS();renderMS();}
+function setMsTF(t){msTF=t;try{localStorage.setItem('msTF',t);}catch(e){}if(msMissing())loadMS();renderMS();}
+function toggleMsKey(k){
+  var i=MS_KEYS.indexOf(k);
+  if(i>=0){if(MS_KEYS.length===1)return;MS_KEYS.splice(i,1);}
+  else{MS_KEYS.push(k);loadMS();}
+  try{localStorage.setItem('msKeys',JSON.stringify(MS_KEYS));}catch(e){}
+  renderMS();
 }
-function orbMissing(){return ORB_KEYS.some(function(k){return !m15Data[k]||!dailyData[k];});}
-function loadORB(full){
-  var a=ORB_KEYS.filter(function(k){return full||!m15Data[k];}),b=ORB_KEYS.filter(function(k){return full||!dailyData[k];});
-  renderORB();
-  if(a.length)loadMarkets(a,m15Data,'15min',renderORB,'orbSt');
-  if(b.length)loadMarkets(b,dailyData,'1day',renderORB,'orbSt');
+function msMissing(){var sts=msNeedStores();return MS_KEYS.some(function(k){return sts.some(function(st){return !st[k];});});}
+function loadMS(full){
+  renderMS();
+  if(msMode==='book'){
+    var C=msStore(),ks=MS_KEYS.filter(function(k){return full||!C.st[k];});
+    if(ks.length)loadMarkets(ks,C.st,C.iv,renderMS,'msSt');
+    return;
+  }
+  var a=MS_KEYS.filter(function(k){return full||!dailyData[k];}),b=MS_KEYS.filter(function(k){return full||!liveH4[k];}),c=MS_KEYS.filter(function(k){return full||!h1Data[k];});
+  if(a.length)loadMarkets(a,dailyData,'1day',renderMS,'msSt');
+  if(b.length)loadMarkets(b,liveH4,'4h',renderMS,'msSt');
+  if(c.length)loadMarkets(c,h1Data,'1h',renderMS,'msSt');
 }
-function orbActive(){var p=document.getElementById('p-orb');return p&&p.classList.contains('on')&&!document.hidden;}
-function orbOpenKeys(){return ORB_KEYS.filter(function(k){var S=SESS[k],p=tzParts(Date.now(),S.tz);return p.wd!=='Sat'&&p.wd!=='Sun'&&p.min>=S.o&&p.min<S.c;});}
-setInterval(function(){if(orbActive()){var ks=orbOpenKeys();if(ks.length)loadMarkets(ks,m15Data,'15min',renderORB,'orbSt');}},15*60000);
-setInterval(function(){if(orbActive())loadMarkets(ORB_KEYS,dailyData,'1day',renderORB,'orbSt');},6*3600000);
+function msActive(){var p=document.getElementById('p-ms');return p&&p.classList.contains('on')&&!document.hidden;}
+setInterval(function(){if(msActive())loadMarkets(MS_KEYS,h1Data,'1h',renderMS,'msSt');},3600000);
+setInterval(function(){if(msActive())loadMarkets(MS_KEYS,dailyData,'1day',renderMS,'msSt');},6*3600000);
+setInterval(function(){
+  if(msActive()&&msMode==='book'&&msTF==='15m'){
+    var ks=MS_KEYS.filter(function(k){var S=SESS[k]||{tz:'Europe/London',o:420,c:1260},p=tzParts(Date.now(),S.tz);return p.wd!=='Sat'&&p.wd!=='Sun'&&p.min>=S.o&&p.min<S.c;});
+    if(ks.length)loadMarkets(ks,m15Data,'15min',renderMS,'msSt');
+  }
+},15*60000);
 
 // ── START ─────────────────────────────────────────────────────────
 // Single fetch of all 13 markets on load — every tab renders from it, no duplicate calls.
-loadMA(); // MA Trend is the opening tab — its requests go first
+loadMS(); // Structure is the opening tab — its requests go first
 setTimeout(loadS1,5000); // the other 13 markets queue behind it
 loadConfluenceNews();
 
